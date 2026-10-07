@@ -2,12 +2,13 @@
 *.png binary
 *.woff2 binary
 
-
-# Nicht ins Lieferpaket (git archive)
+# Not part of the delivery package (git archive)
 CLAUDE.md export-ignore
+README.md export-ignore
+.github export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
 
-# Vendorte Bibliotheken byte-genau lassen
+# Keep vendored libraries byte-identical
 assets/vendor/** -text
 lib/PHPMailer/** -text

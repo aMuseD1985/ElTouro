@@ -1,40 +1,41 @@
 <?php
 /**
- * Forum: Kategorien (vom Admin gepflegt) → Themen → Beiträge.
- * Lesen und Schreiben nur für angemeldete Nutzer. Moderieren (anpinnen, sperren, löschen) nur Plattform-Admins.
- * Löschen ist weich (deleted_at), damit Moderationsentscheidungen nachvollziehbar bleiben.
+ * Forum: categories (maintained by the admin) → topics → posts.
+ * Reading and writing for logged-in users only. Moderating (pin, lock, delete) for platform admins only.
+ * Deleting is soft (deleted_at) so moderation decisions stay traceable.
  */
 declare(strict_types=1);
 
-const BEITRAEGE_PRO_SEITE = 25;
-const BEITRAG_MAX = 8000;
-const SEKUNDEN_ZWISCHEN_BEITRAEGEN = 15;
+const FORUM_POSTS_PER_PAGE = 25;
+const FORUM_POST_MAX = 8000;
+const FORUM_POST_INTERVAL_SEC = 15;
 
-function kategorieName(array $k): string
+function categoryName(array $c): string
 {
     global $LANG;
-    return $LANG === 'en' ? $k['name_en'] : $k['name_de'];
+    return $LANG === 'en' ? $c['name_en'] : $c['name_de'];
 }
 
-function kategorieText(array $k): string
+function categoryDescription(array $c): string
 {
     global $LANG;
-    return (string)($LANG === 'en' ? $k['description_en'] : $k['description_de']);
+    return (string)($LANG === 'en' ? $c['description_en'] : $c['description_de']);
 }
 
-function istModerator(array $ich): bool
+function isForumModerator(array $me): bool
 {
-    return (int)$ich['is_admin'] === 1;
+    return (int)$me['is_admin'] === 1;
 }
 
-/** Bremse gegen Spam und Doppelklicks */
-function darfJetztSchreiben(int $userId): bool
+/** Brake against spam and double clicks */
+function canPostNow(int $userId): bool
 {
-    $letzter = einzeln('SELECT MAX(created_at) AS t FROM forum_posts WHERE user_id = ?', [$userId])['t'] ?? null;
-    return $letzter === null || strtotime($letzter . ' UTC') < time() - SEKUNDEN_ZWISCHEN_BEITRAEGEN;
+    $last = dbOne('SELECT MAX(created_at) AS t FROM forum_posts WHERE user_id = ?', [$userId])['t'] ?? null;
+    return $last === null || strtotime($last . ' UTC') < time() - FORUM_POST_INTERVAL_SEC;
 }
 
-function zeitAnzeige(string $utc): string
+/** UTC timestamp from the DB as local date and time (Europe/Berlin). */
+function formatDateTime(string $utc): string
 {
     global $LANG;
     $d = new DateTimeImmutable($utc, new DateTimeZone('UTC'));

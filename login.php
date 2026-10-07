@@ -2,52 +2,52 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 
-if (aktuellerNutzer()) {
-    weiterleiten('/');
+if (currentUser()) {
+    redirect('/');
 }
-$fehler = '';
+$error = '';
 $email = '';
-$weiter = (string)($_GET['weiter'] ?? $_POST['weiter'] ?? '/');
+$next = (string)($_GET['next'] ?? $_POST['next'] ?? '/');
 
-if (istPost()) {
-    pruefeCsrf();
-    $email = strtolower(feld('email', 254));
-    if (random_int(1, 20) === 1) {   // gelegentlich aufräumen: Versuche höchstens 24 h aufbewahren
-        ausfuehren('DELETE FROM login_attempts WHERE created_at < UTC_TIMESTAMP() - INTERVAL 1 DAY');
+if (isPost()) {
+    checkCsrf();
+    $email = strtolower(postField('email', 254));
+    if (random_int(1, 20) === 1) {   // occasional cleanup: keep attempts for at most 24 h
+        dbExec('DELETE FROM login_attempts WHERE created_at < UTC_TIMESTAMP() - INTERVAL 1 DAY');
     }
-    $versuche = (int)einzeln('SELECT COUNT(*) AS n FROM login_attempts WHERE ip = ? AND created_at > UTC_TIMESTAMP() - INTERVAL 15 MINUTE', [clientIp()])['n'];
-    if ($versuche >= 10) {
-        $fehler = t('login.zu_viele');
+    $attempts = (int)dbOne('SELECT COUNT(*) AS n FROM login_attempts WHERE ip = ? AND created_at > UTC_TIMESTAMP() - INTERVAL 15 MINUTE', [clientIp()])['n'];
+    if ($attempts >= 10) {
+        $error = t('login.too_many');
     } else {
-        $u = einzeln("SELECT id, password_hash FROM users WHERE email = ? AND status = 'active' AND email_verified_at IS NOT NULL", [$email]);
-        // Auch ohne Treffer einen Hash prüfen, damit die Antwortzeit nichts verrät
+        $u = dbOne("SELECT id, password_hash FROM users WHERE email = ? AND status = 'active' AND email_verified_at IS NOT NULL", [$email]);
+        // Verify a hash even without a match so the response time reveals nothing
         $hash = $u['password_hash'] ?? '$2y$10$usesomesillystringfore7hnbRJHxXVLeakoG8K30oukPsA.ztMG';
-        if (password_verify((string)($_POST['passwort'] ?? ''), $hash) && $u) {
+        if (password_verify((string)($_POST['password'] ?? ''), $hash) && $u) {
             if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
-                ausfuehren('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash((string)$_POST['passwort'], PASSWORD_DEFAULT), $u['id']]);
+                dbExec('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash((string)$_POST['password'], PASSWORD_DEFAULT), $u['id']]);
             }
-            einloggen((int)$u['id']);
-            weiterleiten($weiter);
+            logIn((int)$u['id']);
+            redirect($next);
         }
-        ausfuehren('INSERT INTO login_attempts (ip) VALUES (?)', [clientIp()]);
-        $fehler = t('login.fehler');
+        dbExec('INSERT INTO login_attempts (ip) VALUES (?)', [clientIp()]);
+        $error = t('login.error');
     }
 }
 
-seitenKopf(t('login.titel'));
+pageHeader(t('login.title'));
 ?>
-<section class="schmal">
-  <h1><?= te('login.titel') ?></h1>
-  <?php if ($fehler): ?><p class="meldung meldung-fehler" role="alert"><?= e($fehler) ?></p><?php endif; ?>
-  <form method="post" class="formular">
-    <?= csrfFeld() ?>
-    <input type="hidden" name="weiter" value="<?= e($weiter) ?>">
-    <div class="feld"><label for="email"><?= te('reg.email') ?></label>
+<section class="narrow">
+  <h1><?= te('login.title') ?></h1>
+  <?php if ($error): ?><p class="alert alert-error" role="alert"><?= e($error) ?></p><?php endif; ?>
+  <form method="post" class="form">
+    <?= csrfField() ?>
+    <input type="hidden" name="next" value="<?= e($next) ?>">
+    <div class="field"><label for="email"><?= te('register.email') ?></label>
       <input id="email" name="email" type="email" required autocomplete="email" value="<?= e($email) ?>"></div>
-    <div class="feld"><label for="passwort"><?= te('reg.passwort') ?></label>
-      <input id="passwort" name="passwort" type="password" required autocomplete="current-password"></div>
-    <button type="submit"><?= te('login.knopf') ?></button>
+    <div class="field"><label for="password"><?= te('register.password') ?></label>
+      <input id="password" name="password" type="password" required autocomplete="current-password"></div>
+    <button type="submit"><?= te('login.button') ?></button>
   </form>
-  <p><a href="/passwort_vergessen.php"><?= te('login.vergessen') ?></a></p>
+  <p><a href="/password_forgot.php"><?= te('login.forgot') ?></a></p>
 </section>
-<?php seitenFuss();
+<?php pageFooter();

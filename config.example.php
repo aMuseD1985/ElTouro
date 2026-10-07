@@ -1,32 +1,33 @@
 <?php
 /**
- * ElTouro App – Konfiguration. Nach config.php kopieren und ausfüllen.
- * Pro Umgebung (beta, test, später live) eine eigene config.php und eine EIGENE Datenbank.
+ * ElTouro App – configuration. Copy to config.php and fill in.
+ * One config.php per environment (beta, test, later live) and a SEPARATE database each.
+ * Older configs with the German keys (zugang, karte, erster_admin, aktiv …) keep working.
  */
 return [
-    // 'beta' | 'test' | 'live' – steuert Hinweisband, noindex und Zugangsschutz-Standard
+    // 'beta' | 'test' | 'live' – controls the notice band, noindex and the access gate default
     'env' => 'beta',
 
-    // Zeigt Fehlermeldungen direkt im Browser – nur in beta/test wirksam, nie in live.
-    // Zum Einrichten auf true, danach wieder false.
+    // Shows errors right in the browser – only effective in beta/test, never in live.
+    // Set to true while setting up, then back to false.
     'debug' => true,
 
     'db' => [
-        'dsn'  => 'mysql:host=localhost;dbname=DEINE_BETA_DB;charset=utf8mb4',
-        'user' => 'DEIN_DB_USER',
-        'pass' => 'DEIN_DB_PASSWORT',
+        'dsn'  => 'mysql:host=localhost;dbname=YOUR_BETA_DB;charset=utf8mb4',
+        'user' => 'YOUR_DB_USER',
+        'pass' => 'YOUR_DB_PASSWORD',
     ],
 
     'base_url' => 'https://beta.eltouro.de',
 
-    // Zufälliger Schlüssel zum Signieren von Cookies: php -r 'echo bin2hex(random_bytes(32)), "\n";'
+    // Random key for signing cookies: php -r 'echo bin2hex(random_bytes(32)), "\n";'
     'app_secret' => '',
 
-    // Vorab-Zugangsschutz für beta/test. Ein gemeinsames Passwort für alle Tester.
-    // Hash: php -r 'echo password_hash("DAS_TESTER_PASSWORT", PASSWORD_DEFAULT), "\n";'
-    'zugang' => [
-        'aktiv'         => true,
-        'passwort_hash' => '',
+    // Preview access gate for beta/test. One shared password for all testers.
+    // Hash: php -r 'echo password_hash("THE_TESTER_PASSWORD", PASSWORD_DEFAULT), "\n";'
+    'access' => [
+        'enabled'       => true,
+        'password_hash' => '',
     ],
 
     'mail_from'      => 'hallo@eltouro.de',
@@ -34,37 +35,38 @@ return [
     'smtp' => [
         'host'       => 'wXXXXXXX.kasserver.com',
         'port'       => 587,
-        'encryption' => 'tls',   // 'tls' | 'ssl' | 'none' (nur lokal)
+        'encryption' => 'tls',   // 'tls' | 'ssl' | 'none' (local only)
         'user'       => 'hallo@eltouro.de',
         'pass'       => '',
         'debug'      => false,
     ],
 
-    // E-Mail-Adresse, die beim ersten Login automatisch Plattform-Admin wird
-    'erster_admin' => 'marco@example.de',
+    // Email address that automatically becomes platform admin on first confirmation
+    'first_admin' => 'marco@example.de',
 
+    // Key for /migrate.php and /check.php – also used by the GitHub Action after a test deployment
     'migrate_key' => '',
 
-    // Betriebswerkzeuge im Admin (Deployment, Backup, Restore). In live bewusst entscheiden.
+    // Operations tools in the admin area (deployment, backup, restore). Decide consciously for live.
     'ops' => [
-        'aktiv'       => true,
+        'enabled'     => true,
         'max_backups' => 10,
     ],
 
-    // Kartenkacheln. Für beta/test sind die OSM-Kacheln ok (wenig Verkehr, mit Namensnennung).
-    // Vor dem Livegang auf einen Anbieter wie MapTiler umstellen, z. B.
-    // 'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=DEIN_KEY'
-    'karte' => [
-        'kacheln'     => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    // Map tiles. OSM tiles are fine for beta/test (little traffic, with attribution).
+    // Before going live switch to a provider like MapTiler, e.g.
+    // 'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=YOUR_KEY'
+    'map' => [
+        'tiles'       => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
         'attribution' => '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
     ],
 
-    // BRouter mit E-Scooter-Profilen (auf dem Pi, erreichbar per Cloudflare Tunnel).
-    // Leer = Planer verbindet Wegpunkte gerade (Freihand) – zum Ausprobieren ohne Router.
+    // BRouter with e-scooter profiles (on the Pi, reachable via Cloudflare Tunnel).
+    // Empty = the planner connects waypoints with straight lines (freehand) – for trying it out without a router.
     'brouter' => [
-        'url'         => '',                 // z. B. 'https://brouter.eltouro.de/brouter'
-        'profil'      => 'escooter',
-        'profil_2027' => 'escooter-2027',
-        'timeout'     => 10,
+        'url'          => '',                 // e.g. 'https://brouter.eltouro.de/brouter'
+        'profile'      => 'escooter',
+        'profile_2027' => 'escooter-2027',
+        'timeout'      => 10,
     ],
 ];

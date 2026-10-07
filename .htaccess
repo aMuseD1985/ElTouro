@@ -1,7 +1,8 @@
 # ElTouro App (beta/test/live)
 Options -Indexes
 
-<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|kern\.php|lang\.php|mailer\.php|konto\.php|herden_lib\.php|touren_lib\.php|forum_lib\.php|traenke_lib\.php|rechtstexte\.php|betrieb_lib\.php|migrationen\.php|herde_formular\.php|LIESMICH\.md)$">
+# Libraries, includes and docs are never served directly
+<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|rides_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
     Require all denied
 </FilesMatch>
 <FilesMatch "^_">
@@ -10,11 +11,50 @@ Options -Indexes
 
 RewriteEngine On
 
-# Saubere Adressen für Inhaltsseiten: /impressum, /datenschutz, /nutzungsbedingungen, /seite/kurzname
-RewriteRule ^(impressum|datenschutz|nutzungsbedingungen)/?$ seite.php?s=$1 [L,QSA]
-RewriteRule ^seite/([a-z0-9-]+)/?$ seite.php?s=$1 [L,QSA]
-# HTTPS erzwingen: bitte im KAS unter SSL-Schutz "SSL erzwingen" aktivieren statt hier.
-# Eine eigene Regel hier kann mit der KAS-Einstellung eine Endlosschleife bilden.
+# Runtime data, vendored libraries and CI configuration: no access from the browser
+RewriteRule ^(data|daten|lib|\.github)(/|$) - [F,L]
+
+# Clean addresses for content pages
+RewriteRule ^(imprint|privacy|terms)/?$ page.php?s=$1 [L,QSA]
+RewriteRule ^page/([a-z0-9-]+)/?$ page.php?s=$1 [L,QSA]
+
+# Addresses from before the English refactor (Oct 2026): links in mails already sent, invite links,
+# bookmarks. Permanent redirects; query strings are kept. They also make the old German files
+# that the FTP deployment leaves on the server unreachable.
+RewriteRule ^impressum/?$ /imprint [R=301,L]
+RewriteRule ^datenschutz/?$ /privacy [R=301,L]
+RewriteRule ^nutzungsbedingungen/?$ /terms [R=301,L]
+RewriteRule ^seite/([a-z0-9-]+)/?$ /page/$1 [R=301,L]
+RewriteRule ^seite\.php$ /page.php [R=301,L]
+RewriteRule ^zugang\.php$ /access.php [R=301,L]
+RewriteRule ^registrieren\.php$ /register.php [R=301,L]
+RewriteRule ^bestaetigen\.php$ /verify.php [R=301,L]
+RewriteRule ^passwort_vergessen\.php$ /password_forgot.php [R=301,L]
+RewriteRule ^passwort_neu\.php$ /password_reset.php [R=301,L]
+RewriteRule ^profil\.php$ /profile.php [R=301,L]
+RewriteRule ^herden\.php$ /crews.php [R=301,L]
+RewriteRule ^herde\.php$ /crew.php [R=301,L]
+RewriteRule ^herde_neu\.php$ /crew_new.php [R=301,L]
+RewriteRule ^touren\.php$ /tours.php [R=301,L]
+RewriteRule ^tour_planen\.php$ /tour_plan.php [R=301,L]
+RewriteRule ^forum_kategorie\.php$ /forum.php [R=301,L]
+RewriteRule ^forum_neu\.php$ /forum.php [R=301,L]
+RewriteRule ^forum_thema\.php$ /forum_topic.php [R=301,L]
+RewriteRule ^traenke\.php$ /talk.php [R=301,L]
+RewriteRule ^traenke_thema\.php$ /talk_topic.php [R=301,L]
+RewriteRule ^melden\.php$ /report.php [R=301,L]
+RewriteRule ^pruefen\.php$ /check.php [R=301,L]
+RewriteRule ^admin/seiten\.php$ /admin/pages.php [R=301,L]
+RewriteRule ^admin/einstellungen\.php$ /admin/settings.php [R=301,L]
+RewriteRule ^admin/nutzer\.php$ /admin/users.php [R=301,L]
+RewriteRule ^admin/meldungen\.php$ /admin/reports.php [R=301,L]
+RewriteRule ^admin/betrieb\.php$ /admin/ops.php [R=301,L]
+# Old internals and endpoints without a sensible target
+RewriteRule ^(kern|konto|herden_lib|touren_lib|traenke_lib|traenke_api|betrieb_lib|migrationen|rechtstexte|herde_formular)\.php$ - [F,L]
+RewriteRule ^assets/(planer|tourkarte|traenke)\.js$ - [G,L]
+
+# Enforcing HTTPS: please enable "SSL erzwingen" under SSL-Schutz in the KAS instead of here.
+# A rule of our own here can form an endless loop with the KAS setting.
 
 <IfModule mod_headers.c>
     Header always set X-Content-Type-Options "nosniff"

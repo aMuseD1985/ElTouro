@@ -1,11 +1,10 @@
 <?php
 /**
- * Mailversand. SMTP über vendorten PHPMailer (lib/PHPMailer, siehe VERSION),
- * Fallback auf mail(), wenn in der Config kein SMTP-Host steht.
+ * Sending mail. SMTP via the vendored PHPMailer (lib/PHPMailer, see VERSION),
+ * falling back to mail() when the config has no SMTP host.
  *
- * Bewusst PHPMailer statt eigenem SMTP-Client: STARTTLS, AUTH, Zeichensätze und
- * Zeilenumbrüche korrekt hinzubekommen ist fehleranfällig – eine nicht zugestellte
- * Bestätigungsmail kostet uns direkt eine Anmeldung.
+ * Deliberately PHPMailer instead of a home-grown SMTP client: getting STARTTLS, AUTH, charsets
+ * and line breaks right is error-prone – an undelivered confirmation mail costs us a sign-up.
  */
 declare(strict_types=1);
 
@@ -17,9 +16,9 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 
 /**
- * @throws RuntimeException wenn der Versand fehlschlägt
+ * @throws RuntimeException when sending fails
  */
-function sendeMail(string $an, string $betreff, string $html, string $text, ?string $unsubUrl = null): void
+function sendMail(string $to, string $subject, string $html, string $text, ?string $unsubUrl = null): void
 {
     global $CONFIG;
 
@@ -33,10 +32,10 @@ function sendeMail(string $an, string $betreff, string $html, string $text, ?str
             $mail->SMTPAuth   = ($smtp['user'] ?? '') !== '';
             $mail->Username   = (string)($smtp['user'] ?? '');
             $mail->Password   = (string)($smtp['pass'] ?? '');
-            $verschluesselung = $smtp['encryption'] ?? 'tls';
-            if ($verschluesselung === 'ssl') {
+            $encryption = $smtp['encryption'] ?? 'tls';
+            if ($encryption === 'ssl') {
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            } elseif ($verschluesselung === 'none') {   // nur für lokale Tests
+            } elseif ($encryption === 'none') {   // local tests only
                 $mail->SMTPSecure  = '';
                 $mail->SMTPAutoTLS = false;
             } else {
@@ -54,21 +53,21 @@ function sendeMail(string $an, string $betreff, string $html, string $text, ?str
         $mail->CharSet  = PHPMailer::CHARSET_UTF8;
         $mail->Encoding = PHPMailer::ENCODING_QUOTED_PRINTABLE;
         $mail->setFrom((string)$CONFIG['mail_from'], (string)$CONFIG['mail_from_name']);
-        $mail->Sender = (string)$CONFIG['mail_from'];   // Envelope-Absender (SPF)
-        $mail->addAddress($an);
+        $mail->Sender = (string)$CONFIG['mail_from'];   // envelope sender (SPF)
+        $mail->addAddress($to);
 
         if ($unsubUrl !== null) {
             $mail->addCustomHeader('List-Unsubscribe', '<' . $unsubUrl . '>');
         }
 
         $mail->isHTML(true);
-        $mail->Subject = $betreff;
+        $mail->Subject = $subject;
         $mail->Body    = $html;
-        $mail->AltBody = $text;   // Textteil für Clients ohne HTML und für Spamfilter
+        $mail->AltBody = $text;   // text part for clients without HTML and for spam filters
 
         $mail->send();
     } catch (\Throwable $ex) {
-        // ErrorInfo enthält nie das Passwort, nur die SMTP-Antwort
-        throw new RuntimeException('Mailversand fehlgeschlagen: ' . $mail->ErrorInfo, 0, $ex);
+        // ErrorInfo never contains the password, only the SMTP response
+        throw new RuntimeException('Mail delivery failed (SMTP): ' . $mail->ErrorInfo, 0, $ex);
     }
 }

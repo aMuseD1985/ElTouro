@@ -1,0 +1,95 @@
+name: Deploy Testumgebung
+
+# Spielt jeden Push auf "main" per FTPS auf den Testserver ein (oder von Hand unter Actions → Run workflow).
+# Gelöscht wird nichts auf dem Server. config.php, data/ und das alte daten/ bleiben unberührt.
+# Danach läuft die Migration über /migrate.php, wenn TEST_BASE_URL und MIGRATE_KEY gesetzt sind.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   FTP_HOST       z. B. w0123456.kasserver.com
+#   FTP_USER       FTP-Benutzer, am besten nur auf das Test-Verzeichnis beschränkt
+#   FTP_PASSWORD
+#   FTP_DIR        Zielordner, muss "test" oder "beta" enthalten, z. B. /test.eltouro.de/
+#   TEST_BASE_URL  optional, z. B. https://test.eltouro.de
+#   MIGRATE_KEY    optional, der migrate_key aus der config.php des Testservers
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-test
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
+      - name: PHP-Syntax prüfen
+        shell: bash
+        run: |
+          status=0
+          while IFS= read -r -d '' f; do
+            php -l "$f" > /tmp/lint.txt 2>&1 || { cat /tmp/lint.txt; status=1; }
+          done < <(find . -name '*.php' -not -path './.git/*' -print0)
+          exit $status
+
+      - name: Texte in beiden Sprachen vollständig
+        run: |
+          php -r '$t = require "lang.php";
+            $d = array_keys(array_diff_key($t["de"], $t["en"])); $e = array_keys(array_diff_key($t["en"], $t["de"]));
+            if ($d || $e) { echo "Nur DE: ", implode(", ", $d), "\nNur EN: ", implode(", ", $e), "\n"; exit(1); }
+            echo count($t["de"]), " Schlüssel in DE und EN\n";'
+
+      - name: lftp installieren
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Per FTPS hochladen
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_DIR: ${{ secrets.FTP_DIR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$FTP_HOST" && test -n "$FTP_USER" && test -n "$FTP_PASSWORD" && test -n "$FTP_DIR"
+          # niemals auf die Produktion hochladen
+          case "$FTP_DIR" in *test*|*beta*) ;; *) echo "FTP_DIR enthält weder 'test' noch 'beta' – Abbruch (Schutz vor Versehen)"; exit 1;; esac
+          lftp -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST" <<'LFTP'
+          set ftp:ssl-force true
+          set ftp:ssl-protect-data true
+          set ssl:verify-certificate yes
+          set net:max-retries 3
+          set net:timeout 30
+          set cmd:fail-exit yes
+          mirror -R --verbose --parallel=4 --no-perms \
+            -x '^\.git' -x '^\.github/' \
+            -x '^config\.php$' -x '^data/' -x '^daten/' \
+            -x '^CLAUDE\.md$' -x '^README\.md$' \
+            ./ "$FTP_DIR"
+          bye
+          LFTP
+          echo "Hochgeladen: $(git rev-parse --short HEAD)"
+
+      - name: Migration ausführen
+        env:
+          TEST_BASE_URL: ${{ secrets.TEST_BASE_URL }}
+          MIGRATE_KEY: ${{ secrets.MIGRATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${TEST_BASE_URL:-}" ] || [ -z "${MIGRATE_KEY:-}" ]; then
+            echo "TEST_BASE_URL/MIGRATE_KEY nicht gesetzt – Migration bitte unter Admin → Betrieb ausführen."
+            exit 0
+          fi
+          out=$(curl -fsS --max-time 120 --get --data-urlencode "key=$MIGRATE_KEY" "${TEST_BASE_URL%/}/migrate.php")
+          echo "$out" | grep -v '^= ' || true
+          echo "$out" | grep -q '^Fertig\.' || { echo "Migration nicht vollständig durchgelaufen"; exit 1; }

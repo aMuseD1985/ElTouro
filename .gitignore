@@ -1,17 +1,19 @@
-# Umgebungsspezifisch, enthält Zugangsdaten – nie committen
+# Environment-specific, contains credentials – never commit
 config.php
 
-# Laufzeitdaten (Sessions, Backups, Deploy-Pakete)
-daten/*
-!daten/.htaccess
-!daten/sitzungen/
-daten/sitzungen/*
-!daten/sitzungen/.gitkeep
+# Runtime data (sessions, backups, deploy packages)
+data/*
+!data/.htaccess
+!data/sessions/
+data/sessions/*
+!data/sessions/.gitkeep
+# Runtime data from before the English refactor
+daten/
 
-# Lieferpakete
+# Delivery packages
 *.zip
 
-# System/Editor
+# System/editor
 .DS_Store
 .idea/
 .vscode/

@@ -1,107 +1,119 @@
 # ElTouro – Übergabe für Claude Code
 
-Diese Datei ist der Einstiegspunkt für jede Session. Erst lesen, dann arbeiten. Stand: 28.09.2026.
+Diese Datei ist der Einstiegspunkt für jede Session. Erst lesen, dann arbeiten. Stand: 07.10.2026.
 Ansprechpartner und Product Owner: Marco. Kommunikation auf Deutsch, direkt und technisch.
 
 ## Worum es geht
 
 ElTouro ist eine Community-Plattform für E-Scooter-Fahrer im DACH-Raum, Start in Deutschland. Nutzer planen Touren, gründen Herden (Gruppen), tauschen sich im Forum und in der Tränke ihrer Herde aus und verabreden sich zu Ausfahrten. Zuerst als PWA, später als native App. Claims: DE „Finde deine Tour. Finde deine Herde.“, EN „Find your ride. Find your crew.“.
 
-Der Stand: Konten, Herden mit Leitstier-Verwaltung, Routenplaner mit BRouter-Anbindung, Forum, Tränke (Herden-Community im Discourse-light-Stil), Meldungen nach DSA, Rechtstexte, Admin-Backend mit Deployment, Backup und Restore. Ausfahrten mit Termin und Anmeldung sind der nächste große Baustein.
+Der Stand: Konten, Herden mit Leitstier-Verwaltung, Routenplaner mit BRouter-Anbindung, **Ausfahrten** (Termin, Treffpunkt, Teilnehmergrenze, Warteliste, Foto-Einwilligung, § 29 StVO), Forum, Tränke (Herden-Community im Discourse-light-Stil), Meldungen nach DSA, Rechtstexte, Admin-Backend mit Deployment, Backup und Restore.
 
-## Umgebungen und Betrieb
+## Repository, Umgebungen und Deployment
+
+Repo: `github.com/aMuseD1985/ElTouro`, Branch `main`, Wurzel ist der App-Ordner (`eltouro-app/`). Die Landingpage `eltouro-warteliste` ist nicht im Repo.
 
 Hosting bei all-inkl (Premium, Shared Hosting, PHP 8.5, MariaDB 10.11). Drei Orte:
 
 - **eltouro.de** – Landingpage mit Warteliste. Eigene, separate Codebasis (`eltouro-warteliste`), wird per FTP gepflegt.
 - **beta.eltouro.de** – Entwicklungsstand dieser App.
-- **test.eltouro.de** – Stand kurz vor Release.
+- **test.eltouro.de** – Testserver.
 
-Jede Umgebung hat eine eigene `config.php` und eine eigene Datenbank. `env` in der Config (`beta`/`test`/`live`) steuert das farbige Hinweisband, `noindex` und den Zugangsschutz (Tester-Passwort, signiertes Cookie). Marco spielt neue Stände über **Admin → Betrieb → Deployment** ein: ZIP hochladen, Vorschau mit Diff pro Datei, Auswahl per Häkchen, dann Vollbackup, Einspielen und Migration. Es wird dabei nie etwas gelöscht, und `config.php` sowie `daten/` werden nie angefasst. Lieferform an Marco ist deshalb immer ein ZIP mit dem Ordner `eltouro-app/` (ohne `config.php`, ohne Inhalte von `daten/`).
+**Jeder Push auf `main` geht per GitHub Action (`.github/workflows/deploy-test.yml`) direkt per FTPS auf den Testserver** und führt danach die Migration aus. Pushen heißt also deployen – vorher testen. Die Action löscht nichts und fasst `config.php`, `data/` und `daten/` nicht an. Für andere Umgebungen: `git archive --prefix=eltouro-app/ -o ../eltouro-app.zip HEAD` und unter **Admin → Betrieb → Deployment** einspielen (Vorschau mit Diff, Vollbackup, Migration, es wird nie etwas gelöscht).
 
-Routing läuft über BRouter auf einem Raspberry Pi 4 in Marcos Heimnetz, zweiter Pi als Reserve an einem anderen Anschluss, erreichbar per Cloudflare Tunnel. Die E-Scooter-Profile `escooter.brf` (aktuelle eKFV) und `escooter-2027.brf` (Regeln ab 01.03.2027) sind Entwürfe und noch nicht gegen echte Strecken getestet. Ist `brouter.url` leer, verbindet der Planer Punkte gerade und markiert sie als „freihand“.
+Jede Umgebung hat eine eigene `config.php` und eine eigene Datenbank. `env` in der Config (`beta`/`test`/`live`) steuert das farbige Hinweisband, `noindex` und den Zugangsschutz (Tester-Passwort, signiertes Cookie `et_access`). Server-Configs dürfen noch die alten deutschen Schlüssel haben (`zugang`, `karte`, `erster_admin`, `aktiv` …) – `bootstrap.php` übersetzt sie (`eltouroNormalizeConfig()`).
+
+Routing läuft über BRouter auf einem Raspberry Pi 4 in Marcos Heimnetz, zweiter Pi als Reserve an einem anderen Anschluss, erreichbar per Cloudflare Tunnel. Die E-Scooter-Profile `escooter.brf` (aktuelle eKFV) und `escooter-2027.brf` (Regeln ab 01.03.2027) sind Entwürfe und noch nicht gegen echte Strecken getestet. Ist `brouter.url` leer, verbindet der Planer Punkte gerade und markiert sie als „freehand“.
 
 ## Tech-Stack und harte Regeln
 
-Plain PHP ab 8.1 (läuft auf 8.5), MariaDB über PDO, Vanilla JS, kein Framework, kein Composer, kein Build-Schritt. Externe Bibliotheken nur als geprüfte, vendorte Einzeldateien mit `VERSION` und `LICENSE`: PHPMailer 6.12 (`lib/PHPMailer`), Leaflet 1.9.4 (`assets/vendor/leaflet`), Schriften Barlow und Barlow Condensed als WOFF2 (`assets/fonts`). **Keine CDNs, keine Google Fonts, keine Drittanbieter-Requests aus dem Browser** – einzige Ausnahme sind die Kartenkacheln aus `karte.kacheln`. Die Content-Security-Policy wird in `kern.php` gesetzt (`sendeSicherheitsHeader()`), `script-src 'self'`, also keine Inline-Skripte und keine `onclick`-Attribute.
+Plain PHP ab 8.1 (läuft auf 8.5), MariaDB über PDO, Vanilla JS, kein Framework, kein Composer, kein Build-Schritt. Externe Bibliotheken nur als geprüfte, vendorte Einzeldateien mit `VERSION` und `LICENSE`: PHPMailer 6.12 (`lib/PHPMailer`), Leaflet 1.9.4 (`assets/vendor/leaflet`), Schriften Barlow und Barlow Condensed als WOFF2 (`assets/fonts`). **Keine CDNs, keine Google Fonts, keine Drittanbieter-Requests aus dem Browser** – einzige Ausnahme sind die Kartenkacheln aus `map.tiles`. Die Content-Security-Policy wird in `core.php` gesetzt (`sendSecurityHeaders()`), `script-src 'self'`, also keine Inline-Skripte und keine `onclick`-Attribute.
 
-Code-Stil: deutsche Funktions- und Variablennamen (`ladeHerde()`, `pruefeCsrf()`, `$mitgliedschaft`), englische Tabellen- und Spaltennamen. Kommentare auf Deutsch und nur dort, wo das Warum nicht offensichtlich ist.
+**Code-Stil: alles Englisch** – Dateinamen, URLs, Funktionen, Variablen, Konstanten, CSS-Klassen, Formularfelder, `lang.php`-Schlüssel, Kommentare (`loadCrew()`, `checkCsrf()`, `$membership`, `.btn`, `crew.join`). Deutsch bleiben nur die deutschen UI-Texte in `lang.php`, das Admin-Backend (Oberfläche bewusst nur deutsch), Rechtstexte und Doku (README, diese Datei). Kommentare nur dort, wo das Warum nicht offensichtlich ist.
 
 ## Aufbau
 
 Jede Seite beginnt mit `declare(strict_types=1); require __DIR__ . '/bootstrap.php';`.
 
-`bootstrap.php` ist bewusst in altem PHP geschrieben: Versionsprüfung, `config.php` laden, Fehlerbehandlung mit lesbarer Fehlerseite (Details nur bei `'debug' => true` in beta/test), dann `require kern.php`. `kern.php` enthält DB-Helfer (`db()`, `einzeln()`, `alle()`, `ausfuehren()`), Sessions (eigener Ordner `daten/sitzungen`), Zugangsschutz, CSP, Sprache, `t()`/`te()`/`e()`, CSRF (`csrfFeld()`, `pruefeCsrf()`), Nutzer (`aktuellerNutzer()`, `mussEingeloggtSein()`, `mussAdminSein()`), `weiterleiten()` (nur relative Ziele), Einstellungen, das Mini-Markdown `formatiereText()` und das Layout (`seitenKopf()`, `seitenFuss()`).
+`bootstrap.php` ist bewusst in altem PHP geschrieben: Versionsprüfung, `config.php` laden, alte Config-Schlüssel übersetzen, Fehlerbehandlung mit lesbarer Fehlerseite (Details nur bei `'debug' => true` in beta/test), dann `require core.php`. `core.php` enthält DB-Helfer (`db()`, `dbOne()`, `dbAll()`, `dbExec()`), `dataDir()` (legt `data/` immer mit sperrender `.htaccess` an), Sessions (`data/sessions`), Zugangsschutz, CSP, Sprache, `t()`/`te()`/`tl()`(Text in fremder Sprache, z. B. für Mails)/`e()`, CSRF (`csrfField()`, `checkCsrf()`, `checkCsrfHeader()`), Nutzer (`currentUser()`, `requireLogin()`, `requireAdmin()`), `redirect()` (nur relative Ziele), `flash()`, `notFound()`, `setting()`, das Mini-Markdown `formatText()` und das Layout (`pageHeader()`, `pageFooter()`).
 
-Seiten, die ohne Tester-Passwort erreichbar sein müssen (`zugang.php`, `migrate.php`, `pruefen.php`), setzen vor dem `require` die Konstante `OHNE_ZUGANGSSCHUTZ`.
+Seiten, die ohne Tester-Passwort erreichbar sein müssen (`access.php`, `migrate.php`, `check.php`), setzen vor dem `require` die Konstante `SKIP_ACCESS_GATE`.
 
 | Bereich | Dateien |
 |---|---|
-| Konto | `registrieren.php`, `bestaetigen.php`, `login.php`, `logout.php`, `passwort_vergessen.php`, `passwort_neu.php`, `konto.php` (Tokens, Mails), `profil.php` |
-| Herden | `herden_lib.php` (Zugriffsschicht), `herden.php`, `herde_neu.php`, `herde.php`, `herde_formular.php` |
-| Touren | `touren_lib.php` (Zugriff, Geometrie-Prüfung, Kennzahlen), `touren.php`, `tour_planen.php`, `tour.php`, `tour_gpx.php`, `route.php` (BRouter-Proxy), `assets/planer.js`, `assets/tourkarte.js` |
-| Forum | `forum_lib.php`, `forum.php`, `forum_kategorie.php`, `forum_thema.php`, `forum_neu.php` |
-| Tränke | `traenke_lib.php`, `traenke.php`, `traenke_thema.php`, `traenke_api.php` (JSON), `assets/traenke.js` |
-| Inhalte | `seite.php` (Platzhalter `{{betreiber_name}}` usw. aus den Einstellungen), `rechtstexte.php` (Erstfassung DE/EN) |
-| Moderation | `melden.php`, `admin/meldungen.php` |
-| Admin | `admin/index.php`, `seiten.php`, `einstellungen.php` (inkl. Betreiberdaten), `nutzer.php`, `forum.php`, `betrieb.php` |
-| Betrieb | `betrieb_lib.php` (Backup, Restore, Paket-Vorschau, Diff, sicheres Entpacken), `migrationen.php`, `migrate.php`, `pruefen.php` |
+| Konto | `register.php`, `verify.php`, `login.php`, `logout.php`, `password_forgot.php`, `password_reset.php`, `account_lib.php` (Tokens, Mails, `mailHtml()`), `profile.php` |
+| Herden | `crews_lib.php` (Zugriffsschicht), `crews.php`, `crew_new.php`, `crew.php`, `_crew_form.php` |
+| Touren | `tours_lib.php` (Zugriff, Geometrie-Prüfung, Kennzahlen), `tours.php`, `tour_plan.php`, `tour.php`, `tour_gpx.php`, `route.php` (BRouter-Proxy), `assets/planner.js`, `assets/tour_map.js` |
+| Ausfahrten | `rides_lib.php` (Zugriff, Anmeldung/Warteliste mit Zeilensperre, Mails, Tränke-Posts), `rides.php`, `ride.php`, `ride_edit.php`, `assets/ride_form.js` |
+| Forum | `forum_lib.php`, `forum.php`, `forum_category.php`, `forum_topic.php`, `forum_new.php` |
+| Tränke | `talk_lib.php`, `talk.php`, `talk_topic.php`, `talk_api.php` (JSON), `assets/talk.js` |
+| Inhalte | `page.php` (Platzhalter `{{operator_name}}` usw. aus den Einstellungen; Routen `/imprint`, `/privacy`, `/terms`, `/page/x`), `legal_texts.php` (Erstfassung DE/EN) |
+| Moderation | `report.php`, `admin/reports.php` |
+| Admin | `admin/index.php`, `pages.php`, `settings.php` (inkl. Betreiberdaten), `users.php`, `forum.php`, `ops.php` |
+| Betrieb | `ops_lib.php` (Backup, Restore, Paket-Vorschau, Diff, sicheres Entpacken), `migrations.php`, `migrate.php`, `check.php` |
 | Texte | `lang.php` – reines `return [...]`, nichts danach |
+
+Alte deutsche Adressen (`/herde.php`, `/bestaetigen.php`, `/impressum` …) leiten in `.htaccess` per 301 auf die neuen um und machen die alten Dateien auf dem Server unerreichbar. Diese Regeln nicht entfernen, solange alte Mail- und Einladungslinks im Umlauf sein können.
 
 ## Zugriff und Sicherheit
 
-Jede Sichtbarkeitsentscheidung läuft über die jeweilige Zugriffsschicht, nie über eigene Abfragen in Seiten. **Herden:** auffindbar oder geheim; geheime Herden liefern Außenstehenden einen 404 (kein 403, sonst verrät man die Existenz). Mitgliederliste und Tränke nur für aktive Mitglieder. Leitstier = `group_members.role = 'admin'` mit `status = 'active'`; der letzte Leitstier kann nicht austreten. **Touren:** `private` (Ersteller), `group` (aktive Herdenmitglieder), `public` (alle angemeldeten). Kennzahlen wie Länge, Anstieg, Start und Bounding Box rechnet immer der Server aus der Geometrie; Zahlen aus dem Browser werden ignoriert. **Forum:** lesen und schreiben für alle angemeldeten Nutzer, moderieren nur Plattform-Admins. **Tränke:** nur aktive Herdenmitglieder; moderieren Leitstiere und Admins.
+Jede Sichtbarkeitsentscheidung läuft über die jeweilige Zugriffsschicht, nie über eigene Abfragen in Seiten. **Herden:** auffindbar oder geheim; geheime Herden liefern Außenstehenden einen 404 (kein 403, sonst verrät man die Existenz). Mitgliederliste und Tränke nur für aktive Mitglieder. Leitstier = `group_members.role = 'admin'` mit `status = 'active'`; der letzte Leitstier kann nicht austreten. **Touren:** `private` (Ersteller), `group` (aktive Herdenmitglieder), `public` (alle angemeldeten). Kennzahlen wie Länge, Anstieg, Start und Bounding Box rechnet immer der Server aus der Geometrie; Zahlen aus dem Browser werden ignoriert. **Ausfahrten:** `group` (aktive Mitglieder der Herde + Organisator) oder `public`; die Tour muss für die Zielgruppe sichtbar sein (private Touren gehen nie). Teilnehmernamen sehen nur Teilnehmer, Organisator, Herde und Admins. Verwalten dürfen Organisator, Leitstiere der Herde und Admins; Tour und Zielgruppe sind nach dem Anlegen fest. **Forum:** lesen und schreiben für alle angemeldeten Nutzer, moderieren nur Plattform-Admins. **Tränke:** nur aktive Herdenmitglieder; moderieren Leitstiere und Admins.
 
-Weitere feste Regeln: CSRF-Token in jedem Formular und als `X-CSRF`-Header bei jedem `fetch`. Einmal-Tokens nur als SHA-256 in der DB. Passwörter mit `password_hash`, Session-Wechsel beim Login. Gleiche Antworten bei „Adresse existiert/existiert nicht“. Login-Bremse pro IP (Versuche nach 24 h gelöscht). Nutzertexte nur über `formatiereText()`: alles wird escaped, erlaubt sind `##`, `###`, `- `, `**fett**` und Links mit `https://`, `mailto:` oder `/`. Nie HTML aus Nutzereingaben ausgeben. Löschen von Inhalten ist weich (`deleted_at`). Kritische Admin-Aktionen (Deployment, Restore) verlangen das Passwort erneut.
+Weitere feste Regeln: CSRF-Token in jedem Formular und als `X-CSRF`-Header bei jedem `fetch`. Einmal-Tokens nur als SHA-256 in der DB. Passwörter mit `password_hash`, Session-Wechsel beim Login. Gleiche Antworten bei „Adresse existiert/existiert nicht“. Login-Bremse pro IP (Versuche nach 24 h gelöscht). Nutzertexte nur über `formatText()`: alles wird escaped, erlaubt sind `##`, `###`, `- `, `**fett**` und Links mit `https://`, `mailto:` oder `/`. Nie HTML aus Nutzereingaben ausgeben. Löschen von Inhalten ist weich (`deleted_at`). Kritische Admin-Aktionen (Deployment, Restore) verlangen das Passwort erneut.
 
 ## Datenbank
 
-Schema-Änderungen ausschließlich in `migrationen.php`, Funktion `fuehreMigrationenAus()`. Jeder Schritt ist idempotent (prüft selbst, ob er nötig ist). **Neue Schritte immer unten anhängen, bestehende nie umschreiben.** Ausgeführt wird per Admin → Betrieb oder `/migrate.php?key=…`. Tabellen: `users`, `user_profiles`, `auth_tokens`, `login_attempts`, `rider_groups`, `group_members`, `pages`, `settings`, `tours`, `forum_categories`, `forum_threads`, `forum_posts`, `reports`, `herd_topics`, `herd_posts`, `herd_reactions`, `herd_reads`. `groups` ist in MySQL 8 reserviert, deshalb `rider_groups`. Keine nativen Spatial-Typen: Geometrie als GeoJSON, Umkreissuche über indizierte Bounding-Box-Spalten.
+Schema-Änderungen ausschließlich in `migrations.php`, Funktion `runMigrations()`. Jeder Schritt ist idempotent (prüft selbst, ob er nötig ist). **Neue Schritte immer unten anhängen, bestehende nie umschreiben.** Einzige Ausnahme ist Block 0 (Umbenennungen der Englisch-Umstellung), der vor allem anderen läuft. Ausgeführt wird per Admin → Betrieb, `/migrate.php?key=…` oder automatisch durch die GitHub Action. Tabellen: `users`, `user_profiles`, `auth_tokens`, `login_attempts`, `rider_groups`, `group_members`, `pages`, `settings`, `tours`, `rides`, `ride_signups`, `forum_categories`, `forum_threads`, `forum_posts`, `reports`, `herd_topics`, `herd_posts`, `herd_reactions`, `herd_reads`. `groups` ist in MySQL 8 reserviert, deshalb `rider_groups`. Zeiten in der DB immer UTC, Anzeige in `Europe/Berlin`. Keine nativen Spatial-Typen: Geometrie als GeoJSON (Abschnitte mit `properties.freehand`), Umkreissuche über indizierte Bounding-Box-Spalten.
+
+Wer Rechtstexte in `legal_texts.php` ändert: Die Migration ersetzt Standardtexte nur, wenn ihr SHA-256 dem alten Standard entspricht (Hashes in `migrations.php`); von Hand geänderte Seiten meldet `pagesMissingRideSection()` bzw. ein vergleichbarer Check auf der Admin-Startseite.
 
 ## Sprache, Vokabular, Tonalität
 
-Die App ist von Anfang an Deutsch und Englisch; jeder Schlüssel in `lang.php` existiert in beiden Sprachen (prüfen!). Das Admin-Backend ist bewusst nur deutsch. Wir duzen. **Kein Gendern** – ausdrückliche Vorgabe von Marco (Fahrer, Teilnehmer, Organisator). Sätze nie aus Bausteinen zusammensetzen, Platzhalter wie `{n}` verwenden.
+Die App ist von Anfang an Deutsch und Englisch; jeder Schlüssel in `lang.php` existiert in beiden Sprachen (die GitHub Action prüft das). Das Admin-Backend ist bewusst nur deutsch. Wir duzen. **Kein Gendern** – ausdrückliche Vorgabe von Marco (Fahrer, Teilnehmer, Organisator). Sätze nie aus Bausteinen zusammensetzen, Platzhalter wie `{n}` verwenden. Mails an andere Nutzer in deren Sprache (`tl()`).
 
 | Bedeutung | Deutsch | Englisch | Code |
 |---|---|---|---|
-| Gruppe | Herde | crew | `rider_groups` |
-| Gruppen-Admin | Leitstier | crew lead | `group_members.role = 'admin'` |
-| Herden-Community | Tränke | crew talk | `herd_*` |
-| Strecke | Tour | route | `tours` |
-| Termin mit Treffpunkt | Ausfahrt | ride | (kommt: `tour_events`) |
+| Gruppe | Herde | crew | `crew*`, Tabelle `rider_groups` |
+| Gruppen-Admin | Leitstier | crew lead | `isCrewLead()`, `group_members.role = 'admin'` |
+| Herden-Community | Tränke | crew talk | `talk*`, Tabellen `herd_*` |
+| Strecke | Tour | route | `tour*`, Tabelle `tours` |
+| Termin mit Treffpunkt | Ausfahrt | ride | `ride*`, Tabellen `rides`, `ride_signups` |
 
-Marke: „ElTouro“ in einem Wort. Farben: Nacht `#14263F`, Jeans `#2F5E8C`, Gold `#D7A845`, Kreide `#E8ECF1`.
+Marke: „ElTouro“ in einem Wort. Farben: Nacht `#14263F`, Jeans `#2F5E8C`, Gold `#D7A845`, Kreide `#E8ECF1` (CSS: `--night`, `--denim`, `--gold`, `--chalk`).
 
 ## Rechtliche Leitplanken (Produktentscheidungen, nicht verhandelbar)
 
-ElTouro vermittelt, veranstaltet aber keine Fahrten; nichts als „geprüft“ oder „sicher“ kennzeichnen, Schwierigkeit ist „Einschätzung des Erstellers“. Routing meidet Fußwege, Fußgängerzonen, Wald- und Feldwege (auch nach 2027), Autobahnen und Kraftfahrstraßen; „Radverkehr frei“ und Nebeneinanderfahren erst ab 01.03.2027. Öffentliche Ausfahrten nur mit zugelassenen Scootern; Teilnehmergrenze ist Pflicht, ab etwa 15–20 Teilnehmern Hinweis auf § 29 StVO mit Bestätigung durch den Organisator. Mindestalter 16. Standort aus dem Browser nur zum Verschieben der Karte, nie speichern. Fotos (kommen später): EXIF/GPS beim Upload entfernen, nur in der Herde sichtbar, Teilen nur über widerrufbaren Link. Die Datenschutzerklärung (`rechtstexte.php`) beschreibt das tatsächliche Verhalten – **wer Datenflüsse ändert, passt sie mit an.**
+ElTouro vermittelt, veranstaltet aber keine Fahrten; nichts als „geprüft“ oder „sicher“ kennzeichnen, Schwierigkeit ist „Einschätzung des Erstellers“. Routing meidet Fußwege, Fußgängerzonen, Wald- und Feldwege (auch nach 2027), Autobahnen und Kraftfahrstraßen; „Radverkehr frei“ und Nebeneinanderfahren erst ab 01.03.2027. Ausfahrten nur mit zugelassenen Scootern (jede Anmeldung bestätigt das); Teilnehmergrenze ist Pflicht, ab 15 Plätzen (`STVO29_THRESHOLD`) bestätigt der Organisator die Prüfung nach § 29 StVO. Foto-/Video-Einwilligung freiwillig, jederzeit widerrufbar, nie Voraussetzung für die Teilnahme. Mindestalter 16. Standort aus dem Browser nur zum Verschieben der Karte, nie speichern. Fotos (kommen später): EXIF/GPS beim Upload entfernen, nur in der Herde sichtbar, Teilen nur über widerrufbaren Link. Die Datenschutzerklärung (`legal_texts.php`) beschreibt das tatsächliche Verhalten – **wer Datenflüsse ändert, passt sie mit an.**
 
 ## Lokal entwickeln und testen
 
-`php -S` ignoriert `.htaccess`: Rewrites (`/impressum`) und Dateisperren lassen sich lokal nicht testen. Bewährtes Vorgehen: MariaDB lokal starten, eine Test-`config.php` mit `'smtp' => ['host' => '127.0.0.1', 'port' => 1025, 'encryption' => 'none', 'user' => '', 'pass' => '']`, Mails mit `aiosmtpd` abfangen, für Routing einen kleinen Fake-BRouter (PHP-Skript, das eine GeoJSON-Linie zurückgibt) unter `brouter.url` eintragen. Abläufe per `curl` mit Cookie-Jar durchspielen (CSRF-Token aus dem Formular lesen), JavaScript-Features mit Playwright prüfen. Vor jeder Lieferung: `php -l` auf alle Dateien und ein Abgleich, dass `lang.php` in beiden Sprachen dieselben Schlüssel hat.
+`php -S` ignoriert `.htaccess`. Bewährtes Vorgehen: MariaDB per Docker (`docker run -d --name eltouro-db -e MARIADB_ROOT_PASSWORD=root -e MARIADB_DATABASE=eltouro -e MARIADB_USER=eltouro -e MARIADB_PASSWORD=eltouro -p 127.0.0.1:3307:3306 mariadb:10.11`), eine Test-`config.php` mit `'smtp' => ['host' => '127.0.0.1', 'port' => 1025, 'encryption' => 'none', 'user' => '', 'pass' => '']`, Mails mit `aiosmtpd` abfangen, für Routing einen kleinen Fake-BRouter (PHP-Skript, das eine GeoJSON-Linie zurückgibt) unter `brouter.url` eintragen, und `php -S` mit einem Router-Skript starten, das die Regeln aus der `.htaccess` nachbildet (RewriteRule mit F/G/R=301/QSA, FilesMatch). Abläufe per HTTP-Client mit Cookie-Jar durchspielen (CSRF-Token aus dem Formular bzw. `data-csrf` lesen), JavaScript im Browser prüfen (Konsole in einem frischen Tab lesen). Vor jedem Push: `php -l` auf alle Dateien und ein Abgleich, dass `lang.php` in beiden Sprachen dieselben Schlüssel hat.
 
-Hintergrundprozesse (Datenbank, `php -S`) mit `setsid nohup … &` starten, sonst hängt die Shell.
+Hintergrundprozesse (Datenbank, `php -S`) mit `nohup … &` starten, sonst hängt die Shell.
 
 ## Stolperfallen, die schon einmal passiert sind
 
 - PHP läuft bei all-inkl als CGI: `SCRIPT_NAME` ist unzuverlässig (führte zur Endlosschleife am Zugangsschutz). Ausnahmen deshalb per Konstante.
 - HTTPS nicht per `.htaccess` erzwingen, sondern im KAS („SSL erzwingen“), sonst Weiterleitungsschleife.
-- Sessions im gemeinsamen Temp-Ordner des Hosters gingen verloren, deshalb `daten/sitzungen`.
+- Sessions im gemeinsamen Temp-Ordner des Hosters gingen verloren, deshalb `data/sessions`.
 - `curl_close()` ist ab PHP 8.5 veraltet.
 - Nach `];` in `lang.php` darf nichts mehr stehen, sonst ist die ganze App kaputt.
 - CSS-Regeln mit `display` überschreiben das `hidden`-Attribut; global gilt `[hidden] { display: none !important; }`.
 - In Mails werden Links quoted-printable umbrochen; beim Testen den Mail-Text dekodieren, nicht roh greppen.
+- Leaflet: Kartenausschnitt (`fitBounds`/`setView`) **vor** dem ersten `addTo(map)` einer Ebene setzen, sonst bricht `_clipPoints` ab und nichts wird gezeichnet.
+- Die Tränke-Bremse (5 s zwischen Beiträgen) zählt auch automatische Beiträge (Änderungen an Ausfahrten).
 
 ## Backlog (Reihenfolge mit Marco abstimmen)
 
-1. **Ausfahrten:** Tour als Termin anbieten (Datum, Treffpunkt, Kapazität, Warteliste, Fahrprofil, Mindestanforderung „zugelassener Scooter“), Anmeldung mit Einwilligung zu Foto/Video, Hinweis § 29 StVO, Anzeige auf Herdenseite und in der Tränke.
-2. **Konto selbst löschen** im Profil (die Datenschutzerklärung verspricht Löschung, aktuell nur per Mail).
-3. **BRouter anbinden** und die Profile mit echten Strecken prüfen; vor live Kacheln auf MapTiler umstellen.
-4. **Fuhrpark** im Profil (Hersteller, Modell, Straßenzulassung ja/nein).
+1. **Konto selbst löschen** im Profil (die Datenschutzerklärung verspricht Löschung, aktuell nur per Mail). Dabei Anmeldungen zu Ausfahrten und eigene Ausfahrten mitbedenken.
+2. **BRouter anbinden** und die Profile mit echten Strecken prüfen; vor live Kacheln auf MapTiler umstellen.
+3. **Fuhrpark** im Profil (Hersteller, Modell, Straßenzulassung ja/nein) – könnte die Bestätigung „zugelassener Scooter“ bei Ausfahrten vorbelegen.
+4. Ausfahrten ausbauen: Kalender-Export (ICS), Teilnehmer durch den Organisator entfernen, Erinnerungsmail am Vortag, Umkreissuche für öffentliche Ausfahrten.
 5. **GPS-Aufzeichnung** aus Marcos GPS-Rallye-App übernehmen (`watchPosition` + Wake Lock), mit Privatzonen um Start/Ziel.
 6. Forum und Tränke: Beiträge bearbeiten, Benachrichtigungen (Mail-Digest), Erwähnungen.
-7. Fotowand pro Herde (aus der Rallye-App, inkl. EXIF-Entfernung und `wall_status`-Moderation).
+7. Fotowand pro Herde (aus der Rallye-App, inkl. EXIF-Entfernung und `wall_status`-Moderation) – nur Fotos von Teilnehmern mit Einwilligung.
 8. Deployment-Vorschau: Häkchen beim Wechsel zwischen Diffs merken.
+9. Saubere URLs ohne `.php` (Front-Controller) – erst wenn nötig.
 
 ## Verwandte Projekte
 

@@ -2,34 +2,43 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 
-$ich = aktuellerNutzer();
-seitenKopf(t('start.titel'));
+$me = currentUser();
+pageHeader(t('home.title'));
 
-if ($ich === null): ?>
-  <section class="schmal">
-    <h1 class="claim-klein"><?= te('start.gast_titel') ?></h1>
-    <p><?= te('start.gast_text') ?></p>
-    <p><a class="knopf" href="/login.php"><?= te('nav.login') ?></a>
-    <?php if (einstellung('registrierung_offen', '1') === '1'): ?> <a class="knopf zweit" href="/registrieren.php"><?= te('nav.registrieren') ?></a><?php endif; ?></p>
+if ($me === null): ?>
+  <section class="narrow">
+    <h1 class="claim"><?= te('home.guest_title') ?></h1>
+    <p><?= te('home.guest_text') ?></p>
+    <p><a class="btn" href="/login.php"><?= te('nav.login') ?></a>
+    <?php if (setting('registration_open', '1') === '1'): ?> <a class="btn secondary" href="/register.php"><?= te('nav.register') ?></a><?php endif; ?></p>
   </section>
 <?php else:
-  $meine = alle("SELECT g.slug, g.name, g.region, m.status FROM group_members m
+  $mine = dbAll("SELECT g.slug, g.name, g.region, m.status FROM group_members m
                    JOIN rider_groups g ON g.id = m.group_id AND g.deleted_at IS NULL
-                  WHERE m.user_id = ? ORDER BY g.name", [$ich['id']]); ?>
-  <h1><?= te('start.hallo', ['name' => $ich['display_name']]) ?></h1>
+                  WHERE m.user_id = ? ORDER BY g.name", [$me['id']]); ?>
+  <h1><?= te('home.hello', ['name' => $me['display_name']]) ?></h1>
+  <?php require __DIR__ . '/rides_lib.php';
+  $myRides = visibleRides((int)$me['id'], true, "(r.organizer_user_id = ? OR ms.status IN ('confirmed','waitlist'))", [(int)$me['id']], 6); ?>
   <section>
-    <h2><?= te('start.meine_herden') ?></h2>
-    <?php if (!$meine): ?>
-      <p><?= te('start.keine_herden') ?></p>
-      <p><a class="knopf" href="/herden.php"><?= te('herden.entdecken') ?></a> <a class="knopf zweit" href="/herde_neu.php"><?= te('herden.neu') ?></a></p>
+    <div class="title-row">
+      <h2><?= te('home.my_rides') ?></h2>
+      <a class="btn secondary" href="/rides.php"><?= te('home.all_rides') ?></a>
+    </div>
+    <?php rideCards($myRides, 'home.no_rides'); ?>
+  </section>
+  <section>
+    <h2><?= te('home.my_crews') ?></h2>
+    <?php if (!$mine): ?>
+      <p><?= te('home.no_crews') ?></p>
+      <p><a class="btn" href="/crews.php"><?= te('crews.discover') ?></a> <a class="btn secondary" href="/crew_new.php"><?= te('crews.new') ?></a></p>
     <?php else: ?>
-      <ul class="liste">
-      <?php foreach ($meine as $h): ?>
-        <li><a href="/herde.php?s=<?= e(rawurlencode($h['slug'])) ?>"><?= e($h['name']) ?></a>
-          <?php if ($h['status'] === 'pending'): ?><span class="marke-klein leise"><?= te('herde.anfrage_offen') ?></span><?php endif; ?></li>
+      <ul class="list">
+      <?php foreach ($mine as $c): ?>
+        <li><a href="/crew.php?s=<?= e(rawurlencode($c['slug'])) ?>"><?= e($c['name']) ?></a>
+          <?php if ($c['status'] === 'pending'): ?><span class="badge muted"><?= te('crew.request_pending') ?></span><?php endif; ?></li>
       <?php endforeach; ?>
       </ul>
     <?php endif; ?>
   </section>
 <?php endif;
-seitenFuss();
+pageFooter();
