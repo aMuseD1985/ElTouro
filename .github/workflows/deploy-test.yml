@@ -25,7 +25,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -60,7 +60,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$FTP_HOST" && test -n "$FTP_USER" && test -n "$FTP_PASSWORD" && test -n "$FTP_DIR"
+          missing=""
+          for v in FTP_HOST FTP_USER FTP_PASSWORD FTP_DIR; do [ -n "${!v:-}" ] || missing="$missing $v"; done
+          if [ -n "$missing" ]; then
+            echo "::error::Secrets fehlen:$missing – unter Settings → Secrets and variables → Actions anlegen."
+            exit 1
+          fi
           # niemals auf die Produktion hochladen
           case "$FTP_DIR" in *test*|*beta*) ;; *) echo "FTP_DIR enthält weder 'test' noch 'beta' – Abbruch (Schutz vor Versehen)"; exit 1;; esac
           lftp -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST" <<'LFTP'
