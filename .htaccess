@@ -1,0 +1,24 @@
+# ElTouro App (beta/test/live)
+Options -Indexes
+
+<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|kern\.php|lang\.php|mailer\.php|konto\.php|herden_lib\.php|touren_lib\.php|forum_lib\.php|traenke_lib\.php|rechtstexte\.php|betrieb_lib\.php|migrationen\.php|herde_formular\.php|LIESMICH\.md)$">
+    Require all denied
+</FilesMatch>
+<FilesMatch "^_">
+    Require all denied
+</FilesMatch>
+
+RewriteEngine On
+
+# Saubere Adressen für Inhaltsseiten: /impressum, /datenschutz, /nutzungsbedingungen, /seite/kurzname
+RewriteRule ^(impressum|datenschutz|nutzungsbedingungen)/?$ seite.php?s=$1 [L,QSA]
+RewriteRule ^seite/([a-z0-9-]+)/?$ seite.php?s=$1 [L,QSA]
+# HTTPS erzwingen: bitte im KAS unter SSL-Schutz "SSL erzwingen" aktivieren statt hier.
+# Eine eigene Regel hier kann mit der KAS-Einstellung eine Endlosschleife bilden.
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Frame-Options "DENY"
+    Header always set Strict-Transport-Security "max-age=31536000"
+</IfModule>

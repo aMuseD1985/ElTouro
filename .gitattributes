@@ -1,0 +1,13 @@
+* text=auto eol=lf
+*.png binary
+*.woff2 binary
+
+
+# Nicht ins Lieferpaket (git archive)
+CLAUDE.md export-ignore
+.gitignore export-ignore
+.gitattributes export-ignore
+
+# Vendorte Bibliotheken byte-genau lassen
+assets/vendor/** -text
+lib/PHPMailer/** -text

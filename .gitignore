@@ -1,0 +1,18 @@
+# Umgebungsspezifisch, enthält Zugangsdaten – nie committen
+config.php
+
+# Laufzeitdaten (Sessions, Backups, Deploy-Pakete)
+daten/*
+!daten/.htaccess
+!daten/sitzungen/
+daten/sitzungen/*
+!daten/sitzungen/.gitkeep
+
+# Lieferpakete
+*.zip
+
+# System/Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
