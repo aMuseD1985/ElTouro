@@ -5,10 +5,10 @@ name: Deploy Testumgebung
 # Danach läuft die Migration über /migrate.php, wenn TEST_BASE_URL und MIGRATE_KEY gesetzt sind.
 #
 # Secrets (Settings → Secrets and variables → Actions):
-#   FTP_HOST       z. B. w0123456.kasserver.com
-#   FTP_USER       FTP-Benutzer, am besten nur auf das Test-Verzeichnis beschränkt
+#   FTP_HOST       (oder FTP_SERVER) z. B. w0123456.kasserver.com
+#   FTP_USER       (oder FTP_USERNAME) FTP-Benutzer, am besten nur auf das Test-Verzeichnis beschränkt
 #   FTP_PASSWORD
-#   FTP_DIR        Zielordner, muss "test" oder "beta" enthalten, z. B. /test.eltouro.de/
+#   FTP_DIR        (oder FTP_SERVER_DIR) Zielordner, muss "test" oder "beta" enthalten, z. B. /test.eltouro.de/
 #   TEST_BASE_URL  optional, z. B. https://test.eltouro.de
 #   MIGRATE_KEY    optional, der migrate_key aus der config.php des Testservers
 
@@ -53,10 +53,11 @@ jobs:
 
       - name: Per FTPS hochladen
         env:
-          FTP_HOST: ${{ secrets.FTP_HOST }}
-          FTP_USER: ${{ secrets.FTP_USER }}
+          # Both naming schemes work (ablesio: FTP_HOST/FTP_USER/FTP_DIR, family-manager: FTP_SERVER/FTP_USERNAME/FTP_SERVER_DIR)
+          FTP_HOST: ${{ secrets.FTP_HOST || secrets.FTP_SERVER }}
+          FTP_USER: ${{ secrets.FTP_USER || secrets.FTP_USERNAME }}
           FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
-          FTP_DIR: ${{ secrets.FTP_DIR }}
+          FTP_DIR: ${{ secrets.FTP_DIR || secrets.FTP_SERVER_DIR }}
         shell: bash
         run: |
           set -euo pipefail
