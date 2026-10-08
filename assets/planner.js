@@ -23,6 +23,15 @@
   var fieldTitle = document.getElementById('title');
   var nameButton = document.getElementById('tour-name-suggest');
   var autoName = '';   // the last suggestion we filled in ourselves – may be replaced, a typed name never
+  var fieldDesc = document.getElementById('description');
+  var autoDesc = '';
+  // Difficulty and style are only suggested for new tours and until the user picks something
+  var isNew = (document.querySelector('#tour-form input[name="id"]') || {}).value === '0';
+  var touched = {};
+  ['difficulty', 'style'].forEach(function (id) {
+    var sel = document.getElementById(id);
+    if (sel) sel.addEventListener('change', function () { touched[id] = true; });
+  });
 
   // Loading animation: only shown if the calculation takes a moment, progress is an estimate
   var loading = document.getElementById('planner-loading');
@@ -128,11 +137,13 @@
     });
   }
 
-  // Name suggestion from the server (place in the middle of the track, length, loop)
+  // Suggestions from the server (places along the track, length, climb): name, description, difficulty, style.
+  // Fields the user filled in or changed are never overwritten; the dice (force) always rolls a new name.
   function suggestName(force) {
     if (!current || !fieldTitle || !nameButton) return;
     var untouched = function () { return fieldTitle.value.trim() === '' || fieldTitle.value === autoName; };
-    if (!force && !untouched()) return;
+    var descFree = function () { return fieldDesc && (fieldDesc.value.trim() === '' || fieldDesc.value === autoDesc); };
+    if (!force && !untouched() && !descFree() && !(isNew && (!touched.difficulty || !touched.style))) return;
     nameButton.disabled = true;
     fetch('/api/tour-name', {
       method: 'POST',
@@ -143,9 +154,14 @@
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     }).then(function (j) {
-      if (!j.name || (!force && !untouched())) return;
-      autoName = j.name;
-      fieldTitle.value = j.name;
+      if (j.name && (force || untouched())) { autoName = j.name; fieldTitle.value = j.name; }
+      if (j.description && descFree()) { autoDesc = j.description; fieldDesc.value = j.description; }
+      if (isNew) {
+        ['difficulty', 'style'].forEach(function (id) {
+          var sel = document.getElementById(id);
+          if (sel && j[id] && !touched[id]) sel.value = j[id];
+        });
+      }
     }).catch(function () { /* no suggestion – the field simply stays as it is */ }).then(function () {
       nameButton.disabled = !current;
     });

@@ -1,10 +1,10 @@
 <?php
 /**
- * Name suggestions for tours ("Rodeo Rheinhausen", "Bullenrunde Kaldenhausen").
+ * Suggestions for new tours: name ("Rodeo Rheinhausen"), description, difficulty and riding style.
  *
- * The place comes from a reverse geocoder (default: Nominatim of the OpenStreetMap Foundation), asked by
- * our server – never by the browser. Only the middle of the track is sent, rounded to about 100 m, so the
- * start and finish (often someone's home) never leave the server. Results are cached in data/geocode, and
+ * Places come from a reverse geocoder (default: Nominatim of the OpenStreetMap Foundation), asked by
+ * our server – never by the browser. Only points inside the track are sent (middle; for tours from 10 km
+ * also the quarter points), rounded to about 100 m, so start and finish (often someone's home) never leave the server. Results are cached in data/geocode, and
  * requests are spaced at least a second apart as the Nominatim usage policy demands.
  * Set 'geocoder' => ['url' => ''] in config.php to switch it off; names are then built without a place.
  */
@@ -24,23 +24,27 @@ function tourNameFacts(array $geo): array
             $coords[] = $c;
         }
     }
-    // Point at half the distance
-    $half = $geo['distance'] / 2;
+    // Points at a quarter, half and three quarters of the distance
+    $fractions = $geo['distance'] >= 10000 ? [0.25, 0.5, 0.75] : [0.5];
+    $samples = [];
     $walked = 0.0;
-    $middle = $coords[0];
-    for ($i = 1; $i < count($coords); $i++) {
+    $next = 0;
+    for ($i = 1; $i < count($coords) && $next < count($fractions); $i++) {
         $walked += distanceMeters($coords[$i - 1][1], $coords[$i - 1][0], $coords[$i][1], $coords[$i][0]);
-        if ($walked >= $half) {
-            $middle = $coords[$i];
-            break;
+        while ($next < count($fractions) && $walked >= $geo['distance'] * $fractions[$next]) {
+            $samples[(string)$fractions[$next++]] = [(float)$coords[$i][1], (float)$coords[$i][0]];   // lat, lng
         }
     }
     $last = end($coords);
+    $ascent = computeAscent($geo['geojson']);
     return [
-        'middle' => [(float)$middle[1], (float)$middle[0]],   // lat, lng
-        'km'     => $geo['distance'] / 1000,
-        'ascent' => computeAscent($geo['geojson']) ?? 0,
-        'loop'   => $geo['distance'] > 1000 && distanceMeters($coords[0][1], $coords[0][0], $last[1], $last[0]) < 300,
+        'middle'   => $samples['0.5'] ?? [(float)$coords[0][1], (float)$coords[0][0]],
+        'samples'  => array_values($samples),
+        'km'       => $geo['distance'] / 1000,
+        'ascent'   => $ascent ?? 0,
+        'has_elevation' => $ascent !== null,
+        'freehand' => (int)$geo['freehand_pct'],
+        'loop'     => $geo['distance'] > 1000 && distanceMeters($coords[0][1], $coords[0][0], $last[1], $last[0]) < 300,
     ];
 }
 
@@ -67,6 +71,52 @@ function suggestTourName(array $facts, ?string $place, string $exclude = ''): st
     $fresh = array_values(array_filter($candidates, fn($c) => $c !== $exclude));
     $list = $fresh ?: $candidates;
     return mb_substr($list[random_int(0, count($list) - 1)], 0, 120);
+}
+
+/** Places along the track in riding order, without repeats – e.g. ["Rheinhausen", "Moers"]. */
+function placesAlong(array $facts, string $lang): array
+{
+    $places = [];
+    foreach ($facts['samples'] as [$lat, $lng]) {
+        $p = placeNear($lat, $lng, $lang);
+        if ($p !== null && !in_array($p, $places, true)) {
+            $places[] = $p;
+        }
+    }
+    return $places;
+}
+
+/** Difficulty, riding style and a short description from length, climb and freehand share. */
+function suggestTourDetails(array $facts, array $places): array
+{
+    $km = $facts['km'];
+    $ascent = $facts['ascent'];
+    $perKm = $km > 0 ? $ascent / $km : 0;
+    $kmText = number_format($km, $km < 10 ? 1 : 0, t('common.decimal_point'), '');
+
+    $sentences = [];
+    $list = match (count($places)) {
+        0 => null,
+        1 => $places[0],
+        2 => t('common.list_two', ['a' => $places[0], 'b' => $places[1]]),
+        default => t('common.list_three', ['a' => $places[0], 'b' => $places[1], 'c' => $places[2]]),
+    };
+    $kind = $facts['loop'] ? 'loop' : 'oneway';
+    $sentences[] = $list !== null ? t("tourdesc.{$kind}_places", ['km' => $kmText, 'places' => $list]) : t("tourdesc.$kind", ['km' => $kmText]);
+    if ($facts['has_elevation']) {
+        $climb = $ascent >= 500 || $perKm >= 10 ? 'hilly' : ($ascent < 80 && $perKm < 4 ? 'flat' : 'rolling');
+        $sentences[] = t("tourdesc.$climb", ['ascent' => $ascent]);
+    }
+    $sentences[] = t('tourdesc.' . ($km < 15 ? 'short' : ($km <= 50 ? 'medium' : 'long')));
+    if ($facts['freehand'] > 0) {
+        $sentences[] = t('tourdesc.freehand', ['p' => $facts['freehand']]);
+    }
+
+    return [
+        'description' => implode(' ', $sentences),
+        'difficulty'  => $km > 60 || $ascent >= 500 || $perKm >= 12 ? 'demanding' : ($km <= 25 && $ascent < 150 && $perKm < 6 ? 'easy' : 'moderate'),
+        'style'       => $km > 60 || $perKm >= 10 ? 'sporty' : ($km <= 20 && $ascent < 100 ? 'relaxed' : 'social'),
+    ];
 }
 
 /** Name of the quarter, village or town at a point – or null if unknown, switched off or unreachable. */

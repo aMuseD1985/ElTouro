@@ -1,7 +1,7 @@
 <?php
 /**
- * POST /api/tour-name  (JSON: {"geojson": FeatureCollection, "exclude": "previous suggestion"})
- * Response: {"name": "Rodeo Rheinhausen"}
+ * POST /api/tour-name  (JSON: {"geojson": FeatureCollection, "exclude": "previous name suggestion"})
+ * Response: {"name": "Rodeo Rheinhausen", "description": "…", "difficulty": "easy", "style": "social"}
  *
  * The facts (length, loop, middle of the track) are computed here from the geometry, like everything else
  * about tours. See tour_name_lib.php for what is sent to the geocoder.
@@ -30,5 +30,8 @@ if ($geo === null) {
     respond(422, ['error' => 'geojson']);
 }
 $facts = tourNameFacts($geo);
-$place = placeNear($facts['middle'][0], $facts['middle'][1], $LANG);
-respond(200, ['name' => suggestTourName($facts, $place, mb_substr((string)($input['exclude'] ?? ''), 0, 120))]);
+$places = placesAlong($facts, $LANG);
+// The name uses the place in the middle; the description lists all of them in riding order
+$middle = placeNear($facts['middle'][0], $facts['middle'][1], $LANG) ?? ($places[0] ?? null);
+respond(200, ['name' => suggestTourName($facts, $middle, mb_substr((string)($input['exclude'] ?? ''), 0, 120))]
+             + suggestTourDetails($facts, $places));
