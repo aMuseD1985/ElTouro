@@ -84,7 +84,7 @@ if (isPost()) {
 // Texts for the script (i18n in the browser)
 $jsTexts = [];
 foreach (['point', 'calculating', 'done', 'error', 'notice_no_router', 'notice_partly_freehand', 'empty', 'stats', 'freehand_share', 'locate_error',
-          'leg_too_long', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
+          'leg_too_long', 'searching', 'search_none', 'search_error', 'search_slow', 'add_point', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
     $jsTexts[$k] = t('planner.' . $k);
 }
 
@@ -95,6 +95,12 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
 <?php foreach ($errors as $err): ?><p class="alert alert-error" role="alert"><?= e($err) ?></p><?php endforeach; ?>
 
 <p class="hint"><?= te('planner.instructions') ?></p>
+<form class="place-search" id="place-search" role="search">
+  <label for="place-q" class="visually-hidden"><?= te('planner.search_label') ?></label>
+  <input id="place-q" type="search" maxlength="120" autocomplete="off" placeholder="<?= te('planner.search_placeholder') ?>">
+  <button type="submit" class="secondary-submit"><?= te('planner.search_button') ?></button>
+</form>
+<ul id="place-results" class="place-results" hidden></ul>
 <div class="planner-bar">
   <button type="button" class="link" id="pl-undo"><?= te('planner.undo') ?></button>
   <button type="button" class="link" id="pl-loop"><?= te('planner.loop') ?></button>
@@ -171,5 +177,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=7"></script>
+<script src="/assets/planner.js?v=9"></script>
 <?php pageFooter();

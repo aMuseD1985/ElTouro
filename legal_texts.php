@@ -121,6 +121,8 @@ Eine Tour besteht aus den Wegpunkten, die du auf der Karte setzt, und der daraus
 
 **Namensvorschlag:** Damit der Planer Name und Beschreibung für deine Tour vorschlagen kann, schickt unser Server Punkte innerhalb der Strecke – die Mitte, bei Touren ab 10 km auch die beiden Viertelpunkte, jeweils auf etwa 100 Meter gerundet – an den Ortsnamen-Dienst Nominatim der OpenStreetMap Foundation (Vereinigtes Königreich) und erhält die Namen der Ortsteile zurück. Start und Ziel der Tour, deine IP-Adresse und dein Konto werden dabei nicht übermittelt. Das Ergebnis speichern wir zwischen, damit derselbe Punkt nicht erneut abgefragt wird. Für das Vereinigte Königreich gilt ein Angemessenheitsbeschluss der EU-Kommission. Rechtsgrundlage ist unser berechtigtes Interesse an einer bequemen Tourenplanung (Art. 6 Abs. 1 lit. f DSGVO). Den Vorschlag kannst du jederzeit überschreiben.
 
+**Ortssuche:** Wenn du im Planer nach einem Ort oder einer Adresse suchst, schickt unser Server deinen Suchbegriff an denselben Dienst (Nominatim) und zeigt dir die Treffer an. Deine IP-Adresse und dein Konto werden dabei nicht übermittelt; den Suchbegriff und die Treffer speichern wir bis zu 30 Tage zwischen, damit dieselbe Suche nicht erneut geschickt wird. Rechtsgrundlage ist unser berechtigtes Interesse an einer bequemen Tourenplanung (Art. 6 Abs. 1 lit. f DSGVO).
+
 Die Schaltfläche „Mein Standort“ fragt deinen Standort über deinen Browser ab, und nur nach deiner Zustimmung im Browser. Der Standort wird ausschließlich dazu genutzt, die Karte zu verschieben. Er wird nicht an uns übertragen und nicht gespeichert.
 
 ## 7. Ausfahrten
@@ -210,6 +212,8 @@ A route consists of the waypoints you set on the map and the calculated track. W
 **Sharing routes:** You can create a link for a route, even if it is otherwise private. Anyone with the link can see, without logging in, the route’s name, length, climb, difficulty, riding style and the track without its first and last 300 metres. Who created it, which crew it belongs to and its description are not shown. You can deactivate the link at any time; the page is then gone. The buttons for WhatsApp, Telegram, Facebook, X and email are plain links: only when you click one does that service open with the link – nothing is transmitted before. For the preview, the service you share on fetches the shared page and a preview image of the track from us.
 
 **Name suggestions:** So the planner can suggest a name and description for your route, our server sends points inside the track – the middle and, for routes from 10 km, the two quarter points, each rounded to about 100 metres – to the place-name service Nominatim of the OpenStreetMap Foundation (United Kingdom) and receives the names of the neighbourhoods. Start and finish of the route, your IP address and your account are not transmitted. We cache the result so the same point is not looked up again. The United Kingdom is covered by an adequacy decision of the European Commission. Legal basis: our legitimate interest in convenient route planning (Art. 6(1)(f) GDPR). You can overwrite the suggestion at any time.
+
+**Place search:** When you search for a place or address in the planner, our server sends your search term to the same service (Nominatim) and shows you the hits. Your IP address and account are not transmitted; we cache the search term and its hits for up to 30 days so the same search is not sent again. Legal basis: our legitimate interest in convenient route planning (Art. 6(1)(f) GDPR).
 
 ## 7. Rides
 

@@ -78,9 +78,10 @@ return [
         'max_leg_km'   => 50,                 // longest crow-flies distance between two waypoints
     ],
 
-    // Place names for tour name suggestions (server-side reverse geocoding, see tour_name_lib.php).
-    // Missing block = Nominatim of the OpenStreetMap Foundation; '' = off (names without a place).
+    // Place names for tour suggestions and the planner's place search (server-side, see geocoder_lib.php).
+    // Missing block = Nominatim of the OpenStreetMap Foundation; 'url' => '' = off.
     'geocoder' => [
-        'url' => 'https://nominatim.openstreetmap.org/reverse',
+        'url'        => 'https://nominatim.openstreetmap.org/reverse',
+        'search_url' => 'https://nominatim.openstreetmap.org/search',
     ],
 ];

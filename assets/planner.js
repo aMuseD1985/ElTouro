@@ -213,6 +213,69 @@
     });
   }
 
+  // Place search: our server asks the geocoder – only on Enter/click, never while typing
+  var searchForm = document.getElementById('place-search');
+  var searchInput = document.getElementById('place-q');
+  var resultList = document.getElementById('place-results');
+  var searchPin = null;
+
+  function showPlace(r) {
+    resultList.hidden = true;
+    if (el.getBoundingClientRect().top < 0 || el.getBoundingClientRect().top > window.innerHeight * 0.6) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (r.bbox) map.fitBounds([[r.bbox[0], r.bbox[1]], [r.bbox[2], r.bbox[3]]], { maxZoom: 16 });
+    else map.setView([r.lat, r.lng], 15);
+    if (searchPin) map.removeLayer(searchPin);
+    searchPin = L.circleMarker([r.lat, r.lng], { radius: 9, color: '#D7A845', weight: 3, fillColor: '#14263F', fillOpacity: 0.6 }).addTo(map);
+  }
+
+  function listResults(items, message) {
+    resultList.textContent = '';
+    if (message) {
+      var info = document.createElement('li');
+      info.className = 'muted-item';
+      info.textContent = message;
+      resultList.appendChild(info);
+    }
+    items.forEach(function (r) {
+      var li = document.createElement('li');
+      var go = document.createElement('button');
+      go.type = 'button'; go.className = 'link'; go.textContent = r.label;
+      go.addEventListener('click', function () { showPlace(r); });
+      var add = document.createElement('button');
+      add.type = 'button'; add.className = 'link'; add.textContent = T.add_point;
+      add.addEventListener('click', function () {
+        var p = [r.lat, r.lng];
+        showPlace(r);
+        if (points.length >= MAX) return;
+        if (!legOk(points[points.length - 1], p)) { tooFar(); return; }
+        points.push(p);
+        calculate();
+      });
+      li.appendChild(go);
+      li.appendChild(add);
+      resultList.appendChild(li);
+    });
+    resultList.hidden = false;
+  }
+
+  if (searchForm) searchForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var q = searchInput.value.trim();
+    if (q.length < 2) return;
+    listResults([], T.searching);
+    fetch('/api/place-search?q=' + encodeURIComponent(q), { credentials: 'same-origin' })
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+      .then(function (x) {
+        if (x.status === 429) return listResults([], T.search_slow);
+        if (x.status !== 200 || !x.j.results) return listResults([], T.search_error);
+        if (!x.j.results.length) return listResults([], T.search_none);
+        // One clear hit: go there; several: let the rider choose
+        if (x.j.results.length === 1) showPlace(x.j.results[0]);
+        else listResults(x.j.results, '');
+      })
+      .catch(function () { listResults([], T.search_error); });
+  });
+
   map.on('click', function (e) {
     if (points.length >= MAX) return;
     var p = [e.latlng.lat, e.latlng.lng];

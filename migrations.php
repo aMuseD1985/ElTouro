@@ -400,10 +400,12 @@ function runMigrations(): array
     $earlierDefaults = [
         'privacy' => ['de' => ['7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
                              '7adde85362cc9775f7d29d005875c3605475e1d6f9f6dee10f37ead2d8d4065c',
-                             '5020a23f093159124a269bbe8b151bcb3c6009d314befbf9ae5cb29cde3f3a1c'],
+                             '5020a23f093159124a269bbe8b151bcb3c6009d314befbf9ae5cb29cde3f3a1c',
+                             '9bb92bbe55987f3de8a55cd7711ca553faa325e04600c69a49baa642defb77ad'],
                       'en' => ['d626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024',
                              '97ec6abe9fd9c9dafcd7f9bf64af86374052b671234a1c8b3b4cbcfd8524b93d',
-                             'aad225fefb56e29cc0c861f4a05f7f448e8b226d93e0ee18366cd6eb8fb240c4']],
+                             'aad225fefb56e29cc0c861f4a05f7f448e8b226d93e0ee18366cd6eb8fb240c4',
+                             '1bdb2d4a39f593ef2343d1e87df96f3a77f24ab7e357242e7e2fe27779010bb8']],
         'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab', 'feaac83164b6aa8d5cb9441fc8bf1a9ab32abc0c9c34f0c69c777f46fd29cc44'],
                       'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d', '63498436ed4f625110f2b427930d9feb7e2d6dd1c5ec947d7bd74de655560d81']],
     ];
@@ -432,8 +434,8 @@ function legalPagesNeedingUpdate(): array
 {
     $markers = [
         'privacy' => [
-            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:'],
-            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:'],
+            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:'],
+            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:'],
         ],
         'terms' => [
             'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run'],

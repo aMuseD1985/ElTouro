@@ -10,8 +10,8 @@
  */
 declare(strict_types=1);
 require_once __DIR__ . '/tours_lib.php';
+require_once __DIR__ . '/geocoder_lib.php';
 
-const GEOCODER_DEFAULT_URL = 'https://nominatim.openstreetmap.org/reverse';
 // Number of templates per pool in lang.php (tourname.<pool>_<n>), the same in every language
 const TOUR_NAME_POOLS = ['any' => 10, 'loop' => 3, 'short' => 2, 'long' => 2, 'hilly' => 2, 'noplace' => 3];
 
@@ -117,68 +117,4 @@ function suggestTourDetails(array $facts, array $places): array
         'difficulty'  => $km > 60 || $ascent >= 500 || $perKm >= 12 ? 'demanding' : ($km <= 25 && $ascent < 150 && $perKm < 6 ? 'easy' : 'moderate'),
         'style'       => $km > 60 || $perKm >= 10 ? 'sporty' : ($km <= 20 && $ascent < 100 ? 'relaxed' : 'social'),
     ];
-}
-
-/** Name of the quarter, village or town at a point – or null if unknown, switched off or unreachable. */
-function placeNear(float $lat, float $lng, string $lang): ?string
-{
-    global $CONFIG;
-    $url = (string)($CONFIG['geocoder']['url'] ?? GEOCODER_DEFAULT_URL);
-    if ($url === '') {
-        return null;
-    }
-    // Rounded to three decimals (about 100 m): enough for a place name, and it makes the cache work
-    $lat = round($lat, 3);
-    $lng = round($lng, 3);
-    $cache = dataDir('geocode') . '/' . sprintf('%.3f_%.3f_%s.json', $lat, $lng, $lang === 'en' ? 'en' : 'de');
-    if (is_file($cache)) {
-        $hit = json_decode((string)file_get_contents($cache), true);
-        $maxAge = ($hit['place'] ?? null) === null ? 86400 : 90 * 86400;
-        if (is_array($hit) && time() - (int)($hit['at'] ?? 0) < $maxAge) {
-            return $hit['place'];
-        }
-    }
-
-    geocoderThrottle();
-    $contact = setting('operator_email');
-    $ch = curl_init($url . '?' . http_build_query(['format' => 'jsonv2', 'lat' => $lat, 'lon' => $lng, 'zoom' => 14,
-                                                   'addressdetails' => 1, 'accept-language' => $lang]));
-    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 4, CURLOPT_CONNECTTIMEOUT => 3,
-                            CURLOPT_USERAGENT => 'ElTouro/1.0 (+' . baseUrl() . ($contact !== '' ? '; ' . $contact : '') . ')']);
-    $raw = curl_exec($ch);
-    $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-    unset($ch);
-    if (!is_string($raw) || $status !== 200) {
-        return null;   // not cached: next time we try again
-    }
-    $address = json_decode($raw, true)['address'] ?? [];
-    $place = null;
-    foreach (['suburb', 'village', 'town', 'hamlet', 'city_district', 'city', 'municipality'] as $key) {
-        if (!empty($address[$key]) && is_string($address[$key])) {
-            $place = mb_substr(trim($address[$key]), 0, 60);
-            break;
-        }
-    }
-    file_put_contents($cache, json_encode(['place' => $place, 'at' => time()], JSON_UNESCAPED_UNICODE), LOCK_EX);
-    return $place;
-}
-
-/** At most one request per second to the geocoder, across all PHP processes. */
-function geocoderThrottle(): void
-{
-    $fh = fopen(dataDir('geocode') . '/.last', 'c+');
-    if ($fh === false) {
-        return;
-    }
-    flock($fh, LOCK_EX);
-    $last = (float)stream_get_contents($fh);
-    $wait = $last + 1.1 - microtime(true);
-    if ($wait > 0) {
-        usleep((int)(min($wait, 2) * 1_000_000));
-    }
-    ftruncate($fh, 0);
-    rewind($fh);
-    fwrite($fh, (string)microtime(true));
-    flock($fh, LOCK_UN);
-    fclose($fh);
 }
