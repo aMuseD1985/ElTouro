@@ -51,7 +51,7 @@ function loadSharedTour(string $token): ?array
     if (!preg_match('/^[A-Za-z0-9_-]{24}$/', $token)) {
         return null;
     }
-    return dbOne('SELECT id, title, distance_m, ascent_m, difficulty, style, rule_set, freehand_share_pct, geojson, updated_at, share_token, share_created_by
+    return dbOne('SELECT id, title, distance_m, ascent_m, difficulty, style, rule_set, vehicle_class, freehand_share_pct, geojson, updated_at, share_token, share_created_by
                     FROM tours WHERE share_token = ? AND deleted_at IS NULL', [$token]);
 }
 

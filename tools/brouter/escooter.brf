@@ -1,0 +1,245 @@
+# ElTouro e-scooter profile (Germany, eKFV) – draft, to be checked against real routes.
+#
+# Legal frame (non-negotiable, see CLAUDE.md):
+#  - e-scooters ride on cycle tracks, cycle lanes, shared foot/cycle paths (blue signs) and cycle streets;
+#    where there is none, on the carriageway
+#  - never on footways, pedestrian zones, motorways or motor roads (Kraftfahrstraße)
+#  - never on field and forest tracks, also not after 01.03.2027, unless they are signed cycle paths
+#  - "Radverkehr frei" signs (bicycle=yes) and contra-flow cycling only from 01.03.2027 (rules_2027)
+#
+# The vehicle class only changes how rough surfaces and climbs are weighted – never what is allowed:
+#  1 = Stadtflitzer (small wheels, no suspension), 2 = Allrounder (10", suspension),
+#  3 = Bulle (dual motor, pneumatic tyres, suspension), 4 = Bull-Run (rough legal ways, at your own risk)
+#
+# ElTouro passes the class and the rules per request: &profile:scooter_class=3&profile:rules_2027=1
+
+---context:global
+
+assign validForBikes = true
+
+assign scooter_class = 2       # %scooter_class% | Vehicle class | [1=Stadtflitzer, 2=Allrounder, 3=Bulle, 4=Bull-Run]
+assign rules_2027    = false   # %rules_2027% | eKFV from 01.03.2027: "Radverkehr frei" and contra-flow also for e-scooters | boolean
+
+# Climbs: small motors and small wheels suffer most
+assign uphillcutoff   = if equal scooter_class 1 then 2 else if equal scooter_class 2 then 3 else if equal scooter_class 3 then 4 else 5
+assign uphillcost     = if equal scooter_class 1 then 80 else if equal scooter_class 2 then 40 else if equal scooter_class 3 then 15 else 6
+assign downhillcutoff = 4
+assign downhillcost   = if equal scooter_class 1 then 20 else if equal scooter_class 2 then 10 else 0
+
+# Travel time: 20 km/h top speed, the motor does the work
+assign totalMass  = 110
+assign maxSpeed   = 20
+assign S_C_x      = 0.45
+assign C_r        = 0.015
+assign bikerPower = if equal scooter_class 1 then 300 else if equal scooter_class 2 then 450 else 900
+
+assign turnInstructionMode          = 1
+assign turnInstructionCatchingRange = 40
+assign turnInstructionRoundabouts   = true
+assign considerTurnRestrictions     = true
+assign correctMisplacedViaPoints    = false
+assign processUnusedTags            = false
+
+---context:way
+
+assign turncost = if junction=roundabout then 0 else 90
+
+assign initialclassifier = if route=ferry then 2 else 1
+assign initialcost       = if route=ferry then 10000 else 0
+
+#
+# Cycle infrastructure
+#
+assign hascycleway = not
+  and ( or cycleway= cycleway=no|none )
+  and ( or cycleway:left= cycleway:left=no )
+  and ( or cycleway:right= cycleway:right=no )
+      ( or cycleway:both= cycleway:both=no|separate )
+
+# blue signs: cycle path, shared foot/cycle path, cycle street
+assign signedcycleway = or highway=cycleway or bicycle=designated or bicycle_road=yes cyclestreet=yes
+
+# "Radverkehr frei" – counts for e-scooters only from 2027
+assign bikefree = and rules_2027 bicycle=yes|permissive
+
+assign isroad = highway=trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service|road
+
+#
+# Legal access (eKFV § 10). true = an e-scooter may ride here.
+#
+assign generalaccess =
+  if access=no|private then ( or signedcycleway bikefree )
+  else if access=agricultural then signedcycleway
+  else true
+
+assign vehicleaccess =
+  if vehicle=no|private then ( or signedcycleway bikefree )
+  else if vehicle=agricultural then signedcycleway
+  else true
+
+# e-scooters are motor vehicles: "Verbot für Kraftfahrzeuge" applies, unless it is a signed cycle path;
+# agricultural/forestry-only ways stay closed (field and forest tracks), also in 2027
+# (BRouter maps forestry and agricultural;forestry to the value agricultural)
+assign motoraccess =
+  if motor_vehicle=agricultural then signedcycleway
+  else if motor_vehicle=no|private then ( or signedcycleway bikefree )
+  else true
+
+assign wayallowed =
+  if highway=motorway|motorway_link|steps|construction|proposed|abandoned|platform|raceway|corridor then false
+  else if motorroad=yes then false
+  else if bicycle=no|dismount then false
+  else if highway=cycleway then true
+  else if highway=footway|pedestrian|path|bridleway then ( or bicycle=designated bikefree )
+  else if highway=track then ( or bicycle=designated motor_vehicle=yes|designated|permissive )
+  else isroad
+
+assign allowed = and wayallowed and generalaccess and vehicleaccess motoraccess
+
+#
+# One-way streets: contra-flow only with cycle infrastructure in that direction, or from 2027 with "Radverkehr frei"
+#
+assign badoneway =
+  if reversedirection=yes then
+    if oneway:bicycle=yes then true
+    else if oneway= then junction=roundabout
+    else oneway=yes|true|1
+  else oneway=-1
+
+assign contraflowok =
+  or cycleway=opposite|opposite_lane|opposite_track
+  or cycleway:left=opposite|opposite_lane|opposite_track
+  or cycleway:right=opposite|opposite_lane|opposite_track
+  and rules_2027 oneway:bicycle=no
+
+assign onewayok = if badoneway then contraflowok else true
+
+#
+# Roughness 0..9 from surface and smoothness
+#  0 asphalt/concrete, 1 paving stones, 2 compacted/fine gravel, 3 cobbles, 4 "bad",
+#  5 gravel/ground/very bad, 6 horrible, 7 sand/mud, 9 impassable
+#
+assign surfacerough =
+  if surface= then ( if highway=track|path|bridleway then 5 else 0 )
+  else if surface=asphalt|concrete|paved|metal|wood then 0
+  else if surface=paving_stones then 1
+  else if surface=compacted|fine_gravel then 2
+  else if surface=sett|cobblestone|pebblestone then 3
+  else if surface=gravel|unpaved|ground|dirt|earth|grass|grass_paver|clay|rock|stone then 5
+  else if surface=sand|mud then 7
+  else 2
+
+assign smoothrough =
+  if smoothness=impassable|off_road_wheels then 9
+  else if smoothness=very_horrible|horrible|high_clearance then 6
+  else if smoothness=very_bad|robust_wheels then 5
+  else if smoothness=bad|poor|rough then 4
+  else 0
+
+assign tracktyperough =
+  if tracktype=grade1 then 0 else if tracktype=grade2 then 2 else if tracktype=grade3 then 5 else if tracktype=grade4|grade5 then 6 else 0
+
+# well-maintained cobbles and pavers ("smoothness=good") ride like asphalt
+assign rough =
+  if smoothness=excellent|very_good|good then min 1 surfacerough
+  else max tracktyperough max surfacerough smoothrough
+
+assign surfacefactor =
+  if equal rough 9 then 10000
+  else if equal scooter_class 1 then
+    ( if equal rough 0 then 1 else if equal rough 1 then 1.3 else if equal rough 2 then 2.5 else if equal rough 3 then 4
+      else if equal rough 4 then 3 else if equal rough 5 then 10 else if equal rough 6 then 20 else 30 )
+  else if equal scooter_class 2 then
+    ( if equal rough 0 then 1 else if equal rough 1 then 1.15 else if equal rough 2 then 1.5 else if equal rough 3 then 2.2
+      else if equal rough 4 then 1.8 else if equal rough 5 then 4 else if equal rough 6 then 8 else 15 )
+  else if equal scooter_class 3 then
+    ( if equal rough 0 then 1 else if equal rough 1 then 1.05 else if equal rough 2 then 1.15 else if equal rough 3 then 1.4
+      else if equal rough 4 then 1.3 else if equal rough 5 then 2 else if equal rough 6 then 4 else 6 )
+  else
+    ( if equal rough 0 then 1 else if equal rough 1 then 1 else if equal rough 2 then 1.05 else if equal rough 3 then 1.15
+      else if equal rough 4 then 1.1 else if equal rough 5 then 1.25 else if equal rough 6 then 1.6 else 3 )
+
+#
+# Comfort and traffic: cycle infrastructure first, fast roads without it last.
+# Where a cycle path is compulsory (use_sidepath) the carriageway is nearly closed.
+#
+assign isfast = maxspeed=70|80|90|100|110|120|130
+
+assign wayfactor =
+  if signedcycleway then ( if highway=track then 1.2 else 1 )
+  else if bicycle=use_sidepath then 8
+  else if highway=trunk|trunk_link then ( if hascycleway then 1.5 else 6 )
+  else if highway=primary|primary_link then ( if hascycleway then 1.2 else if isfast then 4 else 2.5 )
+  else if highway=secondary|secondary_link then ( if hascycleway then 1.1 else if isfast then 2.5 else 1.6 )
+  else if highway=tertiary|tertiary_link then ( if hascycleway then 1 else if isfast then 1.8 else 1.3 )
+  else if highway=unclassified then ( if hascycleway then 1 else 1.15 )
+  else if highway=residential|living_street then 1.05
+  else if highway=service then ( if service=driveway|parking_aisle|drive-through then 2.5 else 1.3 )
+  else if highway=track then 1.5
+  else if bikefree then 1.4
+  else 2
+
+assign destinationpenalty = if or access=destination or vehicle=destination motor_vehicle=destination then 1 else 0
+
+assign costfactor =
+  if ( and highway= not route=ferry ) then 10000
+  else if route=ferry then 5.67
+  else if not allowed then 10000
+  else if not onewayok then 10000
+  else min 9999 multiply surfacefactor add wayfactor destinationpenalty
+
+# way priorities used for voice hint generation
+
+assign isresidentialorliving = or highway=residential|living_street living_street=yes
+
+assign priorityclassifier =
+  if      ( highway=motorway                       ) then 30
+  else if ( highway=motorway_link                  ) then 29
+  else if ( highway=trunk                          ) then 28
+  else if ( highway=trunk_link                     ) then 27
+  else if ( highway=primary                        ) then 26
+  else if ( highway=primary_link                   ) then 25
+  else if ( highway=secondary                      ) then 24
+  else if ( highway=secondary_link                 ) then 23
+  else if ( highway=tertiary                       ) then 22
+  else if ( highway=tertiary_link                  ) then 21
+  else if ( highway=unclassified                   ) then 20
+  else if ( isresidentialorliving                  ) then 6
+  else if ( highway=service                        ) then 6
+  else if ( highway=cycleway                       ) then 6
+  else if ( or bicycle=designated bicycle_road=yes ) then 6
+  else if ( highway=track                          ) then if tracktype=grade1 then 6 else 4
+  else if ( highway=bridleway|road|path|footway    ) then 4
+  else if ( highway=steps                          ) then 2
+  else if ( highway=pedestrian                     ) then 2
+  else 0
+
+assign isbadoneway = not onewayok
+assign isgoodoneway = if reversedirection=yes then oneway=-1
+                      else if oneway= then junction=roundabout else oneway=yes|true|1
+assign isroundabout = junction=roundabout
+assign islinktype = highway=motorway_link|trunk_link|primary_link|secondary_link|tertiary_link
+assign isgoodforcars = if greater priorityclassifier 6 then true
+                       else if ( or isresidentialorliving highway=service ) then true
+                       else if ( and highway=track tracktype=grade1 ) then true
+                       else false
+
+assign classifiermask add          isbadoneway
+                      add multiply isgoodoneway   2
+                      add multiply isroundabout   4
+                      add multiply islinktype     8
+                          multiply isgoodforcars 16
+
+---context:node
+
+assign nodeaccess =
+  if barrier=stile|turnstile|full-height_turnstile|kissing_gate|log|chain then false
+  else if access=no|private then bicycle=yes|designated|permissive
+  else if vehicle=no|private then bicycle=yes|designated|permissive
+  else not bicycle=no|dismount
+
+assign initialcost =
+  if not nodeaccess then 1000000
+  else if or highway=traffic_signals and highway=crossing crossing=traffic_signals then 20
+  else if barrier=cycle_barrier|bollard|gate|swing_gate then 30
+  else 0

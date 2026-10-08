@@ -32,6 +32,7 @@ if ($points === null) {
     respond(422, ['error' => 'points']);
 }
 $ruleSet = ($input['rule_set'] ?? '') === 'ekfv2027' ? 'ekfv2027' : 'ekfv';
+$vehicle = vehicleClass($input['vehicle'] ?? VEHICLE_CLASS_DEFAULT);
 // Long legs take the home router very long – the planner enforces the same limit (crow-flies distance)
 $maxLegKm = maxLegKm();
 for ($i = 1; $i < count($points); $i++) {
@@ -41,8 +42,11 @@ for ($i = 1; $i < count($points); $i++) {
 }
 @set_time_limit(120);
 
-/** Asks BRouter for a sequence of points. Returns coordinates [[lng,lat,ele], …] or null. */
-function brouter(array $points, string $ruleSet): ?array
+/**
+ * Asks BRouter for a sequence of points. Returns coordinates [[lng,lat,ele], …] or null.
+ * Vehicle class and rule set go to the profile as parameters; profiles without them simply ignore them.
+ */
+function brouter(array $points, string $ruleSet, int $vehicle): ?array
 {
     global $CONFIG;
     $b = $CONFIG['brouter'] ?? [];
@@ -52,9 +56,11 @@ function brouter(array $points, string $ruleSet): ?array
     $lonlats = implode('|', array_map(fn($p) => $p[1] . ',' . $p[0], $points));
     $url = rtrim((string)$b['url'], '?') . '?' . http_build_query([
         'lonlats'        => $lonlats,
-        'profile'        => $ruleSet === 'ekfv2027' ? ($b['profile_2027'] ?? 'escooter-2027') : ($b['profile'] ?? 'escooter'),
+        'profile'        => $ruleSet === 'ekfv2027' ? ($b['profile_2027'] ?? $b['profile'] ?? 'escooter') : ($b['profile'] ?? 'escooter'),
         'alternativeidx' => 0,
         'format'         => 'geojson',
+        'profile:scooter_class' => $vehicle,
+        'profile:rules_2027'    => $ruleSet === 'ekfv2027' ? 1 : 0,
     ]);
     $timeout = (int)($b['timeout'] ?? 10);
     if (function_exists('curl_init')) {
@@ -92,7 +98,7 @@ $notice = null;
 if (empty($CONFIG['brouter']['url'])) {
     $features[] = line(array_map(fn($p) => [$p[1], $p[0]], $points), true);
     $notice = 'no_router';
-} elseif (($whole = brouter($points, $ruleSet)) !== null) {
+} elseif (($whole = brouter($points, $ruleSet, $vehicle)) !== null) {
     $features[] = line($whole, false);
 } elseif (count($points) === 2) {
     // Only one section: routing it again would just repeat the failed request
@@ -101,7 +107,7 @@ if (empty($CONFIG['brouter']['url'])) {
 } else {
     for ($i = 0; $i < count($points) - 1; $i++) {
         $section = [$points[$i], $points[$i + 1]];
-        $c = brouter($section, $ruleSet);
+        $c = brouter($section, $ruleSet, $vehicle);
         $features[] = $c !== null ? line($c, false) : line([[$section[0][1], $section[0][0]], [$section[1][1], $section[1][0]]], true);
         if ($c === null) { $notice = 'partly_freehand'; }
     }

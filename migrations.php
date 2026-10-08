@@ -390,6 +390,12 @@ function runMigrations(): array
       CONSTRAINT fk_event_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) $opt");
 
+    /* ---------- E-scooter profile: vehicle class the tour was planned for (2026-10, tools/brouter/escooter.brf) ---------- */
+    if (!columnExists('tours', 'vehicle_class')) {
+        db()->exec('ALTER TABLE tours ADD vehicle_class TINYINT UNSIGNED NOT NULL DEFAULT 2 AFTER rule_set');
+        $log[] = '~ tours.vehicle_class angelegt';
+    }
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
         'privacy' => ['de' => ['7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
@@ -398,8 +404,8 @@ function runMigrations(): array
                       'en' => ['d626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024',
                              '97ec6abe9fd9c9dafcd7f9bf64af86374052b671234a1c8b3b4cbcfd8524b93d',
                              'aad225fefb56e29cc0c861f4a05f7f448e8b226d93e0ee18366cd6eb8fb240c4']],
-        'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab'],
-                      'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d']],
+        'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab', 'feaac83164b6aa8d5cb9441fc8bf1a9ab32abc0c9c34f0c69c777f46fd29cc44'],
+                      'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d', '63498436ed4f625110f2b427930d9feb7e2d6dd1c5ec947d7bd74de655560d81']],
     ];
     foreach ($earlierDefaults as $slug => $byLang) {
         foreach ($byLang as $loc => $hashes) {
@@ -430,8 +436,8 @@ function legalPagesNeedingUpdate(): array
             'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:'],
         ],
         'terms' => [
-            'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst'],
-            'en' => ['Ausfahrten' => 'sets a participant limit', 'Teilen' => 'share a route via link'],
+            'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run'],
+            'en' => ['Ausfahrten' => 'sets a participant limit', 'Teilen' => 'share a route via link', 'Bull-Run' => 'Bull-Run'],
         ],
     ];
     $missing = [];

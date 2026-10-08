@@ -265,7 +265,7 @@ Du musst mindestens 16 Jahre alt sein. Jede Person darf nur ein Konto haben. Dei
 
 ElTouro stellt eine Plattform bereit, auf der Nutzer Touren und Ausfahrten miteinander teilen und verabreden. **ElTouro veranstaltet keine Fahrten, leitet sie nicht und beaufsichtigt sie nicht.** Wer eine Tour oder Ausfahrt anbietet, ist dafür selbst verantwortlich. Jeder Teilnehmer fährt auf eigene Verantwortung.
 
-Routen sind Vorschläge. Sie werden mit Kartendaten berechnet, die unvollständig oder veraltet sein können, und rot gestrichelte Abschnitte sind gar nicht geprüft. **Vor Ort gelten immer die Verkehrszeichen und die Straßenverkehrsordnung.** Angaben zu Schwierigkeit und Fahrstil sind Einschätzungen der Ersteller.
+Routen sind Vorschläge. Sie werden mit Kartendaten berechnet, die unvollständig oder veraltet sein können, und rot gestrichelte Abschnitte sind gar nicht geprüft. **Vor Ort gelten immer die Verkehrszeichen und die Straßenverkehrsordnung.** Angaben zu Schwierigkeit und Fahrstil sind Einschätzungen der Ersteller. **Bull-Run**-Touren sind bewusst für raue Wege wie Schotter und Kopfsteinpflaster geplant; sie sind keine Empfehlung von ElTouro, und wer sie fährt, tut das auf eigene Gefahr.
 
 ## 4. Deine Pflichten im Straßenverkehr
 
@@ -324,7 +324,7 @@ You must be at least 16. One account per person. Your sign-up details must be co
 
 ## 3. ElTouro connects – you ride yourselves
 
-ElTouro provides a platform where users share and arrange routes and rides. **ElTouro does not organise, lead or supervise rides.** Whoever offers a route or ride is responsible for it, and every participant rides at their own risk. Routes are suggestions based on map data that may be incomplete; red dashed sections are unchecked. **Road signs and traffic law on site always take priority.**
+ElTouro provides a platform where users share and arrange routes and rides. **ElTouro does not organise, lead or supervise rides.** Whoever offers a route or ride is responsible for it, and every participant rides at their own risk. Routes are suggestions based on map data that may be incomplete; red dashed sections are unchecked. **Road signs and traffic law on site always take priority.** **Bull-Run** routes are deliberately planned for rough ways such as gravel and cobbles; they are not a recommendation by ElTouro, and whoever rides them does so at their own risk.
 
 ## 4. Your duties on the road
 

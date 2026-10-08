@@ -23,6 +23,7 @@ $w = [
     'difficulty'  => $tour['difficulty'] ?? 'easy',
     'style'       => $tour['style'] ?? 'social',
     'rule_set'    => $tour['rule_set'] ?? currentRuleSet(),
+    'vehicle'     => vehicleClass($tour['vehicle_class'] ?? VEHICLE_CLASS_DEFAULT),
     'waypoints'   => $tour['waypoints_json'] ?? '[]',
     'geojson'     => $tour['geojson'] ?? '',
 ];
@@ -37,6 +38,7 @@ if (isPost()) {
         'difficulty'  => postField('difficulty'),
         'style'       => postField('style'),
         'rule_set'    => postField('rule_set') === 'ekfv2027' ? 'ekfv2027' : 'ekfv',
+        'vehicle'     => vehicleClass($_POST['vehicle_class'] ?? VEHICLE_CLASS_DEFAULT),
         'waypoints'   => (string)($_POST['waypoints_json'] ?? '[]'),
         'geojson'     => (string)($_POST['geojson'] ?? ''),
     ];
@@ -56,20 +58,20 @@ if (isPost()) {
     if ($w['visibility'] === 'group' && $group === null) $errors[] = t('tour.error_crew');
 
     if (!$errors) {
-        $values = [$w['title'], $w['description'] ?: null, $LANG, $w['visibility'], $group, $w['difficulty'], $w['style'], $w['rule_set'],
+        $values = [$w['title'], $w['description'] ?: null, $LANG, $w['visibility'], $group, $w['difficulty'], $w['style'], $w['rule_set'], $w['vehicle'],
                    $geo['distance'], computeAscent($geo['geojson']), $geo['freehand_pct'], json_encode($points), $geo['geojson'],
                    $geo['start'][0], $geo['start'][1], $geo['bbox'][0], $geo['bbox'][1], $geo['bbox'][2], $geo['bbox'][3]];
         if ($tour) {
             dbExec('UPDATE tours SET title = ?, description = ?, content_lang = ?, visibility = ?, owner_group_id = ?, difficulty = ?, style = ?,
-                           rule_set = ?, distance_m = ?, ascent_m = ?, freehand_share_pct = ?, waypoints_json = ?, geojson = ?,
+                           rule_set = ?, vehicle_class = ?, distance_m = ?, ascent_m = ?, freehand_share_pct = ?, waypoints_json = ?, geojson = ?,
                            start_lat = ?, start_lng = ?, bbox_min_lat = ?, bbox_min_lng = ?, bbox_max_lat = ?, bbox_max_lng = ?
                      WHERE id = ?', [...$values, $tour['id']]);
             $newId = (int)$tour['id'];
         } else {
-            dbExec('INSERT INTO tours (title, description, content_lang, visibility, owner_group_id, difficulty, style, rule_set,
+            dbExec('INSERT INTO tours (title, description, content_lang, visibility, owner_group_id, difficulty, style, rule_set, vehicle_class,
                            distance_m, ascent_m, freehand_share_pct, waypoints_json, geojson,
                            start_lat, start_lng, bbox_min_lat, bbox_min_lng, bbox_max_lat, bbox_max_lng, owner_user_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [...$values, $uid]);
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [...$values, $uid]);
             $newId = (int)db()->lastInsertId();
             recordEvent($uid, 'tour_created', 'tour', $newId, null, (float)round($geo['distance'] / 1000, 2),
                 ['visibility' => $w['visibility'], 'group_id' => $group]);
@@ -151,6 +153,11 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
         <option value="ekfv" <?= $w['rule_set'] === 'ekfv' ? 'selected' : '' ?>><?= te('tour.r_ekfv') ?></option>
         <option value="ekfv2027" <?= $w['rule_set'] === 'ekfv2027' ? 'selected' : '' ?>><?= te('tour.r_ekfv2027') ?></option></select></div>
   </div>
+  <div class="field"><label for="vehicle_class"><?= te('tour.vehicle_class') ?></label>
+    <select id="vehicle_class" name="vehicle_class"><?php foreach (VEHICLE_CLASSES as $n => $key): ?>
+      <option value="<?= $n ?>" <?= $w['vehicle'] === $n ? 'selected' : '' ?>><?= te('tour.vc_' . $key) ?></option><?php endforeach; ?></select>
+    <p class="hint" id="vehicle-hint"><?= te('tour.vehicle_hint') ?></p>
+    <p class="alert alert-info" id="bullrun-hint" <?= $w['vehicle'] === 4 ? '' : 'hidden' ?>><?= te('tour.bullrun_hint') ?></p></div>
 
   <div class="row">
     <div class="field"><label for="visibility"><?= te('tour.visibility') ?></label>
@@ -164,5 +171,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=6"></script>
+<script src="/assets/planner.js?v=7"></script>
 <?php pageFooter();

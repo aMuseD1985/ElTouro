@@ -72,8 +72,8 @@ return [
     // Empty = the planner connects waypoints with straight lines (freehand) – for trying it out without a router.
     'brouter' => [
         'url'          => '',                 // e.g. 'https://brouter.eltouro.de/brouter'
-        'profile'      => 'escooter',
-        'profile_2027' => 'escooter-2027',
+        'profile'      => 'escooter',         // tools/brouter/escooter.brf; vehicle class and 2027 rules are passed as parameters
+        'profile_2027' => 'escooter',
         'timeout'      => 30,                 // seconds per request; long routes on a home PC need a while
         'max_leg_km'   => 50,                 // longest crow-flies distance between two waypoints
     ],

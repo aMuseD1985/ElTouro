@@ -17,6 +17,8 @@
   var fieldWp = document.getElementById('waypoints_json');
   var fieldGj = document.getElementById('geojson');
   var fieldRules = document.getElementById('rule_set');
+  var fieldVehicle = document.getElementById('vehicle_class');
+  var bullrunHint = document.getElementById('bullrun-hint');
   var saveButton = document.getElementById('tour-save');
   var status = document.getElementById('planner-status');
   var info = document.getElementById('planner-info');
@@ -189,7 +191,7 @@
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF': d.csrf },
-      body: JSON.stringify({ points: points, rule_set: fieldRules ? fieldRules.value : 'ekfv' })
+      body: JSON.stringify({ points: points, rule_set: fieldRules ? fieldRules.value : 'ekfv', vehicle: fieldVehicle ? parseInt(fieldVehicle.value, 10) : 2 })
     }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
@@ -236,6 +238,10 @@
   });
   if (nameButton) nameButton.addEventListener('click', function () { suggestName(true); });
   if (fieldRules) fieldRules.addEventListener('change', function () { if (points.length >= 2) calculate(); });
+  if (fieldVehicle) fieldVehicle.addEventListener('change', function () {
+    if (bullrunHint) bullrunHint.hidden = fieldVehicle.value !== '4';
+    if (points.length >= 2) calculate();
+  });
 
   // Initial state: show a saved route without recalculating
   drawMarkers();

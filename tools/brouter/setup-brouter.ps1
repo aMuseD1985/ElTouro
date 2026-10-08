@@ -6,7 +6,7 @@
 
   Was es tut:
     1. Java 11+ suchen (die neueste installierte Version wird genommen)
-    2. BRouter herunterladen und nach C:\brouter entpacken
+    2. BRouter herunterladen und nach C:\brouter entpacken, ElTouro-Profil escooter.brf von GitHub holen
     3. Kartendaten fuer DACH und Nachbarlaender laden (ca. 1,2 GB, Abbruch und Neustart sind kein Problem)
     4. C:\brouter\start.cmd schreiben
     5. Firewall: Port 17777 NUR fuer den ElTouro-Server und das Heimnetz oeffnen
@@ -111,6 +111,12 @@ try {
         Ok 'entpackt'
     }
 
+    # --- 2b. ElTouro-Profil (wird bei jedem Lauf aktualisiert, BRouter liest es ohne Neustart neu) ---
+    Step 'E-Scooter-Profil escooter.brf'
+    & $curl -L --fail --silent --show-error -o "$Dir\profiles2\escooter.brf" "https://raw.githubusercontent.com/aMuseD1985/ElTouro/main/tools/brouter/escooter.brf"
+    if ($LASTEXITCODE -ne 0) { Fail 'Profil konnte nicht von GitHub geladen werden.' }
+    Ok "$Dir\profiles2\escooter.brf"
+
     # --- 3. Kartendaten ---
     Step 'Kartendaten DACH und Nachbarn (segments4)'
     $free = (Get-PSDrive -Name $Dir.Substring(0, 1)).Free
@@ -167,7 +173,7 @@ try {
     } else {
         Start-Process cmd.exe -ArgumentList '/c', "`"$startCmd`""
     }
-    $test = "http://localhost:$Port/brouter?lonlats=7.0982,50.7374|7.1166,50.7333&profile=trekking&alternativeidx=0&format=geojson"
+    $test = "http://localhost:$Port/brouter?lonlats=7.0982,50.7374|7.1166,50.7333&profile=escooter&alternativeidx=0&format=geojson"
     $okRoute = $false
     for ($i = 0; $i -lt 30 -and -not $okRoute; $i++) {
         Start-Sleep -Seconds 2
@@ -189,8 +195,8 @@ try {
     Write-Host "  Geraet: dieser PC ($lan), TCP, Port extern 43117 -> intern $Port"
     Write-Host ''
     Write-Host 'Dann in config.php auf test.eltouro.de:'
-    Write-Host "  'brouter' => ['url' => 'http://<MyFRITZ-Adresse>:43117/brouter', 'profile' => 'trekking', 'profile_2027' => 'trekking', 'timeout' => 10],"
-    if ($public) { Write-Host "  (Zum schnellen Test geht statt MyFRITZ auch die aktuelle IP $public - die aendert sich aber.)" }
+    Write-Host "  'brouter' => ['url' => 'http://<deine-IP>:43117/brouter', 'profile' => 'escooter', 'profile_2027' => 'escooter', 'timeout' => 30],"
+    if ($public) { Write-Host "  (Deine aktuelle IP: $public - die kann sich aendern.)" }
     Write-Host ''
     Write-Host 'Nach dem Test: Portfreigabe am Router wieder aus. Neustart von BRouter: C:\brouter\start.cmd'
     Read-Host 'Enter zum Schliessen'

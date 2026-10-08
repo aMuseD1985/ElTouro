@@ -65,6 +65,7 @@ pageHeader($tour['title']);
   <div><dt><?= te('tour.difficulty') ?></dt><dd><?= te('tour.d_' . $tour['difficulty']) ?></dd></div>
   <div><dt><?= te('tour.style') ?></dt><dd><?= te('tour.s_' . $tour['style']) ?></dd></div>
   <div><dt><?= te('tour.rule_set') ?></dt><dd><?= te('tour.r_' . $tour['rule_set']) ?></dd></div>
+  <div><dt><?= te('tour.vehicle_class') ?></dt><dd><?= te('tour.vc_' . VEHICLE_CLASSES[vehicleClass($tour['vehicle_class'] ?? 2)]) ?></dd></div>
 </dl>
 <p class="hint"><?= te('tour.assessment') ?></p>
 

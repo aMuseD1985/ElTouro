@@ -137,6 +137,19 @@ function validateGeometry(string $json): ?array
     ];
 }
 
+/**
+ * Vehicle classes of the e-scooter profile (tools/brouter/escooter.brf, parameter scooter_class).
+ * They change how rough surfaces and climbs are weighted – never which ways are allowed.
+ */
+const VEHICLE_CLASSES = [1 => 'city', 2 => 'allround', 3 => 'bull', 4 => 'bullrun'];
+const VEHICLE_CLASS_DEFAULT = 2;
+
+function vehicleClass(mixed $value): int
+{
+    $v = (int)$value;
+    return isset(VEHICLE_CLASSES[$v]) ? $v : VEHICLE_CLASS_DEFAULT;
+}
+
 /** Longest crow-flies distance between two waypoints the planner accepts (config brouter.max_leg_km). */
 function maxLegKm(): float
 {
