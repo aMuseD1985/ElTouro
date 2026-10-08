@@ -113,6 +113,8 @@ Hintergrundprozesse (Datenbank, `php -S`) mit `nohup … &` starten, sonst häng
 
 ## Backlog (Reihenfolge mit Marco abstimmen)
 
+**Belohnungssystem:** Konzept und Entscheidungen in `docs/rewards.md` (Ereignisse speichern, Punkte berechnen; Ränge Becerro → Leyenda; vorerst ohne Geldwert). Nächster Schritt dort: Stufe 1 „Fundament“ – Herkunft der Anmeldung muss erfasst sein, bevor sie verloren geht.
+
 1. **Konto selbst löschen** im Profil (die Datenschutzerklärung verspricht Löschung, aktuell nur per Mail). Dabei Anmeldungen zu Ausfahrten und eigene Ausfahrten mitbedenken.
 2. **BRouter anbinden** und die Profile mit echten Strecken prüfen; vor live Kacheln auf MapTiler umstellen.
 3. **Fuhrpark** im Profil (Hersteller, Modell, Straßenzulassung ja/nein) – könnte die Bestätigung „zugelassener Scooter“ bei Ausfahrten vorbelegen.

@@ -83,7 +83,7 @@ jobs:
           mirror -R --verbose --parallel=4 --no-perms \
             -x '^\.git' -x '^\.github/' \
             -x '^config\.php\$' -x '^data/' -x '^daten/' \
-            -x '^CLAUDE\.md\$' -x '^README\.md\$' \
+            -x '^CLAUDE\.md\$' -x '^README\.md\$' -x '^docs/' \
             ./ "$FTP_DIR"
           echo "--- Inhalt des Zielordners:"
           cls -1 "$FTP_DIR"

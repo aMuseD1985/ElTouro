@@ -5,6 +5,7 @@
 # Not part of the delivery package (git archive)
 CLAUDE.md export-ignore
 README.md export-ignore
+docs export-ignore
 .github export-ignore
 .gitignore export-ignore
 .gitattributes export-ignore
