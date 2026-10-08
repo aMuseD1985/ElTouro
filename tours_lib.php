@@ -137,6 +137,13 @@ function validateGeometry(string $json): ?array
     ];
 }
 
+/** Longest crow-flies distance between two waypoints the planner accepts (config brouter.max_leg_km). */
+function maxLegKm(): float
+{
+    global $CONFIG;
+    return max(1.0, (float)($CONFIG['brouter']['max_leg_km'] ?? 50));
+}
+
 /** Sum of climbs from the elevation values (only if the router delivered elevations). */
 function computeAscent(string $geojson): ?int
 {

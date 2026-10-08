@@ -7,7 +7,7 @@
   Was es tut:
     1. Java 11+ suchen (die neueste installierte Version wird genommen)
     2. BRouter herunterladen und nach C:\brouter entpacken
-    3. Kartendaten fuer ganz Deutschland laden (ca. 1,5 GB, Abbruch und Neustart sind kein Problem)
+    3. Kartendaten fuer DACH und Nachbarlaender laden (ca. 1,2 GB, Abbruch und Neustart sind kein Problem)
     4. C:\brouter\start.cmd schreiben
     5. Firewall: Port 17777 NUR fuer den ElTouro-Server und das Heimnetz oeffnen
     6. BRouter starten und eine Testroute in Bonn rechnen
@@ -26,8 +26,8 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $RuleName = 'BRouter ElTouro'
-# 5x5-Grad-Kacheln, die Deutschland abdecken
-$Tiles = 'E5_N45', 'E5_N50', 'E5_N55', 'E10_N45', 'E10_N50', 'E15_N50'
+# 5x5-Grad-Kacheln: Deutschland, Oesterreich, Schweiz und die Nachbarn (Benelux, Ostfrankreich, Tschechien, Daenemark-Sued)
+$Tiles = 'E0_N45', 'E0_N50', 'E5_N45', 'E5_N50', 'E5_N55', 'E10_N45', 'E10_N50', 'E15_N45', 'E15_N50'
 
 function Step($text) { Write-Host ''; Write-Host "==> $text" -ForegroundColor Cyan }
 function Ok($text) { Write-Host "    $text" -ForegroundColor Green }
@@ -112,9 +112,9 @@ try {
     }
 
     # --- 3. Kartendaten ---
-    Step 'Kartendaten Deutschland (segments4)'
+    Step 'Kartendaten DACH und Nachbarn (segments4)'
     $free = (Get-PSDrive -Name $Dir.Substring(0, 1)).Free
-    if ($free -lt 3GB) { Warn ("Nur noch {0:N1} GB frei - es werden ca. 1,5 GB gebraucht." -f ($free / 1GB)) }
+    if ($free -lt 3GB) { Warn ("Nur noch {0:N1} GB frei - es werden ca. 1,2 GB gebraucht." -f ($free / 1GB)) }
     foreach ($t in $Tiles) {
         $file = "$Dir\segments4\$t.rd5"
         $url = "https://brouter.de/brouter/segments4/$t.rd5"
@@ -135,14 +135,17 @@ try {
     # (z. B. die favicon-Anfrage des Browsers) - die erste Route nach dem Start dauert wegen der Kacheln laenger.
     Step 'start.cmd schreiben'
     $startCmd = "$Dir\start.cmd"
+    # Arbeitsspeicher: ein Viertel des RAM, hoechstens 2 GB (lange Routen ueber 100 km brauchen mehr als die 128 MB des Originals)
+    $ramMb = [int]((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1MB)
+    $heapMb = [Math]::Max(512, [Math]::Min(2048, [int]($ramMb / 4)))
     @(
         '@echo off'
         "title BRouter ElTouro - Port $Port (Fenster offen lassen)"
         "cd /d `"$Dir`""
-        "`"$java`" -Xmx512M -Xms128M -Xmn8M -DmaxRunningTime=60 -DuseRFCMimeType=false -cp brouter-$Version-all.jar btools.server.RouteServer segments4 profiles2 customprofiles $Port 4"
+        "`"$java`" -Xmx${heapMb}M -Xms256M -DmaxRunningTime=60 -DuseRFCMimeType=false -cp brouter-$Version-all.jar btools.server.RouteServer segments4 profiles2 customprofiles $Port 4"
         'pause'
     ) | Set-Content -Path $startCmd -Encoding ASCII
-    Ok $startCmd
+    Ok "$startCmd (Speicher fuer BRouter: $heapMb MB von $ramMb MB RAM)"
 
     # --- 5. Firewall ---
     Step "Firewall: Port $Port nur fuer $ServerIp und das Heimnetz"
@@ -160,7 +163,7 @@ try {
     Step 'BRouter starten'
     $running = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
     if ($running) {
-        Warn "Auf Port $Port laeuft schon etwas - ich starte nicht nochmal (altes BRouter-Fenster schliessen, um neu zu starten)."
+        Warn "Auf Port $Port laeuft schon ein BRouter - neue Einstellungen gelten erst nach Neustart: BRouter-Fenster schliessen und C:\brouter\start.cmd starten."
     } else {
         Start-Process cmd.exe -ArgumentList '/c', "`"$startCmd`""
     }

@@ -82,7 +82,7 @@ if (isPost()) {
 // Texts for the script (i18n in the browser)
 $jsTexts = [];
 foreach (['point', 'calculating', 'done', 'error', 'notice_no_router', 'notice_partly_freehand', 'empty', 'stats', 'freehand_share', 'locate_error',
-          'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
+          'leg_too_long', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
     $jsTexts[$k] = t('planner.' . $k);
 }
 
@@ -107,6 +107,7 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
      data-geojson="<?= e($w['geojson']) ?>"
      data-csrf="<?= e(csrfToken()) ?>"
      data-lang="<?= e($LANG) ?>"
+     data-max-leg-km="<?= e((string)maxLegKm()) ?>"
      data-texts="<?= e(json_encode($jsTexts, JSON_UNESCAPED_UNICODE)) ?>"></div>
   <!-- Shown while the route is calculated; the status line below says the same for screen readers -->
   <div id="planner-loading" class="planner-loading" hidden aria-hidden="true">
@@ -163,5 +164,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=4"></script>
+<script src="/assets/planner.js?v=5"></script>
 <?php pageFooter();

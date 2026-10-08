@@ -74,7 +74,8 @@ return [
         'url'          => '',                 // e.g. 'https://brouter.eltouro.de/brouter'
         'profile'      => 'escooter',
         'profile_2027' => 'escooter-2027',
-        'timeout'      => 10,
+        'timeout'      => 30,                 // seconds per request; long routes on a home PC need a while
+        'max_leg_km'   => 50,                 // longest crow-flies distance between two waypoints
     ],
 
     // Place names for tour name suggestions (server-side reverse geocoding, see tour_name_lib.php).

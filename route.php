@@ -32,6 +32,14 @@ if ($points === null) {
     respond(422, ['error' => 'points']);
 }
 $ruleSet = ($input['rule_set'] ?? '') === 'ekfv2027' ? 'ekfv2027' : 'ekfv';
+// Long legs take the home router very long – the planner enforces the same limit (crow-flies distance)
+$maxLegKm = maxLegKm();
+for ($i = 1; $i < count($points); $i++) {
+    if (distanceMeters($points[$i - 1][0], $points[$i - 1][1], $points[$i][0], $points[$i][1]) > $maxLegKm * 1000) {
+        respond(422, ['error' => 'leg_too_long', 'max_km' => $maxLegKm]);
+    }
+}
+@set_time_limit(120);
 
 /** Asks BRouter for a sequence of points. Returns coordinates [[lng,lat,ele], …] or null. */
 function brouter(array $points, string $ruleSet): ?array
@@ -86,6 +94,10 @@ if (empty($CONFIG['brouter']['url'])) {
     $notice = 'no_router';
 } elseif (($whole = brouter($points, $ruleSet)) !== null) {
     $features[] = line($whole, false);
+} elseif (count($points) === 2) {
+    // Only one section: routing it again would just repeat the failed request
+    $features[] = line(array_map(fn($p) => [$p[1], $p[0]], $points), true);
+    $notice = 'partly_freehand';
 } else {
     for ($i = 0; $i < count($points) - 1; $i++) {
         $section = [$points[$i], $points[$i + 1]];

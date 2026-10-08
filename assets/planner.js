@@ -7,6 +7,7 @@
   var d = el.dataset;
   var T = JSON.parse(d.texts || '{}');
   var MAX = 60;
+  var MAX_LEG = parseFloat(d.maxLegKm || '50') * 1000;   // metres, crow-flies, between two waypoints
   var points = [];
   var current = null;
   var requestNo = 0;
@@ -76,6 +77,9 @@
     return 2 * r * Math.asin(Math.min(1, Math.sqrt(x)));
   }
 
+  function legOk(p, q) { return !p || !q || distance([p[1], p[0]], [q[1], q[0]]) <= MAX_LEG; }
+  function tooFar() { setStatus(T.leg_too_long.replace('{km}', Math.round(MAX_LEG / 1000))); }
+
   function showStats(gj) {
     if (!gj) { info.textContent = ''; return; }
     var total = 0, free = 0;
@@ -111,7 +115,9 @@
       var m = L.marker(p, { draggable: true, keyboard: true, title: T.point + ' ' + (i + 1) });
       m.on('dragend', function (e) {
         var ll = e.target.getLatLng();
-        points[i] = [ll.lat, ll.lng];
+        var moved = [ll.lat, ll.lng];
+        if (!legOk(points[i - 1], moved) || !legOk(moved, points[i + 1])) { drawMarkers(); tooFar(); return; }
+        points[i] = moved;
         calculate();
       });
       m.on('click', function () {
@@ -191,14 +197,19 @@
 
   map.on('click', function (e) {
     if (points.length >= MAX) return;
-    points.push([e.latlng.lat, e.latlng.lng]);
+    var p = [e.latlng.lat, e.latlng.lng];
+    if (!legOk(points[points.length - 1], p)) { tooFar(); return; }
+    points.push(p);
     calculate();
   });
 
   document.getElementById('pl-undo').addEventListener('click', function () { points.pop(); calculate(); });
   document.getElementById('pl-clear').addEventListener('click', function () { points = []; calculate(); });
   document.getElementById('pl-loop').addEventListener('click', function () {
-    if (points.length >= 2 && points.length < MAX) { points.push(points[0].slice()); calculate(); }
+    if (points.length < 2 || points.length >= MAX) return;
+    if (!legOk(points[points.length - 1], points[0])) { tooFar(); return; }
+    points.push(points[0].slice());
+    calculate();
   });
   document.getElementById('pl-locate').addEventListener('click', function () {
     if (!navigator.geolocation) { setStatus(T.locate_error); return; }
