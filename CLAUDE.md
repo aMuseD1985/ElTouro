@@ -23,7 +23,7 @@ Hosting bei all-inkl (Premium, Shared Hosting, PHP 8.5, MariaDB 10.11). Drei Ort
 
 Jede Umgebung hat eine eigene `config.php` und eine eigene Datenbank. `env` in der Config (`beta`/`test`/`live`) steuert das farbige Hinweisband, `noindex` und den Zugangsschutz (Tester-Passwort, signiertes Cookie `et_access`). Server-Configs dürfen noch die alten deutschen Schlüssel haben (`zugang`, `karte`, `erster_admin`, `aktiv` …) – `bootstrap.php` übersetzt sie (`eltouroNormalizeConfig()`).
 
-Routing läuft über BRouter auf einem Raspberry Pi 4 in Marcos Heimnetz, zweiter Pi als Reserve an einem anderen Anschluss, erreichbar per Cloudflare Tunnel. Die E-Scooter-Profile `escooter.brf` (aktuelle eKFV) und `escooter-2027.brf` (Regeln ab 01.03.2027) sind Entwürfe und noch nicht gegen echte Strecken getestet. Ist `brouter.url` leer, verbindet der Planer Punkte gerade und markiert sie als „freehand“.
+Routing läuft über BRouter auf einem Raspberry Pi 4 in Marcos Heimnetz, zweiter Pi als Reserve an einem anderen Anschluss, erreichbar per Cloudflare Tunnel. Die E-Scooter-Profile `escooter.brf` (aktuelle eKFV) und `escooter-2027.brf` (Regeln ab 01.03.2027) sind Entwürfe und noch nicht gegen echte Strecken getestet. Ist `brouter.url` leer, verbindet der Planer Punkte gerade und markiert sie als „freehand“. Zum Testen gibt es `tools/brouter/setup-brouter.ps1`: richtet BRouter samt Deutschland-Kacheln auf einem Windows-PC ein, mit Firewall-Freigabe nur für die Server-IP. `tools/` wird nicht deployt und ist per `.htaccess` gesperrt.
 
 ## Tech-Stack und harte Regeln
 

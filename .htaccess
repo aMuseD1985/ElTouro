@@ -15,7 +15,7 @@ DirectoryIndex index.php
 RewriteEngine On
 
 # Runtime data, vendored libraries and CI configuration: no access from the browser
-RewriteRule ^(data|daten|lib|docs|\.github)(/|$) - [F,L]
+RewriteRule ^(data|daten|lib|docs|tools|\.github)(/|$) - [F,L]
 
 # Any .php address requested from outside (old German pages, links in mails sent before the clean
 # URLs) goes to legacy.php, which redirects permanently to the clean URL. THE_REQUEST is the original
