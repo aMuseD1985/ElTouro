@@ -131,13 +131,15 @@ try {
     }
 
     # --- 4. start.cmd ---
+    # 4 Threads: bei nur 1 bricht BRouter eine laufende Route nach 2 s ab, sobald eine zweite Verbindung kommt
+    # (z. B. die favicon-Anfrage des Browsers) - die erste Route nach dem Start dauert wegen der Kacheln laenger.
     Step 'start.cmd schreiben'
     $startCmd = "$Dir\start.cmd"
     @(
         '@echo off'
         "title BRouter ElTouro - Port $Port (Fenster offen lassen)"
         "cd /d `"$Dir`""
-        "`"$java`" -Xmx512M -Xms128M -Xmn8M -DmaxRunningTime=60 -DuseRFCMimeType=false -cp brouter-$Version-all.jar btools.server.RouteServer segments4 profiles2 customprofiles $Port 1"
+        "`"$java`" -Xmx512M -Xms128M -Xmn8M -DmaxRunningTime=60 -DuseRFCMimeType=false -cp brouter-$Version-all.jar btools.server.RouteServer segments4 profiles2 customprofiles $Port 4"
         'pause'
     ) | Set-Content -Path $startCmd -Encoding ASCII
     Ok $startCmd
