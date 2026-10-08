@@ -20,7 +20,12 @@ RewriteRule ^(data|daten|lib|\.github)(/|$) - [F,L]
 # request line, so the internal rewrites below never land here.
 RewriteCond %{THE_REQUEST} \s/[^\s?]*\.php[\s?]
 RewriteRule ^ legacy.php [L]
-RewriteRule ^(impressum|datenschutz|nutzungsbedingungen|seite/.*)$ legacy.php [L]
+# Old clean URLs without .php: plain redirects (an internal rewrite to legacy.php did not take effect on the host)
+RewriteRule ^impressum/?$ /imprint [R=301,L]
+RewriteRule ^datenschutz/?$ /privacy [R=301,L]
+RewriteRule ^nutzungsbedingungen/?$ /terms [R=301,L]
+RewriteRule ^seite/(impressum|datenschutz|nutzungsbedingungen)/?$ /$1 [R=301,L]
+RewriteRule ^seite/([a-z0-9-]+)/?$ /page/$1 [R=301,L]
 RewriteRule ^assets/(planer|tourkarte|traenke)\.js$ - [G,L]
 
 # ---- Clean URLs (internal rewrites; query strings are kept) ----
