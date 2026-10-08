@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/rewards_lib.php';
+require __DIR__ . '/share_lib.php';
 $me = requireLogin();
 
 if (isPost()) {
@@ -16,6 +18,9 @@ if (isPost()) {
 
 $p = dbOne('SELECT bio, home_region FROM user_profiles WHERE user_id = ?', [$me['id']]) ?? ['bio' => '', 'home_region' => ''];
 $google = dbOne("SELECT email FROM user_identities WHERE provider = 'google' AND user_id = ?", [$me['id']]);
+$inviteUrl = inviteUrl(userInviteCode((int)$me['id']));
+$brought = confirmedReferralCount((int)$me['id']);
+$cameVia = dbOne('SELECT r.source, u.display_name FROM referrals r LEFT JOIN users u ON u.id = r.referrer_user_id AND u.status = \'active\' WHERE r.user_id = ?', [$me['id']]);
 pageHeader(t('profile.title'));
 ?>
 <section class="narrow">
@@ -36,4 +41,13 @@ pageHeader(t('profile.title'));
     <button type="submit"><?= te('profile.button') ?></button>
   </form>
 </section>
+
+<section class="panel narrow" id="invite">
+  <h2><?= te('invite.title') ?></h2>
+  <p><?= te('invite.text') ?></p>
+  <?= shareBox($inviteUrl, t('invite.share_title'), t('invite.share_text', ['name' => $me['display_name']]), false) ?>
+  <p class="muted"><?= $brought > 0 ? te('invite.count', ['n' => $brought]) : te('invite.none') ?></p>
+  <?php if ($cameVia && $cameVia['display_name']): ?><p class="muted"><?= te('invite.came_via', ['name' => $cameVia['display_name']]) ?></p><?php endif; ?>
+</section>
+<script src="/assets/share.js?v=1"></script>
 <?php pageFooter();

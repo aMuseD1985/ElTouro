@@ -1,6 +1,6 @@
 # Belohnungssystem – Konzept
 
-Stand: 08.10.2026 · Status: **Konzept, noch nichts gebaut** · Lebendes Dokument – bei jeder Erweiterung oben im Entscheidungsprotokoll nachtragen.
+Stand: 08.10.2026 · Status: **Stufe 1 (Fundament) gebaut**, Stufen 2–5 Konzept · Lebendes Dokument – bei jeder Erweiterung oben im Entscheidungsprotokoll nachtragen.
 
 ## Ziel
 
@@ -14,6 +14,9 @@ Wer die Community voranbringt, soll das sehen und zeigen können: Leute in die C
 | 08.10.2026 | Ränge mit **spanischen Namen** (passend zu ElTouro). |
 | 08.10.2026 | Der Rang ist **für alle angemeldeten Nutzer sichtbar**. |
 | 08.10.2026 | Grundprinzip: **Ereignisse speichern, Punkte berechnen** (siehe unten). |
+| 08.10.2026 | Geteilte Tour: Werber ist, **wer den Teilen-Link erzeugt hat** (`tours.share_created_by`), nicht der Ersteller der Tour. |
+| 08.10.2026 | Herden-Einladung: gespeichert wird nur die Herde (`ref_type = crew`), **ohne persönlichen Werber** – wem es gutgeschrieben wird (Leitstiere, Herde), wird in Stufe 3 entschieden; die Daten dafür liegen vor. |
+| 08.10.2026 | Herkunft wird nur in der bestehenden Sitzung gemerkt (kein zusätzliches Cookie) und beim Login eines bestehenden Kontos verworfen. |
 
 ## Grundprinzipien – damit wir uns nichts verbauen
 
@@ -171,7 +174,7 @@ Für schnelle Anzeige: `points`, `rank_key`, `km`, `rides_attended`, `rides_host
 
 | Stufe | Inhalt | Sichtbar für Nutzer |
 |---|---|---|
-| **1 – Fundament** (als Nächstes) | `activity_events`, `referrals`, `users.invite_code`, Einladungslink `/join/<code>` im Profil, `?via=` an allen Teilen-Knöpfen, Herkunft bei Registrierung (Formular und Google) erfassen, Ereignisse für Bestätigung und Tour-Anlage schreiben, Datenschutzerklärung | Einladungslink im Profil |
+| **1 – Fundament** ✅ gebaut 08.10.2026 (`rewards_lib.php`, `join.php`) | `activity_events`, `referrals`, `users.invite_code`, Einladungslink `/join/<code>` im Profil, `?via=` an allen Teilen-Knöpfen, Herkunft bei Registrierung (Formular und Google) erfassen, Ereignisse für Bestätigung und Tour-Anlage schreiben, Datenschutzerklärung | Einladungslink im Profil |
 | **2 – Teilnahme** | Teilnahme nach der Ausfahrt bestätigen + Widerspruch, Ereignisse `ride_attended`, `ride_hosted`, `tour_ridden_by_others`, `referral_activated` | „Teilnahme bestätigen“ bei Organisatoren |
 | **3 – Punkte & Ränge** | `rewards_rules.php` v1, `points_ledger`, `user_stats`, Rang am Namen, Punkteübersicht im Profil („wofür habe ich Punkte bekommen“), Admin: neu berechnen, entwerten | Rang, Punkte |
 | **4 – Abzeichen** | `user_badges`, Abzeichen im Profil, Mitteilung bei neuem Abzeichen | Abzeichen |
@@ -180,8 +183,7 @@ Für schnelle Anzeige: `points`, `rank_key`, `km`, `rides_attended`, `rides_host
 
 ## Offene Fragen
 
-1. **Teilen-Link-Zuordnung:** Wer bekommt den Geworbenen, wenn jemand eine öffentliche Tour eines anderen teilt – der Teilende (Vorschlag) oder der Ersteller?
 2. **Ranglisten:** für alle sichtbar wie der Rang, mit Opt-out (Vorschlag) – oder Opt-in?
-3. **Herden-Einladungen:** zählt der Werber-Bonus für den Leitstier persönlich oder für die Herde (Herden-Rang als eigenes Thema)?
+3. **Herden-Einladungen:** Wem wird ein Fahrer gutgeschrieben, der über die Einladung einer Herde kam – den Leitstieren, der Herde (Herden-Rang als eigenes Thema) oder beiden? (Daten liegen vor, Entscheidung in Stufe 3.)
 4. **Bestandsnutzer:** Bekommen Fahrer, die vor dem Start des Systems dabei waren, das Abzeichen „Pionier“ automatisch? (Vorschlag: ja.)
 5. **Punktwerte v1:** die Tabelle oben ist ein Startvorschlag – nach den ersten Wochen mit echten Daten nachjustieren.

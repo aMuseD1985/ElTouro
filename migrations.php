@@ -360,10 +360,40 @@ function runMigrations(): array
       CONSTRAINT fk_ui_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) $opt");
 
+    /* ---------- Reward system, stage 1: referral origin and activity events (2026-10, docs/rewards.md) ---------- */
+    if (!columnExists('users', 'invite_code')) {
+        db()->exec('ALTER TABLE users ADD invite_code CHAR(10) NULL, ADD UNIQUE KEY uq_users_invite (invite_code)');
+        $log[] = '~ users.invite_code angelegt';
+    }
+    if (!columnExists('tours', 'share_created_by')) {
+        db()->exec('ALTER TABLE tours ADD share_created_by BIGINT UNSIGNED NULL AFTER share_created_at');
+        $log[] = '~ tours.share_created_by angelegt';
+    }
+    $create('referrals', "CREATE TABLE referrals (
+      user_id BIGINT UNSIGNED PRIMARY KEY, referrer_user_id BIGINT UNSIGNED NULL,
+      source ENUM('invite_link','share_link','crew_invite','ride_share') NOT NULL,
+      channel ENUM('whatsapp','telegram','facebook','x','email','copy','native','unknown') NOT NULL DEFAULT 'unknown',
+      ref_type VARCHAR(20) NOT NULL, ref_id BIGINT UNSIGNED NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      KEY ix_ref_referrer (referrer_user_id), KEY ix_ref_source (source, channel),
+      CONSTRAINT fk_ref_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      CONSTRAINT fk_ref_referrer FOREIGN KEY (referrer_user_id) REFERENCES users(id) ON DELETE SET NULL
+    ) $opt");
+    $create('activity_events', "CREATE TABLE activity_events (
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL,
+      type VARCHAR(40) NOT NULL, subject_type VARCHAR(20) NOT NULL, subject_id BIGINT UNSIGNED NOT NULL,
+      related_user_id BIGINT UNSIGNED NULL, value DECIMAL(10,2) NULL, meta JSON NULL,
+      occurred_at DATETIME NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      voided_at DATETIME NULL, voided_by BIGINT UNSIGNED NULL, void_reason VARCHAR(500) NULL,
+      UNIQUE KEY uq_event (type, user_id, subject_type, subject_id),
+      KEY ix_event_user (user_id, occurred_at), KEY ix_event_type (type, occurred_at),
+      CONSTRAINT fk_event_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
-        'privacy' => ['de' => ['7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814'],
-                      'en' => ['d626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074']],
+        'privacy' => ['de' => ['7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787'],
+                      'en' => ['d626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024']],
         'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab'],
                       'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d']],
     ];
@@ -372,7 +402,7 @@ function runMigrations(): array
             $p = dbOne('SELECT body FROM pages WHERE slug = ? AND locale = ?', [$slug, $loc]);
             if ($p !== null && in_array(hash('sha256', $p['body']), $hashes, true)) {
                 dbExec('UPDATE pages SET body = ? WHERE slug = ? AND locale = ?', [$texts[$slug][$loc], $slug, $loc]);
-                $log[] = "~ $slug/$loc: Standardtext aktualisiert (Teilen, Google-Anmeldung)";
+                $log[] = "~ $slug/$loc: Standardtext aktualisiert";
             }
         }
     }
@@ -392,8 +422,8 @@ function legalPagesNeedingUpdate(): array
 {
     $markers = [
         'privacy' => [
-            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:'],
-            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:'],
+            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:'],
+            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:'],
         ],
         'terms' => [
             'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst'],

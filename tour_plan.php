@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/tours_lib.php';
+require __DIR__ . '/rewards_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 
@@ -70,6 +71,8 @@ if (isPost()) {
                            start_lat, start_lng, bbox_min_lat, bbox_min_lng, bbox_max_lat, bbox_max_lng, owner_user_id)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [...$values, $uid]);
             $newId = (int)db()->lastInsertId();
+            recordEvent($uid, 'tour_created', 'tour', $newId, null, (float)round($geo['distance'] / 1000, 2),
+                ['visibility' => $w['visibility'], 'group_id' => $group]);
         }
         flash(t('tour.saved'));
         redirect('/tour/' . $newId);

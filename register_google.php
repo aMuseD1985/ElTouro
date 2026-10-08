@@ -8,6 +8,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/account_lib.php';
 require __DIR__ . '/google_lib.php';
+require __DIR__ . '/rewards_lib.php';
 
 $pending = $_SESSION['google_pending'] ?? null;
 if (!is_array($pending) || $pending['at'] < time() - GOOGLE_PENDING_TTL || currentUser()) {
@@ -37,20 +38,28 @@ if (isPost()) {
                 [$unusable, $values['name'], $birth->format('Y-m-d'), $LANG, $existing['id']]);
             dbExec('UPDATE auth_tokens SET used_at = UTC_TIMESTAMP() WHERE user_id = ? AND used_at IS NULL', [$existing['id']]);
             $uid = (int)$existing['id'];
+            storeReferral($uid);   // replaces an origin recorded for whoever created the unconfirmed account
+            $isNew = true;
         } elseif ($existing !== null) {
             $uid = (int)$existing['id'];   // confirmed in the meantime – just link
+            $isNew = false;
         } else {
             dbExec('INSERT INTO users (email, password_hash, display_name, birth_date, locale, terms_accepted_at, email_verified_at)
                     VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())',
                 [$pending['email'], $unusable, $values['name'], $birth->format('Y-m-d'), $LANG]);
             $uid = (int)$pdo->lastInsertId();
             dbExec('INSERT INTO user_profiles (user_id) VALUES (?)', [$uid]);
+            storeReferral($uid);
+            $isNew = true;
         }
         dbExec("INSERT IGNORE INTO user_identities (provider, subject, user_id, email, last_login_at) VALUES ('google', ?, ?, ?, UTC_TIMESTAMP())",
             [$pending['sub'], $uid, $pending['email']]);
         $pdo->commit();
         unset($_SESSION['google_pending']);
         promoteFirstAdmin($uid);
+        if ($isNew) {
+            recordVerification($uid);
+        }
         logIn($uid);
         flash(t('verify.ok'));
         redirect($pending['next']);

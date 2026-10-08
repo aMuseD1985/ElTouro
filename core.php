@@ -224,6 +224,7 @@ function logIn(int $userId): void
 {
     session_regenerate_id(true);
     $_SESSION['uid'] = $userId;
+    unset($_SESSION['referral']);   // an existing account was not brought by whoever's link opened this session
 }
 
 /* ---------- Language ---------- */

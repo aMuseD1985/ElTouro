@@ -3,6 +3,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/account_lib.php';
 require __DIR__ . '/google_lib.php';
+require __DIR__ . '/rewards_lib.php';
 
 if (currentUser()) {
     redirect('/');
@@ -32,6 +33,7 @@ if ($open && isPost()) {
                     [$values['email'], password_hash($pw, PASSWORD_DEFAULT), $values['name'], $birth->format('Y-m-d'), $LANG]);
                 $uid = (int)db()->lastInsertId();
                 dbExec('INSERT INTO user_profiles (user_id) VALUES (?)', [$uid]);
+                storeReferral($uid);
                 $token = createToken($uid, 'verify', 48);
                 sendAccountMail($values['email'], 'mail.verify_subject', 'mail.verify_text',
                     ['name' => $values['name'], 'link' => baseUrl() . '/verify?t=' . $token]);

@@ -6,7 +6,7 @@ Code, Dateinamen und Adressen sind englisch, die Oberfläche ist deutsch und eng
 
 ## Adressen
 
-Saubere URLs ohne `.php`, definiert in der `.htaccess`: `/tours`, `/tour/plan`, `/tour/5`, `/tour/5/edit`, `/tour/5/gpx`, `/rides`, `/ride/new`, `/ride/3`, `/ride/3/edit`, `/crews`, `/crews/new`, `/crew/<slug>`, `/crew/<slug>/talk`, `/talk/<id>`, `/forum`, `/forum/<kategorie>`, `/forum/<kategorie>/new`, `/forum/topic/<id>`, `/login`, `/register`, `/verify`, `/password/forgot`, `/password/reset`, `/profile`, `/report`, `/imprint`, `/privacy`, `/terms`, `/page/<slug>`, `/admin/…`, `/s/<token>` (geteilte Tour), APIs unter `/api/route` und `/api/talk`, `/migrate`, `/check`.
+Saubere URLs ohne `.php`, definiert in der `.htaccess`: `/tours`, `/tour/plan`, `/tour/5`, `/tour/5/edit`, `/tour/5/gpx`, `/rides`, `/ride/new`, `/ride/3`, `/ride/3/edit`, `/crews`, `/crews/new`, `/crew/<slug>`, `/crew/<slug>/talk`, `/talk/<id>`, `/forum`, `/forum/<kategorie>`, `/forum/<kategorie>/new`, `/forum/topic/<id>`, `/login`, `/register`, `/verify`, `/password/forgot`, `/password/reset`, `/profile`, `/report`, `/imprint`, `/privacy`, `/terms`, `/page/<slug>`, `/admin/…`, `/s/<token>` (geteilte Tour), `/join/<code>` (persönlicher Einladungslink), APIs unter `/api/route` und `/api/talk`, `/migrate`, `/check`.
 
 Jeder direkte Aufruf einer `.php`-Adresse (alte deutsche Seiten wie `/herde.php?s=…`, Links aus verschickten Mails) landet in `legacy.php` und wird mit den passenden Parametern dauerhaft (301) auf die neue Adresse umgeleitet.
 
@@ -54,6 +54,10 @@ Ablauf: OpenID Connect mit PKCE, `state` und `nonce`. Ein bereits verknüpftes G
 ## Touren teilen
 
 Auf jeder Tour gibt es „Tour teilen“: Ein Klick erzeugt einen Link `/s/<token>`, auch für private Touren. Die Seite ist ohne Anmeldung und ohne Tester-Passwort erreichbar und zeigt nur Name, Länge, Anstieg, Schwierigkeit, Fahrstil, Regelwerk und die Strecke **ohne die ersten und letzten 300 m** – kein Ersteller, keine Herde, keine Beschreibung. Für Vorschauen in WhatsApp, Facebook & Co. gibt es Open-Graph-Tags und ein Vorschaubild (`/s/<token>/image.png`, mit GD gezeichnet, in `data/share` zwischengespeichert). Teilen-Knöpfe für WhatsApp, Telegram, Facebook, X und E-Mail sind reine Links ohne fremde Skripte; am Handy öffnet „Teilen …“ das Teilen-Menü des Geräts. Der Link lässt sich jederzeit deaktivieren. Teilen dürfen alle, die die Tour bearbeiten dürfen, bei öffentlichen Touren alle angemeldeten Fahrer; deaktivieren nur Bearbeiter.
+
+## Einladungen und Belohnungssystem (Stufe 1)
+
+Jeder Fahrer hat im Profil einen persönlichen Einladungslink (`/join/<code>`) mit Teilen-Knöpfen. Alle Teilen-Knöpfe hängen den Kanal an (`?via=whatsapp`, `facebook`, `x`, `telegram`, `email`, `copy`, `native`). Bei der Registrierung (auch über Google) wird gespeichert, über welchen Link und Kanal jemand kam (`referrals`, erster Kontakt zählt), und wichtige Aktivitäten landen als Ereignisse in `activity_events`. Punkte, Ränge und Abzeichen werden daraus später berechnet – Konzept und Stand in `docs/rewards.md`.
 
 ## Ausfahrten
 

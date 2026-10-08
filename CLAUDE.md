@@ -45,6 +45,7 @@ Seiten, die ohne Tester-Passwort erreichbar sein müssen (`access.php`, `migrate
 |---|---|
 | Konto | `register.php`, `verify.php`, `login.php`, `logout.php`, `password_forgot.php`, `password_reset.php`, `account_lib.php` (Tokens, Mails, `mailHtml()`, `displayNameError()`, `validBirthDate()`, `promoteFirstAdmin()`), `profile.php` |
 | Google | `google_lib.php` (OIDC mit PKCE/state/nonce, Button), `auth_google.php` (Start und Callback), `register_google.php` (Abschluss: Name, Geburtsdatum, AGB) |
+| Belohnung | `rewards_lib.php` (Stufe 1: Herkunft `referrals` per `rememberReferral()`/`storeReferral()`, Ereignisse `recordEvent()` in `activity_events`, Einladungscode), `join.php` (`/join/<code>`) – Konzept `docs/rewards.md` |
 | Teilen | `share_lib.php` (Rechte, Token, `trimRouteEnds()`, Vorschaubild mit GD), `share.php` (`/s/<token>`), `assets/share.js` |
 | Herden | `crews_lib.php` (Zugriffsschicht), `crews.php`, `crew_new.php`, `crew.php`, `_crew_form.php` |
 | Touren | `tours_lib.php` (Zugriff, Geometrie-Prüfung, Kennzahlen), `tours.php`, `tour_plan.php`, `tour.php`, `tour_gpx.php`, `route.php` (BRouter-Proxy), `assets/planner.js`, `assets/tour_map.js` |
@@ -67,7 +68,7 @@ Weitere feste Regeln: CSRF-Token in jedem Formular und als `X-CSRF`-Header bei j
 
 ## Datenbank
 
-Schema-Änderungen ausschließlich in `migrations.php`, Funktion `runMigrations()`. Jeder Schritt ist idempotent (prüft selbst, ob er nötig ist). **Neue Schritte immer unten anhängen, bestehende nie umschreiben.** Einzige Ausnahme ist Block 0 (Umbenennungen der Englisch-Umstellung), der vor allem anderen läuft. Ausgeführt wird per Admin → Betrieb, `/migrate.php?key=…` oder automatisch durch die GitHub Action. Tabellen: `users`, `user_profiles`, `auth_tokens`, `login_attempts`, `rider_groups`, `group_members`, `pages`, `settings`, `tours` (inkl. `share_token`), `rides`, `ride_signups`, `user_identities`, `forum_categories`, `forum_threads`, `forum_posts`, `reports`, `herd_topics`, `herd_posts`, `herd_reactions`, `herd_reads`. `groups` ist in MySQL 8 reserviert, deshalb `rider_groups`. Zeiten in der DB immer UTC, Anzeige in `Europe/Berlin`. Keine nativen Spatial-Typen: Geometrie als GeoJSON (Abschnitte mit `properties.freehand`), Umkreissuche über indizierte Bounding-Box-Spalten.
+Schema-Änderungen ausschließlich in `migrations.php`, Funktion `runMigrations()`. Jeder Schritt ist idempotent (prüft selbst, ob er nötig ist). **Neue Schritte immer unten anhängen, bestehende nie umschreiben.** Einzige Ausnahme ist Block 0 (Umbenennungen der Englisch-Umstellung), der vor allem anderen läuft. Ausgeführt wird per Admin → Betrieb, `/migrate.php?key=…` oder automatisch durch die GitHub Action. Tabellen: `users`, `user_profiles`, `auth_tokens`, `login_attempts`, `rider_groups`, `group_members`, `pages`, `settings`, `tours` (inkl. `share_token`, `share_created_by`), `rides`, `ride_signups`, `user_identities`, `referrals`, `activity_events`, `forum_categories`, `forum_threads`, `forum_posts`, `reports`, `herd_topics`, `herd_posts`, `herd_reactions`, `herd_reads`. `groups` ist in MySQL 8 reserviert, deshalb `rider_groups`. Zeiten in der DB immer UTC, Anzeige in `Europe/Berlin`. Keine nativen Spatial-Typen: Geometrie als GeoJSON (Abschnitte mit `properties.freehand`), Umkreissuche über indizierte Bounding-Box-Spalten.
 
 Wer Rechtstexte in `legal_texts.php` ändert: SHA-256 des bisherigen Standardtexts vorher in `migrations.php` als „earlier default“ eintragen – dann ersetzt die Migration unveränderte Seiten automatisch. Von Hand geänderte Seiten meldet `legalPagesNeedingUpdate()` (Marker-Sätze pro Abschnitt) im Migrationsprotokoll und auf der Admin-Startseite; neue Abschnitte dort mit einem Marker ergänzen.
 
@@ -113,7 +114,7 @@ Hintergrundprozesse (Datenbank, `php -S`) mit `nohup … &` starten, sonst häng
 
 ## Backlog (Reihenfolge mit Marco abstimmen)
 
-**Belohnungssystem:** Konzept und Entscheidungen in `docs/rewards.md` (Ereignisse speichern, Punkte berechnen; Ränge Becerro → Leyenda; vorerst ohne Geldwert). Nächster Schritt dort: Stufe 1 „Fundament“ – Herkunft der Anmeldung muss erfasst sein, bevor sie verloren geht.
+**Belohnungssystem:** Konzept und Entscheidungen in `docs/rewards.md` (Ereignisse speichern, Punkte berechnen; Ränge Becerro → Leyenda; vorerst ohne Geldwert). Stufe 1 (Herkunft, Ereignisse, Einladungslink, `?via=` an allen Teilen-Knöpfen) ist gebaut. Nächster Schritt: Stufe 2 „Teilnahme bestätigen“ (Grundlage für km). **Regel:** Neue Funktionen, die für Punkte relevant sein könnten, schreiben ab sofort ein Ereignis per `recordEvent()` – lieber zu viel protokollieren als später fehlen.
 
 1. **Konto selbst löschen** im Profil (die Datenschutzerklärung verspricht Löschung, aktuell nur per Mail). Dabei Anmeldungen zu Ausfahrten und eigene Ausfahrten mitbedenken.
 2. **BRouter anbinden** und die Profile mit echten Strecken prüfen; vor live Kacheln auf MapTiler umstellen.

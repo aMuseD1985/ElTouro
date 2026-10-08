@@ -8,6 +8,7 @@ declare(strict_types=1);
 const SKIP_ACCESS_GATE = true;
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/share_lib.php';
+require __DIR__ . '/rewards_lib.php';
 
 $tour = loadSharedTour((string)($_GET['token'] ?? ''));
 if ($tour === null) {
@@ -29,6 +30,7 @@ if (isset($_GET['image'])) {
 }
 
 $me = currentUser();
+rememberReferral('share_link', $tour['share_created_by'] !== null ? (int)$tour['share_created_by'] : null, 'tour', (int)$tour['id'], $_GET['via'] ?? null);
 $url = baseUrl() . '/s/' . $tour['share_token'];
 $summary = shareSummary($tour);
 $meta = [

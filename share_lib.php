@@ -28,17 +28,19 @@ function shareUrl(array $tour): ?string
 }
 
 /** Creates the share link if there is none yet. Returns the token. */
-function enableTourShare(int $tourId): string
+function enableTourShare(int $tourId, int $userId): string
 {
     $token = rtrim(strtr(base64_encode(random_bytes(18)), '+/', '-_'), '=');   // 24 characters, URL-safe
-    dbExec('UPDATE tours SET share_token = ?, share_created_at = UTC_TIMESTAMP() WHERE id = ? AND share_token IS NULL', [$token, $tourId]);
+    // Whoever creates the link is credited for riders who sign up through it (docs/rewards.md)
+    dbExec('UPDATE tours SET share_token = ?, share_created_at = UTC_TIMESTAMP(), share_created_by = ? WHERE id = ? AND share_token IS NULL',
+        [$token, $userId, $tourId]);
     return (string)dbOne('SELECT share_token FROM tours WHERE id = ?', [$tourId])['share_token'];
 }
 
 function disableTourShare(int $tourId): void
 {
     $old = dbOne('SELECT share_token FROM tours WHERE id = ?', [$tourId])['share_token'] ?? null;
-    dbExec('UPDATE tours SET share_token = NULL, share_created_at = NULL WHERE id = ?', [$tourId]);
+    dbExec('UPDATE tours SET share_token = NULL, share_created_at = NULL, share_created_by = NULL WHERE id = ?', [$tourId]);
     if ($old && is_file(DATA_DIR . '/share/' . $old . '.png')) {
         @unlink(DATA_DIR . '/share/' . $old . '.png');
     }
@@ -49,7 +51,7 @@ function loadSharedTour(string $token): ?array
     if (!preg_match('/^[A-Za-z0-9_-]{24}$/', $token)) {
         return null;
     }
-    return dbOne('SELECT id, title, distance_m, ascent_m, difficulty, style, rule_set, freehand_share_pct, geojson, updated_at, share_token
+    return dbOne('SELECT id, title, distance_m, ascent_m, difficulty, style, rule_set, freehand_share_pct, geojson, updated_at, share_token, share_created_by
                     FROM tours WHERE share_token = ? AND deleted_at IS NULL', [$token]);
 }
 
@@ -192,16 +194,45 @@ function shareImagePath(array $tour, array $trimmed): ?string
     return $file;
 }
 
-/** Share targets as plain links – no third-party scripts, nothing is sent before the user clicks. */
+/** Our link with the channel marker (?via=…) that tells where a new rider came from. */
+function viaUrl(string $url, string $channel): string
+{
+    return $url . (str_contains($url, '?') ? '&' : '?') . 'via=' . $channel;
+}
+
+/**
+ * Share targets as plain links – no third-party scripts, nothing is sent before the user clicks.
+ * Each carries its own channel marker so sign-ups can be attributed to social media (docs/rewards.md).
+ */
 function shareTargets(string $url, string $text): array
 {
-    $u = rawurlencode($url);
+    $u = fn(string $ch) => rawurlencode(viaUrl($url, $ch));
     $tx = rawurlencode($text);
     return [
-        'WhatsApp' => 'https://wa.me/?text=' . rawurlencode($text . ' ' . $url),
-        'Telegram' => 'https://t.me/share/url?url=' . $u . '&text=' . $tx,
-        'Facebook' => 'https://www.facebook.com/sharer/sharer.php?u=' . $u,
-        'X'        => 'https://x.com/intent/post?text=' . $tx . '&url=' . $u,
-        'E-Mail'   => 'mailto:?subject=' . $tx . '&body=' . rawurlencode($text . "\n\n" . $url),
+        'WhatsApp' => 'https://wa.me/?text=' . rawurlencode($text . ' ' . viaUrl($url, 'whatsapp')),
+        'Telegram' => 'https://t.me/share/url?url=' . $u('telegram') . '&text=' . $tx,
+        'Facebook' => 'https://www.facebook.com/sharer/sharer.php?u=' . $u('facebook'),
+        'X'        => 'https://x.com/intent/post?text=' . $tx . '&url=' . $u('x'),
+        'E-Mail'   => 'mailto:?subject=' . $tx . '&body=' . rawurlencode($text . "\n\n" . viaUrl($url, 'email')),
     ];
+}
+
+/**
+ * The complete share box (link field, copy, device share sheet, share targets) – used for tours and
+ * for the personal invite link. Needs assets/share.js on the page.
+ */
+function shareBox(string $url, string $title, string $text, bool $withPreview = true): string
+{
+    $h = '<div class="share-link"><label for="share-url" class="visually-hidden">' . te('share.link') . '</label>'
+       . '<input id="share-url" class="copy-field" readonly value="' . e(viaUrl($url, 'copy')) . '">'
+       . '<button type="button" class="secondary-submit" id="share-copy" data-done="' . te('share.copied') . '">' . te('share.copy') . '</button>'
+       . '<button type="button" id="share-native" data-title="' . e($title) . '" data-text="' . e($text) . '" data-url="' . e(viaUrl($url, 'native')) . '" hidden>' . te('share.native') . '</button></div>'
+       . '<ul class="share-targets">';
+    foreach (shareTargets($url, $text) as $name => $href) {
+        $h .= '<li><a href="' . e($href) . '" target="_blank" rel="noopener noreferrer">' . e($name) . '</a></li>';
+    }
+    if ($withPreview) {
+        $h .= '<li><a href="' . e($url) . '" target="_blank" rel="noopener">' . te('share.preview') . '</a></li>';
+    }
+    return $h . '</ul>';
 }

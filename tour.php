@@ -3,6 +3,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/rides_lib.php';
 require __DIR__ . '/share_lib.php';
+require __DIR__ . '/rewards_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 
@@ -16,7 +17,8 @@ $canShare = canShareTour($tour, $uid);
 if (isPost() && in_array($_POST['action'] ?? '', ['share', 'unshare'], true)) {
     checkCsrf();
     if ($_POST['action'] === 'share' && $canShare) {
-        enableTourShare((int)$tour['id']);
+        $token = enableTourShare((int)$tour['id'], $uid);
+        recordEvent($uid, 'share_link_created', 'tour', (int)$tour['id'], null, null, ['token' => $token]);
         flash(t('share.created'));
     } elseif ($_POST['action'] === 'unshare' && $canEdit) {
         disableTourShare((int)$tour['id']);
@@ -89,18 +91,7 @@ pageHeader($tour['title']);
     <form method="post"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>"><input type="hidden" name="action" value="share">
       <button type="submit"><?= te('share.create') ?></button></form>
   <?php else: $text = $tour['title'] . ' – ' . shareSummary($tour); ?>
-    <div class="share-link">
-      <label for="share-url" class="visually-hidden"><?= te('share.link') ?></label>
-      <input id="share-url" class="copy-field" readonly value="<?= e($shareUrl) ?>">
-      <button type="button" class="secondary-submit" id="share-copy" data-done="<?= te('share.copied') ?>"><?= te('share.copy') ?></button>
-      <button type="button" id="share-native" data-title="<?= e($tour['title']) ?>" data-text="<?= e($text) ?>" data-url="<?= e($shareUrl) ?>" hidden><?= te('share.native') ?></button>
-    </div>
-    <ul class="share-targets">
-      <?php foreach (shareTargets($shareUrl, $text) as $name => $href): ?>
-        <li><a href="<?= e($href) ?>" target="_blank" rel="noopener noreferrer"><?= e($name) ?></a></li>
-      <?php endforeach; ?>
-      <li><a href="<?= e($shareUrl) ?>" target="_blank" rel="noopener"><?= te('share.preview') ?></a></li>
-    </ul>
+    <?= shareBox($shareUrl, $tour['title'], $text) ?>
     <?php if ($canEdit): ?>
       <form method="post"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>"><input type="hidden" name="action" value="unshare">
         <button class="link danger"><?= te('share.revoke') ?></button></form>

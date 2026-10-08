@@ -5,7 +5,7 @@ Options -Indexes -MultiViews
 DirectoryIndex index.php
 
 # Libraries, includes and docs are never served directly
-<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|rides_lib\.php|share_lib\.php|google_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
+<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|rides_lib\.php|share_lib\.php|google_lib\.php|rewards_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
     Require all denied
 </FilesMatch>
 <FilesMatch "^_">
@@ -41,6 +41,7 @@ RewriteRule ^password/forgot/?$ password_forgot.php [L,QSA]
 RewriteRule ^password/reset/?$ password_reset.php [L,QSA]
 RewriteRule ^profile/?$ profile.php [L,QSA]
 RewriteRule ^auth/google/?$ auth_google.php [L,QSA]
+RewriteRule ^join/([a-z0-9]{10})/?$ join.php?code=$1 [L,QSA]
 RewriteRule ^auth/google/callback/?$ auth_google.php?callback=1 [L,QSA]
 
 RewriteRule ^crews/?$ crews.php [L,QSA]

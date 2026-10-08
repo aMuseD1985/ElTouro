@@ -146,6 +146,13 @@ return [
     'footer.imprint' => 'Impressum', 'footer.privacy' => 'Datenschutz', 'footer.terms' => 'Nutzungsbedingungen',
     'page.empty' => 'Diese Seite wird gerade vorbereitet.',
 
+    'join.kicker' => 'Einladung', 'join.title' => '{name} lädt dich zu ElTouro ein',
+    'join.register' => 'Mit E-Mail-Adresse registrieren', 'join.have_account' => 'Schon dabei?',
+    'invite.title' => 'Lade Fahrer zu ElTouro ein', 'invite.text' => 'Dein persönlicher Einladungslink. Wer darüber zu ElTouro kommt, wird dir zugeordnet – das zählt später für Rang und Abzeichen.',
+    'invite.share_title' => 'Komm zu ElTouro', 'invite.share_text' => '{name} lädt dich zu ElTouro ein – Touren für den E-Scooter planen und gemeinsam fahren.',
+    'invite.count' => 'Über deine Links sind schon {n} Fahrer zu ElTouro gekommen.', 'invite.none' => 'Über deine Links ist noch niemand dazugekommen.',
+    'invite.came_via' => 'Du bist über {name} zu ElTouro gekommen.',
+
     'google.button' => 'Mit Google anmelden', 'google.button_register' => 'Mit Google registrieren', 'google.or' => 'oder mit E-Mail-Adresse',
     'google.cancelled' => 'Die Anmeldung mit Google wurde abgebrochen.',
     'google.error' => 'Die Anmeldung mit Google hat nicht geklappt. Bitte versuch es noch einmal.',
@@ -388,6 +395,13 @@ return [
     'time.now' => 'just now', 'time.min' => '{n} min ago', 'time.hours' => '{n} h ago', 'time.days' => '{n} days ago',
     'footer.imprint' => 'Legal notice', 'footer.privacy' => 'Privacy', 'footer.terms' => 'Terms of use',
     'page.empty' => 'This page is being prepared.',
+
+    'join.kicker' => 'Invitation', 'join.title' => '{name} invites you to ElTouro',
+    'join.register' => 'Sign up with email', 'join.have_account' => 'Already riding with us?',
+    'invite.title' => 'Invite riders to ElTouro', 'invite.text' => 'Your personal invite link. Whoever joins ElTouro through it is credited to you – this will count towards rank and badges.',
+    'invite.share_title' => 'Join ElTouro', 'invite.share_text' => '{name} invites you to ElTouro – plan e-scooter routes and ride together.',
+    'invite.count' => '{n} riders have already joined ElTouro through your links.', 'invite.none' => 'Nobody has joined through your links yet.',
+    'invite.came_via' => 'You joined ElTouro through {name}.',
 
     'google.button' => 'Sign in with Google', 'google.button_register' => 'Sign up with Google', 'google.or' => 'or with your email address',
     'google.cancelled' => 'Signing in with Google was cancelled.',

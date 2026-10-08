@@ -2,6 +2,13 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/crews_lib.php';
+require __DIR__ . '/rewards_lib.php';
+if (currentUser() === null && isset($_GET['code'])) {
+    $invited = loadCrew((string)($_GET['s'] ?? ''));
+    if ($invited !== null && hasValidInviteCode($invited, (string)$_GET['code'])) {
+        rememberReferral('crew_invite', null, 'crew', (int)$invited['id'], $_GET['via'] ?? null);
+    }
+}
 $me = requireLogin();
 $uid = (int)$me['id'];
 
