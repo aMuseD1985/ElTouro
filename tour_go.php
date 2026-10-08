@@ -16,7 +16,7 @@ if ($tour === null || !canSeeTour($tour, (int)$me['id'])) {
 
 $keys = ['start', 'start_sim', 'arrive', 'halfway', 'offroute', 'back', 'speed', 'gps_wait', 'gps_error', 'gps_denied', 'wakelock',
          'in_m', 'in_km', 'now', 'remaining', 'eta_min', 'eta_h', 'speed_unit', 'sim_clock', 'follow', 'voice_on', 'voice_off',
-         'far_stop', 'now_stop_charge', 'now_stop_food', 'now_stop_break', 'now_stop_sight', 'label_stop', 'done_title', 'done_arrived', 'done_text', 'done_recorded', 'done_not_recorded', 'saving', 'no_hints'];
+         'view_heading', 'view_3d', 'view_north', 'far_stop', 'now_stop_charge', 'now_stop_food', 'now_stop_break', 'now_stop_sight', 'label_stop', 'done_title', 'done_arrived', 'done_text', 'done_recorded', 'done_not_recorded', 'saving', 'no_hints'];
 foreach (['left', 'slight_left', 'sharp_left', 'right', 'slight_right', 'sharp_right', 'keep_left', 'keep_right', 'uturn',
           'roundabout', 'exit_left', 'exit_right', 'straight'] as $m) {
     array_push($keys, 'far_' . $m, 'now_' . $m, 'label_' . $m);
@@ -28,7 +28,7 @@ foreach ($keys as $k) {
 $sim = isset($_GET['sim']);
 pageHeader(t('nav.title', ['title' => $tour['title']]));
 ?>
-<link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
+<link rel="stylesheet" href="/assets/vendor/maplibre/maplibre-gl.css">
 <div class="ride-mode" id="ride"
      data-geojson="<?= e($tour['geojson']) ?>"
      data-guidance="<?= e($tour['guidance_json'] ?? '[]') ?>"
@@ -68,6 +68,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
       <?php endif; ?>
       <button type="button" id="ride-stop" class="btn secondary" hidden><?= te('nav.stop_button') ?></button>
       <button type="button" id="ride-voice" class="secondary-submit" aria-pressed="true">🔊</button>
+      <button type="button" id="ride-view" class="secondary-submit">➤</button>
       <button type="button" id="ride-follow" class="secondary-submit" title="<?= te('nav.follow') ?>" aria-label="<?= te('nav.follow') ?>">⌖</button>
       <a class="secondary-submit ride-close" href="/tour/<?= (int)$tour['id'] ?>" aria-label="<?= te('nav.close') ?>">✕</a>
     </div>
@@ -82,6 +83,6 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
     </div>
   </div>
 </div>
-<script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/navigate.js?v=7"></script>
+<script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
+<script src="/assets/navigate.js?v=10"></script>
 <?php pageFooter();

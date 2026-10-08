@@ -177,9 +177,15 @@ sendSecurityHeaders();
 function sendSecurityHeaders(): void
 {
     global $CONFIG;
-    $tileHost = parse_url(str_replace(['{s}', '{z}', '{x}', '{y}', '{r}'], ['a', '0', '0', '0', ''], (string)($CONFIG['map']['tiles'] ?? '')), PHP_URL_HOST);
-    $images = "'self' data:" . ($tileHost ? ' https://' . $tileHost : '');
-    header("Content-Security-Policy: default-src 'self'; img-src $images; style-src 'self' 'unsafe-inline'; font-src 'self'; script-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'self'");
+    $tiles = (string)($CONFIG['map']['tiles'] ?? '');
+    $tileHost = parse_url(str_replace(['{s}', '{z}', '{x}', '{y}', '{r}'], ['a', '0', '0', '0', ''], $tiles), PHP_URL_HOST);
+    if ($tileHost && str_contains($tiles, '{s}')) {
+        $tileHost = '*.' . substr($tileHost, strpos($tileHost, '.') + 1);   // a.tile.example.org, b.…, c.… -> *.tile.example.org
+    }
+    $tileSrc = $tileHost ? ' https://' . $tileHost : '';
+    // Leaflet loads tiles as images, MapLibre (ride mode) fetches them and decodes them via blob:
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:$tileSrc; style-src 'self' 'unsafe-inline'; font-src 'self'; "
+         . "script-src 'self'; worker-src 'self'; connect-src 'self'$tileSrc; form-action 'self'; frame-ancestors 'none'; base-uri 'self'");
 }
 
 /* ---------- Users ---------- */
@@ -454,7 +460,7 @@ function pageHeader(string $title, array $meta = []): void
 <?php if (!isLive()): ?><meta name="robots" content="noindex, nofollow"><?php endif; ?>
 <link rel="icon" href="/assets/img/favicon.png">
 <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-<link rel="stylesheet" href="/assets/style.css?v=12">
+<link rel="stylesheet" href="/assets/style.css?v=14">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>

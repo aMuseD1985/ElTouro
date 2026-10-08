@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var el = document.getElementById('ride');
-  if (!el || !window.L) return;
+  if (!el || !window.maplibregl) return;
   var d = el.dataset;
   var T = JSON.parse(d.texts || '{}');
   var SIM = d.sim === '1';
@@ -92,26 +92,85 @@
   } catch (e) { /* no stops */ }
   hints.sort(function (x, y) { return x.at - y.at; });
 
-  // ---------------------------------------------------------------- map
-  var map = L.map('ride-map', { zoomControl: false, attributionControl: true });
-  map.fitBounds(L.geoJSON(gj).getBounds(), { padding: [40, 40] });   // view first, then layers (Leaflet _clipPoints)
-  L.tileLayer(d.tiles, { maxZoom: 19, attribution: d.attribution }).addTo(map);
-  L.geoJSON(gj, { style: function (f) {
-    return f.properties && f.properties.freehand ? { color: '#A3261B', weight: 7, opacity: 0.85, dashArray: '8 8' } : { color: '#2F5E8C', weight: 7, opacity: 0.85 };
-  } }).addTo(map);
-  var doneLine = L.polyline([], { color: '#8A96A8', weight: 7, opacity: 0.9 }).addTo(map);
-  var rider = null;
-  var follow = true;
-  map.on('dragstart', function () { follow = false; });
+  // ---------------------------------------------------------------- map (MapLibre: it can turn and tilt, Leaflet can't)
+  maplibregl.setWorkerUrl('/assets/vendor/maplibre/maplibre-gl-csp-worker.js');
+  var tileUrls = d.tiles.indexOf('{s}') < 0 ? [d.tiles.replace('{r}', '')]
+    : ['a', 'b', 'c'].map(function (x) { return d.tiles.replace('{s}', x).replace('{r}', ''); });
+  var lngLats = line.map(function (p) { return [p[1], p[0]]; });
+  var bounds = lngLats.reduce(function (b, c) {
+    return [[Math.min(b[0][0], c[0]), Math.min(b[0][1], c[1])], [Math.max(b[1][0], c[0]), Math.max(b[1][1], c[1])]];
+  }, [[180, 90], [-180, -90]]);
+  var map = new maplibregl.Map({
+    container: 'ride-map',
+    style: { version: 8, sources: { tiles: { type: 'raster', tiles: tileUrls, tileSize: 256, maxzoom: 19, attribution: d.attribution } },
+             layers: [{ id: 'tiles', type: 'raster', source: 'tiles' }] },
+    bounds: bounds, fitBoundsOptions: { padding: 50 }, maxPitch: 65, attributionControl: { compact: true }
+  });
+  var ready = false;
+  map.on('load', function () {
+    var round = { 'line-cap': 'round', 'line-join': 'round' };
+    map.addSource('route', { type: 'geojson', data: gj });
+    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: round, paint: { 'line-color': '#14263F', 'line-width': 12, 'line-opacity': 0.3 } });
+    map.addLayer({ id: 'route', type: 'line', source: 'route', layout: round, filter: ['!=', ['get', 'freehand'], true],
+                   paint: { 'line-color': '#2F5E8C', 'line-width': 8 } });
+    map.addLayer({ id: 'route-free', type: 'line', source: 'route', filter: ['==', ['get', 'freehand'], true],
+                   paint: { 'line-color': '#A3261B', 'line-width': 8, 'line-dasharray': [1.2, 1.2] } });
+    map.addSource('done', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } } });
+    map.addLayer({ id: 'done', type: 'line', source: 'done', layout: round, paint: { 'line-color': '#8A96A8', 'line-width': 8 } });
+    ready = true;
+  });
 
-  function riderIcon(heading) {
-    // The bull faces right (east); heading west it is mirrored instead of standing on its head
-    var west = heading > 180;
-    var rot = west ? heading + 90 : heading - 90;
-    return L.divIcon({ className: '', iconSize: [54, 54], iconAnchor: [27, 40],
-      html: '<div class="ride-rider" style="transform: rotate(' + rot.toFixed(0) + 'deg)' + (west ? ' scaleX(-1)' : '') + '">'
-          + '<img src="/assets/img/scooter-bull.svg" alt=""></div>' });
+  // Planned stops as small pins
+  try {
+    JSON.parse(d.stops || '[]').forEach(function (st) {
+      var e = document.createElement('div');
+      e.className = 'poi-pin poi-' + st.type;
+      e.textContent = { charge: '⚡', food: '🍽', break: '☕', sight: '👁' }[st.type] || '•';
+      e.title = st.name;
+      new maplibregl.Marker({ element: e }).setLngLat([st.lng, st.lat]).addTo(map);
+    });
+  } catch (e) { /* no stops */ }
+
+  // The rider: the bull faces east in the picture; heading west it is mirrored instead of standing on its head
+  var riderEl = document.createElement('div');
+  riderEl.className = 'ride-rider';
+  riderEl.innerHTML = '<img src="/assets/img/scooter-bull.svg" alt="">';
+  var rider = null;
+  // With the map turned the track always runs up the screen, so the bull (a side view) simply stands upright;
+  // north up, it turns with the riding direction.
+  function placeRider(pos, heading) {
+    if (!rider) rider = new maplibregl.Marker({ element: riderEl, rotationAlignment: 'viewport', pitchAlignment: 'viewport' }).setLngLat([pos[1], pos[0]]).addTo(map);
+    rider.setLngLat([pos[1], pos[0]]);
+    var west = view === 'north' && heading > 180;
+    rider.setRotation(view !== 'north' ? 0 : west ? heading + 90 : heading - 90);
+    riderEl.classList.toggle('west', west);
   }
+
+  // Views: north up, in riding direction, 3D (tilted, riding direction). The rider sits in the lower third when it turns.
+  var VIEWS = ['heading', '3d', 'north'];
+  var view = 'heading';
+  try { if (VIEWS.indexOf(localStorage.getItem('eltouro.view')) >= 0) view = localStorage.getItem('eltouro.view'); } catch (e) { /* ignore */ }
+  var follow = true;
+  ['dragstart', 'rotatestart', 'pitchstart'].forEach(function (ev) {
+    map.on(ev, function (e) { if (e.originalEvent) follow = false; });   // only the rider's own gestures, not our camera moves
+  });
+  function camera(pos, heading, instant) {
+    if (!follow) return;
+    var h = el.clientHeight;
+    var opts = { center: [pos[1], pos[0]], duration: instant ? 0 : (SIM ? 240 : 900), easing: function (t) { return t; }, essential: true };
+    if (view === 'north') {
+      opts.bearing = 0; opts.pitch = 0; opts.zoom = Math.max(map.getZoom(), 16);
+      opts.padding = { top: 0, bottom: ((document.querySelector('.ride-panel') || {}).offsetHeight || 0), left: 0, right: 0 };
+    } else {
+      opts.bearing = heading; opts.pitch = view === '3d' ? 60 : 0;
+      opts.zoom = view === '3d' ? 17.5 : Math.max(map.getZoom(), 16.5);
+      // keep the rider above the control panel, in the lower part of the free map area
+      var panel = (document.querySelector('.ride-panel') || {}).offsetHeight || 0;
+      opts.padding = { top: Math.round(h * (view === '3d' ? 0.32 : 0.25)), bottom: panel + 20, left: 0, right: 0 };
+    }
+    map.easeTo(opts);
+  }
+  var lastPos = null, lastHeading = 0;
 
   // ---------------------------------------------------------------- UI helpers
   var ui = {
@@ -119,7 +178,7 @@
     remaining: document.getElementById('ride-remaining'), eta: document.getElementById('ride-eta'), speed: document.getElementById('ride-speed'),
     subtitle: document.getElementById('ride-subtitle'), start: document.getElementById('ride-start'), stop: document.getElementById('ride-stop'),
     voice: document.getElementById('ride-voice'), follow: document.getElementById('ride-follow'), record: document.getElementById('ride-record'),
-    factor: document.getElementById('ride-factor'), done: document.getElementById('ride-done')
+    factor: document.getElementById('ride-factor'), done: document.getElementById('ride-done'), view: document.getElementById('ride-view')
   };
   function fmt(x, digits) { return x.toLocaleString(LOCALE, { minimumFractionDigits: digits, maximumFractionDigits: digits }); }
   function spokenDistance(m) {
@@ -195,12 +254,17 @@
       state.along = m.along; state.seg = m.seg;
     }
 
-    var heading = bearing(pointAt(state.along), pointAt(state.along + 15));
+    // Off the track the GPS heading (if the device has one) is better than the track's direction
+    var heading = state.offRoute && fix.heading != null && !isNaN(fix.heading) ? fix.heading : bearing(pointAt(state.along), pointAt(state.along + 15));
     var shown = state.offRoute ? p : pointAt(state.along);
-    if (!rider) rider = L.marker(shown, { icon: riderIcon(heading), interactive: false, zIndexOffset: 1000 }).addTo(map);
-    else { rider.setLatLng(shown); rider.setIcon(riderIcon(heading)); }
-    doneLine.setLatLngs(line.slice(0, state.seg + 1).concat([pointAt(state.along)]));
-    if (follow) map.setView(shown, Math.max(map.getZoom(), 16), { animate: false });
+    placeRider(shown, heading);
+    if (ready) {
+      var here = pointAt(state.along);
+      map.getSource('done').setData({ type: 'Feature', properties: {},
+        geometry: { type: 'LineString', coordinates: lngLats.slice(0, state.seg + 1).concat([[here[1], here[0]]]) } });
+    }
+    camera(shown, heading, false);
+    lastPos = shown; lastHeading = heading;
 
     var speedMs = fix.speedMs != null ? fix.speedMs : CRUISE_KMH / 3.6;
     guide(speedMs, fix);
@@ -294,7 +358,8 @@
     ui.text.textContent = T.gps_wait;
     watchId = navigator.geolocation.watchPosition(function (pos) {
       var c = pos.coords;
-      onFix({ lat: c.latitude, lng: c.longitude, acc: c.accuracy, speedMs: c.speed != null && !isNaN(c.speed) ? c.speed : null, t: pos.timestamp || Date.now() });
+      onFix({ lat: c.latitude, lng: c.longitude, acc: c.accuracy, speedMs: c.speed != null && !isNaN(c.speed) ? c.speed : null,
+              heading: c.heading, t: pos.timestamp || Date.now() });
     }, function (err) {
       ui.text.textContent = err.code === 1 ? T.gps_denied : T.gps_error;
     }, { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 });
@@ -378,7 +443,21 @@
   });
   ui.follow.addEventListener('click', function () {
     follow = true;
-    if (rider) map.setView(rider.getLatLng(), Math.max(map.getZoom(), 16));
+    if (lastPos) camera(lastPos, lastHeading, false);
+  });
+  function showView() {
+    ui.view.textContent = { heading: '➤', '3d': '3D', north: 'N' }[view];
+    ui.view.title = T['view_' + view];
+    ui.view.setAttribute('aria-label', T['view_' + view]);
+  }
+  showView();
+  ui.view.addEventListener('click', function () {
+    view = VIEWS[(VIEWS.indexOf(view) + 1) % VIEWS.length];
+    try { localStorage.setItem('eltouro.view', view); } catch (e) { /* ignore */ }
+    showView();
+    follow = true;
+    if (lastPos) camera(lastPos, lastHeading, false);
+    else map.easeTo({ pitch: view === '3d' ? 60 : 0, bearing: 0 });
   });
 
   function finish(arrived) {

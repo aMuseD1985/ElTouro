@@ -282,7 +282,7 @@ details summary { cursor: pointer; }
 
 /* Ride mode: full screen over the page – map, next manoeuvre on top, figures and controls at the bottom */
 .ride-mode { position: fixed; inset: 0; z-index: 3000; background: var(--night); color: #fff; }
-.ride-map { position: absolute; inset: 0; }
+.ride-mode .ride-map { position: absolute; inset: 0; }   /* beats maplibregl-map { position: relative } */
 .ride-banner { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 10px; right: 10px; z-index: 1000; display: flex; gap: .8rem;
   align-items: center; padding: .7rem .9rem; border-radius: 14px; background: rgba(20, 38, 63, .94); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
 .ride-arrow { flex: none; width: 64px; height: 64px; border-radius: 12px; background: var(--gold); color: var(--night); display: flex; align-items: center; justify-content: center; }
@@ -301,8 +301,10 @@ details summary { cursor: pointer; }
 .ride-controls .secondary-submit { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .ride-controls label { display: flex; align-items: center; gap: .4rem; color: #fff; }
 .ride-hint { margin: .5rem 0 0; font-size: .85rem; color: #B9C3D1; }
-.ride-rider { width: 54px; height: 54px; transform-origin: 50% 74%; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5)); }
-.ride-rider img { width: 100%; height: 100%; }
+.ride-rider { width: 58px; height: 58px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5)); }
+.ride-rider img { width: 100%; height: 100%; display: block; }
+.ride-rider.west img { transform: scaleX(-1); }
+.ride-map .maplibregl-ctrl-attrib { font-size: 10px; }
 .ride-done { position: absolute; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; background: rgba(20, 38, 63, .8); padding: 1rem; }
 .ride-done-box { max-width: 26rem; padding: 1.4rem; border-radius: 16px; background: #fff; color: var(--night); text-align: center; }
 .ride-panel .btn.secondary, .ride-panel .secondary-submit { background: var(--chalk); color: var(--night); border-color: var(--chalk); }
