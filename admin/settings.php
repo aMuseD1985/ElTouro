@@ -21,7 +21,7 @@ if (isPost()) {
         dbExec('INSERT INTO settings (k, v) VALUES (?, ?) ON DUPLICATE KEY UPDATE v = VALUES(v)', [$k, $v]);
     }
     flash('Gespeichert.');
-    redirect('/admin/settings.php');
+    redirect('/admin/settings');
 }
 
 pageHeader('Einstellungen');

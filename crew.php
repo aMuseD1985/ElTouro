@@ -14,7 +14,7 @@ if ($crew === null || !canSeeCrew($crew, $m, $code)) {
     notFound();
 }
 $gid = (int)$crew['id'];
-$self = '/crew.php?s=' . rawurlencode($crew['slug']);
+$self = '/crew/' . rawurlencode($crew['slug']);
 
 if (isPost()) {
     checkCsrf();
@@ -37,7 +37,7 @@ if (isPost()) {
                 }
                 dbExec('DELETE FROM group_members WHERE group_id = ? AND user_id = ?', [$gid, $uid]);
                 flash(t('crew.left'));
-                redirect($crew['discoverability'] === 'secret' ? '/crews.php' : $self);
+                redirect($crew['discoverability'] === 'secret' ? '/crews' : $self);
             }
             break;
 
@@ -76,7 +76,7 @@ if (isPost()) {
             }
             break;
     }
-    redirect($self . ($code !== null && $m === null ? '&code=' . rawurlencode($code) : ''));
+    redirect($self . ($code !== null && $m === null ? '?code=' . rawurlencode($code) : ''));
 }
 
 $isMember = isActiveMember($m);
@@ -115,10 +115,10 @@ pageHeader($crew['name']);
 <section class="talk-teaser">
   <div class="title-row">
     <h2><?= te('talk.title') ?><?php if ($unread > 0): ?> <span class="tt-new"><?= te('talk.n_new', ['n' => $unread]) ?></span><?php endif; ?></h2>
-    <a class="btn" href="/talk.php?s=<?= e(rawurlencode($crew['slug'])) ?>"><?= te('talk.open') ?></a>
+    <a class="btn" href="/crew/<?= e(rawurlencode($crew['slug'])) ?>/talk"><?= te('talk.open') ?></a>
   </div>
   <?php if ($latest): ?><ul class="list"><?php foreach ($latest as $lt): ?>
-    <li><a href="/talk_topic.php?id=<?= (int)$lt['id'] ?>"><?= e($lt['title']) ?></a> <span class="muted">· <?= e(relativeTime($lt['last_post_at'])) ?></span></li>
+    <li><a href="/talk/<?= (int)$lt['id'] ?>"><?= e($lt['title']) ?></a> <span class="muted">· <?= e(relativeTime($lt['last_post_at'])) ?></span></li>
   <?php endforeach; ?></ul>
   <?php else: ?><p class="muted"><?= te('talk.empty') ?></p><?php endif; ?>
 </section>
@@ -130,7 +130,7 @@ pageHeader($crew['name']);
 <section>
   <div class="title-row">
     <h2><?= te('crew.rides') ?></h2>
-    <a class="btn secondary" href="/ride_edit.php"><?= te('ride.new') ?></a>
+    <a class="btn secondary" href="/ride/new"><?= te('ride.new') ?></a>
   </div>
   <?php rideCards($crewRides, 'crew.no_rides'); ?>
 </section>
@@ -142,9 +142,9 @@ pageHeader($crew['name']);
     require_once __DIR__ . '/tours_lib.php';
     $tours = dbAll("SELECT id, title, distance_m FROM tours WHERE owner_group_id = ? AND visibility IN ('group','public') AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 20", [$gid]); ?>
     <ul class="list">
-      <?php foreach ($tours as $tr): ?><li><a href="/tour.php?id=<?= (int)$tr['id'] ?>"><?= e($tr['title']) ?></a> <span class="muted">· <?= e(formatKm((int)$tr['distance_m'])) ?></span></li><?php endforeach; ?>
+      <?php foreach ($tours as $tr): ?><li><a href="/tour/<?= (int)$tr['id'] ?>"><?= e($tr['title']) ?></a> <span class="muted">· <?= e(formatKm((int)$tr['distance_m'])) ?></span></li><?php endforeach; ?>
     </ul>
-    <p><a class="btn secondary" href="/tour_plan.php?crew=<?= $gid ?>"><?= te('crew.tour_new') ?></a></p>
+    <p><a class="btn secondary" href="/tour/plan?crew=<?= $gid ?>"><?= te('crew.tour_new') ?></a></p>
   <?php else: ?>
     <p class="muted"><?= te('crew.members_only') ?></p>
   <?php endif; ?>

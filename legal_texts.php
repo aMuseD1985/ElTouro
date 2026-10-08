@@ -98,6 +98,8 @@ Zur Bestätigung deiner E-Mail-Adresse und zum Zurücksetzen des Passworts schic
 
 Zum Schutz vor Angriffen speichern wir fehlgeschlagene Anmeldeversuche mit IP-Adresse für höchstens 24 Stunden (Art. 6 Abs. 1 lit. f DSGVO).
 
+**Anmeldung mit Google:** Wenn du „Mit Google anmelden“ wählst, leiten wir dich zu Google weiter (Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Irland). Nach deiner Zustimmung dort übermittelt Google uns deine Google-Konto-Kennung, deine E-Mail-Adresse, ob sie bestätigt ist, und deinen Namen, den wir nur als Vorschlag für deinen Anzeigenamen verwenden. Wir speichern die Konto-Kennung und die E-Mail-Adresse, um dich bei der nächsten Anmeldung wiederzuerkennen; ein Passwort erhalten wir von Google nicht. Google kann dabei Daten in die USA übermitteln; Google ist nach dem EU-US Data Privacy Framework zertifiziert. Rechtsgrundlage ist der Nutzungsvertrag (Art. 6 Abs. 1 lit. b DSGVO). Die Anmeldung mit Google ist freiwillig, E-Mail-Adresse und Passwort funktionieren genauso.
+
 Deine Kontodaten speichern wir, solange dein Konto besteht. Wenn du dein Konto löschen möchtest, schreib uns an {{operator_email}}; wir löschen es innerhalb von 30 Tagen. Beiträge in Foren und Herden werden dabei anonymisiert oder gelöscht.
 
 ## 5. Was andere Nutzer von dir sehen
@@ -112,6 +114,8 @@ Andere angemeldete Nutzer sehen deinen Anzeigenamen sowie die Inhalte, die du se
 ## 6. Touren und Standortdaten
 
 Eine Tour besteht aus den Wegpunkten, die du auf der Karte setzt, und der daraus berechneten Strecke. Wir speichern sie, damit du sie wiederfindest und teilen kannst (Art. 6 Abs. 1 lit. b DSGVO). Achte darauf, dass Start und Ziel öffentlicher Touren nicht direkt vor deiner Haustür liegen.
+
+**Touren teilen:** Du kannst für eine Tour einen Link erzeugen, auch wenn sie sonst privat ist. Wer den Link kennt, sieht ohne Anmeldung den Namen der Tour, Länge, Anstieg, Schwierigkeit, Fahrstil und die Strecke ohne die ersten und letzten 300 Meter. Wer die Tour erstellt hat, zu welcher Herde sie gehört und ihre Beschreibung sind nicht zu sehen. Du kannst den Link jederzeit deaktivieren, danach ist die Seite nicht mehr erreichbar. Die Schaltflächen für WhatsApp, Telegram, Facebook, X und E-Mail sind einfache Links: Erst wenn du darauf klickst, öffnet sich der jeweilige Dienst mit dem Link; vorher werden keine Daten übertragen. Für die Vorschau ruft der Dienst, bei dem du teilst, die geteilte Seite und ein Vorschaubild der Strecke bei uns ab.
 
 Die Schaltfläche „Mein Standort“ fragt deinen Standort über deinen Browser ab, und nur nach deiner Zustimmung im Browser. Der Standort wird ausschließlich dazu genutzt, die Karte zu verschieben. Er wird nicht an uns übertragen und nicht gespeichert.
 
@@ -185,6 +189,8 @@ For sign-up we process your email address, display name, date of birth, password
 
 We send emails with one-time links to confirm your address and reset your password, via our host’s mail server. Only a check value is stored in our database, not the link itself. Failed login attempts are stored with the IP address for at most 24 hours to prevent attacks (Art. 6(1)(f) GDPR).
 
+**Sign in with Google:** If you choose “Sign in with Google”, we redirect you to Google (Google Ireland Limited, Gordon House, Barrow Street, Dublin 4, Ireland). After you agree there, Google sends us your Google account ID, your email address, whether it is verified, and your name, which we only use as a suggestion for your display name. We store the account ID and email address to recognise you next time; we never receive a password from Google. Google may transfer data to the USA; Google is certified under the EU-US Data Privacy Framework. Legal basis: the user agreement (Art. 6(1)(b) GDPR). Signing in with Google is optional; email and password work just the same.
+
 We keep your account data as long as your account exists. To delete your account, email {{operator_email}}; we’ll delete it within 30 days, and your forum and crew posts will be anonymised or deleted.
 
 ## 5. What other users see
@@ -194,6 +200,8 @@ Other logged-in users see your display name and the content you publish. Crew me
 ## 6. Routes and location
 
 A route consists of the waypoints you set on the map and the calculated track. We store it so you can find and share it (Art. 6(1)(b) GDPR). Make sure start and finish of public routes aren’t right outside your front door. The “My location” button asks your browser for your location, only with your consent, and only uses it to move the map. It is not sent to us or stored.
+
+**Sharing routes:** You can create a link for a route, even if it is otherwise private. Anyone with the link can see, without logging in, the route’s name, length, climb, difficulty, riding style and the track without its first and last 300 metres. Who created it, which crew it belongs to and its description are not shown. You can deactivate the link at any time; the page is then gone. The buttons for WhatsApp, Telegram, Facebook, X and email are plain links: only when you click one does that service open with the link – nothing is transmitted before. For the preview, the service you share on fetches the shared page and a preview image of the track from us.
 
 ## 7. Rides
 
@@ -273,7 +281,7 @@ Für deine Inhalte bist du selbst verantwortlich. Nicht erlaubt sind insbesonder
 - Werbung oder Spam sind, oder
 - personenbezogene Daten anderer ohne deren Einverständnis enthalten.
 
-Du räumst uns das einfache, unentgeltliche Recht ein, deine Inhalte auf ElTouro im Rahmen der von dir gewählten Sichtbarkeit anzuzeigen und dafür technisch zu verarbeiten. Das Recht endet, wenn du den Inhalt löschst; Kopien in Sicherungen werden mit dem regulären Löschzyklus entfernt.
+Wenn du eine Tour per Link teilst, kann sie jeder sehen, der den Link hat – auch ohne ElTouro-Konto. Du räumst uns das einfache, unentgeltliche Recht ein, deine Inhalte auf ElTouro im Rahmen der von dir gewählten Sichtbarkeit anzuzeigen und dafür technisch zu verarbeiten. Das Recht endet, wenn du den Inhalt löschst; Kopien in Sicherungen werden mit dem regulären Löschzyklus entfernt.
 
 ## 6. Melden und Moderation
 
@@ -316,7 +324,7 @@ You agree to ride in public only with a road-legal, insured e-scooter, to follow
 
 ## 5. What you publish
 
-You are responsible for your content. Not allowed: illegal content or content infringing others’ rights, insults, threats, hate or discrimination, instructions for dangerous or prohibited behaviour on the road, advertising or spam, and personal data of others without consent. You grant us a simple, free right to display and technically process your content on ElTouro within the visibility you choose, ending when you delete it.
+You are responsible for your content. Not allowed: illegal content or content infringing others’ rights, insults, threats, hate or discrimination, instructions for dangerous or prohibited behaviour on the road, advertising or spam, and personal data of others without consent. If you share a route via link, anyone with the link can see it, even without an ElTouro account. You grant us a simple, free right to display and technically process your content on ElTouro within the visibility you choose, ending when you delete it.
 
 ## 6. Reporting and moderation
 

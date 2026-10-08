@@ -21,7 +21,7 @@ function tourList(array $list): void
     if (!$list) { echo '<p class="muted">' . te('tours.none') . '</p>'; return; }
     echo '<ul class="cards">';
     foreach ($list as $t) {
-        echo '<li class="card"><h3><a href="/tour.php?id=' . (int)$t['id'] . '">' . e($t['title']) . '</a></h3>'
+        echo '<li class="card"><h3><a href="/tour/' . (int)$t['id'] . '">' . e($t['title']) . '</a></h3>'
            . '<p class="muted">' . e(formatKm((int)$t['distance_m'])) . ' · ' . te('tour.d_' . $t['difficulty']) . ' · ' . te('tour.s_' . $t['style']) . '</p>'
            . '<p class="muted">' . te('tour.by', ['name' => $t['creator']]) . ($t['crew_name'] ? ' · ' . e($t['crew_name']) : '') . '</p></li>';
     }
@@ -32,7 +32,7 @@ pageHeader(t('tours.title'));
 ?>
 <div class="title-row">
   <h1><?= te('tours.title') ?></h1>
-  <a class="btn" href="/tour_plan.php"><?= te('tour.new') ?></a>
+  <a class="btn" href="/tour/plan"><?= te('tour.new') ?></a>
 </div>
 <h2><?= te('tours.mine') ?></h2><?php tourList($mine); ?>
 <h2><?= te('tours.crews') ?></h2><?php tourList($crews); ?>

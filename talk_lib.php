@@ -98,7 +98,7 @@ function renderTalkPost(array $p, int $userId, bool $moderator): string
     $h .= '<button type="button" class="tb-btn tb-like' . ($p['i_like'] ? ' active' : '') . '" data-action="like" aria-pressed="' . ($p['i_like'] ? 'true' : 'false') . '" aria-label="' . te('talk.like') . '">'
         . '<span aria-hidden="true">♥</span> <span class="tb-count">' . ((int)$p['like_count'] ?: '') . '</span></button>';
     $h .= '<button type="button" class="tb-btn" data-action="reply" data-name="' . e($name) . '">' . te('talk.reply') . '</button>';
-    $h .= '<a class="tb-btn" href="/report.php?type=herdpost&amp;id=' . $id . '">' . te('report.link') . '</a>';
+    $h .= '<a class="tb-btn" href="/report?type=herdpost&amp;id=' . $id . '">' . te('report.link') . '</a>';
     if ((int)$p['user_id'] === $userId || $moderator) {
         $h .= '<button type="button" class="tb-btn danger" data-action="delete">' . te('talk.delete') . '</button>';
     }
@@ -132,7 +132,7 @@ function renderTalkTopicRow(array $t): string
 {
     $new = $t['last_read_post_id'] === null;
     $h = '<li class="tt' . ((int)$t['unread'] > 0 ? ' tt-unread' : '') . '">';
-    $h .= '<div class="tt-title"><a href="/talk_topic.php?id=' . (int)$t['id'] . '">' . e($t['title']) . '</a>';
+    $h .= '<div class="tt-title"><a href="/talk/' . (int)$t['id'] . '">' . e($t['title']) . '</a>';
     if ($t['is_pinned']) $h .= ' <span class="badge">' . te('forum.pinned') . '</span>';
     if ($t['is_locked']) $h .= ' <span class="badge muted">' . te('forum.locked') . '</span>';
     if ((int)$t['unread'] > 0) {

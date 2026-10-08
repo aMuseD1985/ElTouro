@@ -59,3 +59,32 @@ function mailHtml(string $text): string
          . preg_replace('~(https?://[^\s<]+)~', '<a href="$1" style="color:#2F5E8C">$1</a>', nl2br(e($text)))
          . '</div>';
 }
+
+/** Error text for an invalid or taken display name, or null if it is fine. */
+function displayNameError(string $name): ?string
+{
+    if (!preg_match('/^[\p{L}\p{N}._-]{3,30}$/u', $name)) {
+        return t('register.error_name');
+    }
+    return dbOne('SELECT id FROM users WHERE display_name = ?', [$name]) ? t('register.error_name_taken') : null;
+}
+
+/** Date of birth (Y-m-d) if the rider is old enough (MIN_AGE), otherwise null. */
+function validBirthDate(string $value): ?DateTimeImmutable
+{
+    $birth = DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+    if (!$birth || $birth > new DateTimeImmutable('-' . MIN_AGE . ' years') || $birth < new DateTimeImmutable('-110 years')) {
+        return null;
+    }
+    return $birth;
+}
+
+/** The address configured as first_admin becomes platform admin once it is confirmed (by mail or by Google). */
+function promoteFirstAdmin(int $userId): void
+{
+    global $CONFIG;
+    $u = dbOne('SELECT email FROM users WHERE id = ? AND email_verified_at IS NOT NULL', [$userId]);
+    if ($u && ($CONFIG['first_admin'] ?? '') !== '' && strcasecmp($u['email'], (string)$CONFIG['first_admin']) === 0) {
+        dbExec('UPDATE users SET is_admin = 1 WHERE id = ?', [$userId]);
+    }
+}

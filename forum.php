@@ -15,7 +15,7 @@ pageHeader(t('forum.title'));
 <ul class="forum-list">
 <?php foreach ($categories as $c): ?>
   <li>
-    <div><h2 class="h3"><a href="/forum_category.php?c=<?= e(rawurlencode($c['slug'])) ?>"><?= e(categoryName($c)) ?></a></h2>
+    <div><h2 class="h3"><a href="/forum/<?= e(rawurlencode($c['slug'])) ?>"><?= e(categoryName($c)) ?></a></h2>
       <p class="muted"><?= e(categoryDescription($c)) ?></p></div>
     <div class="count"><?= te('forum.topics', ['n' => (int)$c['topics']]) ?>
       <?php if ($c['latest']): ?><br><span class="muted"><?= e(formatDateTime($c['latest'])) ?></span><?php endif; ?></div>

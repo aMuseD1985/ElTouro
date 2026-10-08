@@ -19,7 +19,7 @@ if (isPost()) {
         };
         flash('Gespeichert.');
     }
-    redirect('/admin/users.php' . (isset($_GET['q']) ? '?q=' . rawurlencode((string)$_GET['q']) : ''));
+    redirect('/admin/users' . (isset($_GET['q']) ? '?q=' . rawurlencode((string)$_GET['q']) : ''));
 }
 
 $q = mb_substr(trim((string)($_GET['q'] ?? '')), 0, 100);

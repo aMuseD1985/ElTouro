@@ -212,3 +212,21 @@ details summary { cursor: pointer; }
 .d-minus { background: #FBEAE8; } .d-minus td:last-child span { color: var(--error); }
 .d-gap td { background: var(--chalk); color: var(--muted); text-align: center; }
 @media (max-width: 640px) { .file-list ul { columns: 1; } }
+
+/* ---- Sign in with Google (Google branding: white, grey border, coloured "G") ---- */
+.google-login { margin: 0 0 .5rem; }
+.btn-google { display: inline-flex; align-items: center; gap: .75rem; min-height: 48px; padding: .6rem 1.2rem; background: #fff; color: #1F1F1F;
+  border: 1px solid #747775; border-radius: 8px; font-family: "Roboto", var(--body); font-weight: 600; font-size: 1rem; text-decoration: none; }
+.btn-google:hover { background: #F7F8F8; color: #1F1F1F; }
+.or-line { display: flex; align-items: center; gap: .75rem; color: var(--muted); font-size: .92rem; margin: .5rem 0 1rem; max-width: 34rem; }
+.or-line::before, .or-line::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+/* ---- Sharing ---- */
+.share-link { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin: 1rem 0 .5rem; }
+.share-link .copy-field { flex: 1 1 18rem; }
+.share-targets { list-style: none; padding: 0; margin: .5rem 0 1rem; display: flex; flex-wrap: wrap; gap: .5rem; }
+.share-targets a { display: inline-flex; align-items: center; min-height: 40px; padding: .35rem .9rem; border: 2px solid var(--night); border-radius: 999px;
+  text-decoration: none; font-weight: 600; color: var(--night); }
+.share-targets a:hover { background: var(--night); color: #fff; }
+.share-kicker { margin: 0; font-weight: 600; color: var(--denim); text-transform: uppercase; letter-spacing: .06em; font-size: .85rem; }
+.share-cta h2:first-child { margin-top: 0; }

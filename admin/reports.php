@@ -25,7 +25,7 @@ if (isPost()) {
             [$decision ?: '–', $me['id'], $r['id']]);
         flash('Meldung abgeschlossen.');
     }
-    redirect('/admin/reports.php');
+    redirect('/admin/reports');
 }
 
 /** Link and preview of the reported content */
@@ -35,10 +35,10 @@ function reportTarget(array $r): array
     return match ($r['target_type']) {
         'post'   => (function () use ($r, $gone) {
             $p = dbOne('SELECT p.body, p.thread_id, u.display_name FROM forum_posts p JOIN users u ON u.id = p.user_id WHERE p.id = ?', [$r['target_id']]);
-            return $p ? ['/forum_topic.php?t=' . $p['thread_id'] . '#b' . $r['target_id'], $p['display_name'] . ': ' . mb_strimwidth($p['body'], 0, 200, '…')] : ['', $gone];
+            return $p ? ['/forum/topic/' . $p['thread_id'] . '#b' . $r['target_id'], $p['display_name'] . ': ' . mb_strimwidth($p['body'], 0, 200, '…')] : ['', $gone];
         })(),
-        'tour'   => ['/tour.php?id=' . $r['target_id'], (string)(dbOne('SELECT title FROM tours WHERE id = ?', [$r['target_id']])['title'] ?? $gone)],
-        'thread' => ['/forum_topic.php?t=' . $r['target_id'], (string)(dbOne('SELECT title FROM forum_threads WHERE id = ?', [$r['target_id']])['title'] ?? '')],
+        'tour'   => ['/tour/' . $r['target_id'], (string)(dbOne('SELECT title FROM tours WHERE id = ?', [$r['target_id']])['title'] ?? $gone)],
+        'thread' => ['/forum/topic/' . $r['target_id'], (string)(dbOne('SELECT title FROM forum_threads WHERE id = ?', [$r['target_id']])['title'] ?? '')],
         'group'  => ['', (string)(dbOne('SELECT name FROM rider_groups WHERE id = ?', [$r['target_id']])['name'] ?? '')],
         'user'   => ['', (string)(dbOne('SELECT display_name FROM users WHERE id = ?', [$r['target_id']])['display_name'] ?? '')],
         'herdpost' => (function () use ($r, $gone) {
@@ -52,7 +52,7 @@ function reportTarget(array $r): array
             if (!$x) return ['', $gone];
             // Crew-only rides are shown as text like crew talk; public ones can be opened
             $text = $x['display_name'] . ': ' . $x['title'] . ($x['description'] ? ' – ' . mb_strimwidth($x['description'], 0, 250, '…') : '');
-            return [$x['visibility'] === 'public' ? '/ride.php?id=' . $r['target_id'] : '', $text];
+            return [$x['visibility'] === 'public' ? '/ride/' . $r['target_id'] : '', $text];
         })(),
         default  => ['', $gone],
     };

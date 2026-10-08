@@ -1,8 +1,9 @@
 # ElTouro App (beta/test/live)
 Options -Indexes
+DirectoryIndex index.php
 
 # Libraries, includes and docs are never served directly
-<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|rides_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
+<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|rides_lib\.php|share_lib\.php|google_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
     Require all denied
 </FilesMatch>
 <FilesMatch "^_">
@@ -14,44 +15,62 @@ RewriteEngine On
 # Runtime data, vendored libraries and CI configuration: no access from the browser
 RewriteRule ^(data|daten|lib|\.github)(/|$) - [F,L]
 
-# Clean addresses for content pages
+# Any .php address requested from outside (old German pages, links in mails sent before the clean
+# URLs) goes to legacy.php, which redirects permanently to the clean URL. THE_REQUEST is the original
+# request line, so the internal rewrites below never land here.
+RewriteCond %{THE_REQUEST} \s/[^\s?]*\.php[\s?]
+RewriteRule ^ legacy.php [L]
+RewriteRule ^(impressum|datenschutz|nutzungsbedingungen|seite/.*)$ legacy.php [L]
+RewriteRule ^assets/(planer|tourkarte|traenke)\.js$ - [G,L]
+
+# ---- Clean URLs (internal rewrites; query strings are kept) ----
+RewriteRule ^access/?$ access.php [L,QSA]
+RewriteRule ^login/?$ login.php [L,QSA]
+RewriteRule ^logout/?$ logout.php [L,QSA]
+RewriteRule ^register/?$ register.php [L,QSA]
+RewriteRule ^register/google/?$ register_google.php [L,QSA]
+RewriteRule ^verify/?$ verify.php [L,QSA]
+RewriteRule ^password/forgot/?$ password_forgot.php [L,QSA]
+RewriteRule ^password/reset/?$ password_reset.php [L,QSA]
+RewriteRule ^profile/?$ profile.php [L,QSA]
+RewriteRule ^auth/google/?$ auth_google.php [L,QSA]
+RewriteRule ^auth/google/callback/?$ auth_google.php?callback=1 [L,QSA]
+
+RewriteRule ^crews/?$ crews.php [L,QSA]
+RewriteRule ^crews/new/?$ crew_new.php [L,QSA]
+RewriteRule ^crew/([a-z0-9-]+)/?$ crew.php?s=$1 [L,QSA]
+RewriteRule ^crew/([a-z0-9-]+)/talk/?$ talk.php?s=$1 [L,QSA]
+RewriteRule ^talk/([0-9]+)/?$ talk_topic.php?id=$1 [L,QSA]
+RewriteRule ^api/talk/?$ talk_api.php [L,QSA]
+
+RewriteRule ^tours/?$ tours.php [L,QSA]
+RewriteRule ^tour/plan/?$ tour_plan.php [L,QSA]
+RewriteRule ^tour/([0-9]+)/?$ tour.php?id=$1 [L,QSA]
+RewriteRule ^tour/([0-9]+)/edit/?$ tour_plan.php?id=$1 [L,QSA]
+RewriteRule ^tour/([0-9]+)/gpx/?$ tour_gpx.php?id=$1 [L,QSA]
+RewriteRule ^api/route/?$ route.php [L,QSA]
+RewriteRule ^s/([A-Za-z0-9_-]{24})/?$ share.php?token=$1 [L,QSA]
+RewriteRule ^s/([A-Za-z0-9_-]{24})/image\.png$ share.php?token=$1&image=1 [L,QSA]
+
+RewriteRule ^rides/?$ rides.php [L,QSA]
+RewriteRule ^ride/new/?$ ride_edit.php [L,QSA]
+RewriteRule ^ride/([0-9]+)/?$ ride.php?id=$1 [L,QSA]
+RewriteRule ^ride/([0-9]+)/edit/?$ ride_edit.php?id=$1 [L,QSA]
+
+RewriteRule ^forum/?$ forum.php [L,QSA]
+RewriteRule ^forum/topic/([0-9]+)/?$ forum_topic.php?t=$1 [L,QSA]
+RewriteRule ^forum/([a-z0-9-]+)/?$ forum_category.php?c=$1 [L,QSA]
+RewriteRule ^forum/([a-z0-9-]+)/new/?$ forum_new.php?c=$1 [L,QSA]
+
+RewriteRule ^report/?$ report.php [L,QSA]
 RewriteRule ^(imprint|privacy|terms)/?$ page.php?s=$1 [L,QSA]
 RewriteRule ^page/([a-z0-9-]+)/?$ page.php?s=$1 [L,QSA]
 
-# Addresses from before the English refactor (Oct 2026): links in mails already sent, invite links,
-# bookmarks. Permanent redirects; query strings are kept. They also make the old German files
-# that the FTP deployment leaves on the server unreachable.
-RewriteRule ^impressum/?$ /imprint [R=301,L]
-RewriteRule ^datenschutz/?$ /privacy [R=301,L]
-RewriteRule ^nutzungsbedingungen/?$ /terms [R=301,L]
-RewriteRule ^seite/([a-z0-9-]+)/?$ /page/$1 [R=301,L]
-RewriteRule ^seite\.php$ /page.php [R=301,L]
-RewriteRule ^zugang\.php$ /access.php [R=301,L]
-RewriteRule ^registrieren\.php$ /register.php [R=301,L]
-RewriteRule ^bestaetigen\.php$ /verify.php [R=301,L]
-RewriteRule ^passwort_vergessen\.php$ /password_forgot.php [R=301,L]
-RewriteRule ^passwort_neu\.php$ /password_reset.php [R=301,L]
-RewriteRule ^profil\.php$ /profile.php [R=301,L]
-RewriteRule ^herden\.php$ /crews.php [R=301,L]
-RewriteRule ^herde\.php$ /crew.php [R=301,L]
-RewriteRule ^herde_neu\.php$ /crew_new.php [R=301,L]
-RewriteRule ^touren\.php$ /tours.php [R=301,L]
-RewriteRule ^tour_planen\.php$ /tour_plan.php [R=301,L]
-RewriteRule ^forum_kategorie\.php$ /forum.php [R=301,L]
-RewriteRule ^forum_neu\.php$ /forum.php [R=301,L]
-RewriteRule ^forum_thema\.php$ /forum_topic.php [R=301,L]
-RewriteRule ^traenke\.php$ /talk.php [R=301,L]
-RewriteRule ^traenke_thema\.php$ /talk_topic.php [R=301,L]
-RewriteRule ^melden\.php$ /report.php [R=301,L]
-RewriteRule ^pruefen\.php$ /check.php [R=301,L]
-RewriteRule ^admin/seiten\.php$ /admin/pages.php [R=301,L]
-RewriteRule ^admin/einstellungen\.php$ /admin/settings.php [R=301,L]
-RewriteRule ^admin/nutzer\.php$ /admin/users.php [R=301,L]
-RewriteRule ^admin/meldungen\.php$ /admin/reports.php [R=301,L]
-RewriteRule ^admin/betrieb\.php$ /admin/ops.php [R=301,L]
-# Old internals and endpoints without a sensible target
-RewriteRule ^(kern|konto|herden_lib|touren_lib|traenke_lib|traenke_api|betrieb_lib|migrationen|rechtstexte|herde_formular)\.php$ - [F,L]
-RewriteRule ^assets/(planer|tourkarte|traenke)\.js$ - [G,L]
+RewriteRule ^admin/?$ admin/index.php [L,QSA]
+RewriteRule ^admin/(pages|settings|users|forum|reports|ops)/?$ admin/$1.php [L,QSA]
+
+RewriteRule ^migrate/?$ migrate.php [L,QSA]
+RewriteRule ^check/?$ check.php [L,QSA]
 
 # Enforcing HTTPS: please enable "SSL erzwingen" under SSL-Schutz in the KAS instead of here.
 # A rule of our own here can form an endless loop with the KAS setting.

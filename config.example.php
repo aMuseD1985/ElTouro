@@ -41,10 +41,17 @@ return [
         'debug'      => false,
     ],
 
+    // "Sign in with Google" – empty = button hidden. Google Cloud console → APIs & Services → Credentials →
+    // OAuth client ID (web application), authorised redirect URI: <base_url>/auth/google/callback
+    'google' => [
+        'client_id'     => '',
+        'client_secret' => '',
+    ],
+
     // Email address that automatically becomes platform admin on first confirmation
     'first_admin' => 'marco@example.de',
 
-    // Key for /migrate.php and /check.php – also used by the GitHub Action after a test deployment
+    // Key for /migrate and /check – also used by the GitHub Action after a test deployment
     'migrate_key' => '',
 
     // Operations tools in the admin area (deployment, backup, restore). Decide consciously for live.

@@ -26,7 +26,7 @@ if (isPost()) {
         dbExec('INSERT INTO forum_categories (slug, name_de, name_en, description_de, description_en, sort) VALUES (?, ?, ?, ?, ?, ?)', [$slug, ...$values]);
         flash('Kategorie angelegt.');
     }
-    redirect('/admin/forum.php');
+    redirect('/admin/forum');
 }
 
 $list = dbAll('SELECT c.*, (SELECT COUNT(*) FROM forum_threads t WHERE t.category_id = c.id) AS topics FROM forum_categories c ORDER BY sort, id');

@@ -13,14 +13,14 @@ if (isPost()) {
         try {
             $token = createToken((int)$u['id'], 'reset', 1);
             sendAccountMail($email, 'mail.reset_subject', 'mail.reset_text',
-                ['name' => $u['display_name'], 'link' => baseUrl() . '/password_reset.php?t=' . $token]);
+                ['name' => $u['display_name'], 'link' => baseUrl() . '/password/reset?t=' . $token]);
         } catch (Throwable $ex) {
             error_log('ElTouro reset: ' . $ex->getMessage());
         }
     }
     // Always the same answer
     flash(t('password.sent'));
-    redirect('/login.php');
+    redirect('/login');
 }
 
 pageHeader(t('password.title'));

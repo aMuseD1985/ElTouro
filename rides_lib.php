@@ -147,7 +147,7 @@ function rideCards(array $list, string $empty): void
         $free = max(0, (int)$r['capacity'] - (int)$r['confirmed']);
         echo '<li class="card ride-card' . ($r['status'] === 'cancelled' ? ' cancelled' : '') . '">'
            . '<p class="ride-when">' . e(formatRideTime($r['starts_at'])) . '</p>'
-           . '<h3><a href="/ride.php?id=' . (int)$r['id'] . '">' . e($r['title']) . '</a></h3>'
+           . '<h3><a href="/ride/' . (int)$r['id'] . '">' . e($r['title']) . '</a></h3>'
            . '<p class="muted">' . e($r['meeting_point']) . ' · ' . e(formatKm((int)$r['distance_m'])) . '</p>'
            . '<p class="muted">' . te('ride.by', ['name' => $r['organizer']]) . ($r['crew_name'] ? ' · ' . e($r['crew_name']) : ' · ' . te('ride.v_public')) . '</p><p>';
         if ($r['status'] === 'cancelled') {
@@ -322,7 +322,7 @@ function notifyRiders(array $ride, string $kind, ?array $userIds = null, int $ex
             'title'   => $ride['title'],
             'when'    => formatRideTime($ride['starts_at'], $u['locale']),
             'meeting' => $ride['meeting_point'],
-            'link'    => baseUrl() . '/ride.php?id=' . (int)$ride['id'],
+            'link'    => baseUrl() . '/ride/' . (int)$ride['id'],
         ]);
         try {
             sendMail($u['email'], tl($u['locale'], 'mail.ride_' . $kind . '_subject', ['title' => $ride['title']]), mailHtml($text), $text);
@@ -343,7 +343,7 @@ function rideAnnouncement(array $ride, array $tour): string
         'tour'     => $tour['title'],
         'km'       => formatKm((int)$tour['distance_m']),
         'capacity' => (int)$ride['capacity'],
-        'link'     => '/ride.php?id=' . (int)$ride['id'],
+        'link'     => '/ride/' . (int)$ride['id'],
     ]) . ($ride['description'] ? "\n\n" . $ride['description'] : '');
 }
 

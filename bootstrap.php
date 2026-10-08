@@ -61,6 +61,15 @@ function eltouroNormalizeConfig($c)
     if (!isset($c['first_admin']) && isset($c['erster_admin'])) {
         $c['first_admin'] = $c['erster_admin'];
     }
+    // Without a tile server the map stays grey – fall back to OSM (fine for beta/test, see config.example.php)
+    if (empty($c['map']['tiles'])) {
+        $c['map'] = array(
+            'tiles'       => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'attribution' => '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+        );
+    } elseif (empty($c['map']['attribution'])) {
+        $c['map']['attribution'] = '© Kartendaten: ' . htmlspecialchars((string)parse_url($c['map']['tiles'], PHP_URL_HOST), ENT_QUOTES, 'UTF-8');
+    }
     return $c;
 }
 $CONFIG = eltouroNormalizeConfig($CONFIG);

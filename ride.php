@@ -11,7 +11,7 @@ if ($ride === null || !canSeeRide($ride, $uid)) {
     notFound();
 }
 $rid = (int)$ride['id'];
-$self = '/ride.php?id=' . $rid;
+$self = '/ride/' . $rid;
 $isOrganizer = (int)$ride['organizer_user_id'] === $uid;
 $canManage = canManageRide($ride, $me);
 
@@ -68,10 +68,10 @@ $inCrew = $ride['group_id'] !== null && isActiveMember(membership((int)$ride['gr
 pageHeader($ride['title']);
 ?>
 <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
-<p class="breadcrumbs"><a href="/rides.php"><?= te('rides.title') ?></a> ›<?php if ($ride['crew_slug'] && $inCrew): ?> <a href="/crew.php?s=<?= e(rawurlencode($ride['crew_slug'])) ?>"><?= e($ride['crew_name']) ?></a> ›<?php endif; ?></p>
+<p class="breadcrumbs"><a href="/rides"><?= te('rides.title') ?></a> ›<?php if ($ride['crew_slug'] && $inCrew): ?> <a href="/crew/<?= e(rawurlencode($ride['crew_slug'])) ?>"><?= e($ride['crew_name']) ?></a> ›<?php endif; ?></p>
 <div class="title-row">
   <h1><?= e($ride['title']) ?></h1>
-  <?php if ($canManage && $open): ?><a class="btn secondary" href="/ride_edit.php?id=<?= $rid ?>"><?= te('ride.edit') ?></a><?php endif; ?>
+  <?php if ($canManage && $open): ?><a class="btn secondary" href="/ride/<?= $rid ?>/edit"><?= te('ride.edit') ?></a><?php endif; ?>
 </div>
 <p class="ride-when big"><?= e(formatRideTime($ride['starts_at'])) ?></p>
 <p class="muted"><?= te('ride.by', ['name' => $ride['organizer']]) ?> ·
@@ -103,9 +103,9 @@ pageHeader($ride['title']);
      data-start="<?= te('tour.start') ?>" data-finish="<?= te('tour.finish') ?>"
      <?php if ($ride['meeting_lat'] !== null): ?>data-meeting="<?= e($ride['meeting_lat'] . ',' . $ride['meeting_lng']) ?>" data-meeting-label="<?= te('ride.meeting_point') ?>"<?php endif; ?>></div>
 <p class="action-bar">
-  <?php if (canSeeTour($tour, $uid)): ?><a href="/tour.php?id=<?= (int)$tour['id'] ?>"><?= te('ride.to_tour') ?></a>
-    <a class="btn secondary" href="/tour_gpx.php?id=<?= (int)$tour['id'] ?>"><?= te('tour.gpx') ?></a><?php endif; ?>
-  <?php if ($ride['talk_topic_id'] && $inCrew): ?><a href="/talk_topic.php?id=<?= (int)$ride['talk_topic_id'] ?>"><?= te('ride.to_talk') ?></a><?php endif; ?>
+  <?php if (canSeeTour($tour, $uid)): ?><a href="/tour/<?= (int)$tour['id'] ?>"><?= te('ride.to_tour') ?></a>
+    <a class="btn secondary" href="/tour/<?= (int)$tour['id'] ?>/gpx"><?= te('tour.gpx') ?></a><?php endif; ?>
+  <?php if ($ride['talk_topic_id'] && $inCrew): ?><a href="/talk/<?= (int)$ride['talk_topic_id'] ?>"><?= te('ride.to_talk') ?></a><?php endif; ?>
 </p>
 <?php if ((int)$tour['freehand_share_pct'] > 0): ?><p class="alert alert-info"><?= te('tour.freehand_warning', ['p' => (int)$tour['freehand_share_pct']]) ?></p><?php endif; ?>
 <?php else: ?>
@@ -184,7 +184,7 @@ pageHeader($ride['title']);
 </section>
 <?php endif; ?>
 
-<p class="spaced"><a href="/report.php?type=ride&amp;id=<?= $rid ?>"><?= te('report.link') ?></a></p>
+<p class="spaced"><a href="/report?type=ride&amp;id=<?= $rid ?>"><?= te('report.link') ?></a></p>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/tour_map.js?v=3"></script>
+<script src="/assets/tour_map.js?v=4"></script>
 <?php pageFooter();

@@ -115,10 +115,10 @@ function accessGate(): void
         return;
     }
     $next = (string)($_SERVER['REQUEST_URI'] ?? '/');
-    if (str_starts_with($next, '/access.php')) {
+    if (str_starts_with($next, '/access')) {
         $next = '/';   // never chain "next" onto the access page itself
     }
-    header('Location: /access.php?next=' . rawurlencode($next));
+    header('Location: /access?next=' . rawurlencode($next));
     exit;
 }
 
@@ -205,7 +205,7 @@ function requireLogin(): array
 {
     $u = currentUser();
     if ($u === null) {
-        redirect('/login.php?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? '/'));
+        redirect('/login?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? '/'));
     }
     return $u;
 }
@@ -434,7 +434,10 @@ function inlineFormat(string $s): string
 
 /* ---------- Layout ---------- */
 
-function pageHeader(string $title): void
+/**
+ * @param array<string,string> $meta Open Graph / Twitter tags for link previews, e.g. ['og:title' => …, 'og:image' => …]
+ */
+function pageHeader(string $title, array $meta = []): void
 {
     global $LANG;
     $u = currentUser();
@@ -450,8 +453,10 @@ function pageHeader(string $title): void
 <?php if (!isLive()): ?><meta name="robots" content="noindex, nofollow"><?php endif; ?>
 <link rel="icon" href="/assets/img/favicon.png">
 <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-<link rel="stylesheet" href="/assets/style.css?v=2">
+<link rel="stylesheet" href="/assets/style.css?v=3">
 <meta name="theme-color" content="#14263F">
+<?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
+<?php endforeach; ?>
 </head>
 <body>
 <a class="skip" href="#content"><?= te('nav.skip') ?></a>
@@ -461,16 +466,16 @@ function pageHeader(string $title): void
   <a class="brand" href="/">ElTouro</a>
   <nav class="main-nav" aria-label="<?= te('nav.main') ?>">
     <?php if ($u): ?>
-      <a href="/rides.php"><?= te('nav.rides') ?></a>
-      <a href="/tours.php"><?= te('nav.tours') ?></a>
-      <a href="/crews.php"><?= te('nav.crews') ?></a>
-      <a href="/forum.php"><?= te('nav.forum') ?></a>
-      <a href="/profile.php"><?= te('nav.profile') ?></a>
+      <a href="/rides"><?= te('nav.rides') ?></a>
+      <a href="/tours"><?= te('nav.tours') ?></a>
+      <a href="/crews"><?= te('nav.crews') ?></a>
+      <a href="/forum"><?= te('nav.forum') ?></a>
+      <a href="/profile"><?= te('nav.profile') ?></a>
       <?php if ((int)$u['is_admin'] === 1): ?><a href="/admin/"><?= te('nav.admin') ?></a><?php endif; ?>
-      <form method="post" action="/logout.php" class="inline"><?= csrfField() ?><button type="submit" class="link"><?= te('nav.logout') ?></button></form>
+      <form method="post" action="/logout" class="inline"><?= csrfField() ?><button type="submit" class="link"><?= te('nav.logout') ?></button></form>
     <?php else: ?>
-      <a href="/login.php"><?= te('nav.login') ?></a>
-      <?php if (setting('registration_open', '1') === '1'): ?><a href="/register.php"><?= te('nav.register') ?></a><?php endif; ?>
+      <a href="/login"><?= te('nav.login') ?></a>
+      <?php if (setting('registration_open', '1') === '1'): ?><a href="/register"><?= te('nav.register') ?></a><?php endif; ?>
     <?php endif; ?>
   </nav>
   <nav class="lang-switch" aria-label="<?= te('nav.language') ?>">

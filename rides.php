@@ -18,7 +18,7 @@ pageHeader(t('rides.title'));
 ?>
 <div class="title-row">
   <h1><?= te('rides.title') ?></h1>
-  <a class="btn" href="/ride_edit.php"><?= te('ride.new') ?></a>
+  <a class="btn" href="/ride/new"><?= te('ride.new') ?></a>
 </div>
 <p class="muted"><?= te('rides.intro') ?></p>
 <h2><?= te('rides.mine') ?></h2><?php rideCards($mine, 'rides.none_mine'); ?>

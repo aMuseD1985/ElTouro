@@ -96,6 +96,6 @@ jobs:
             echo "TEST_BASE_URL/MIGRATE_KEY nicht gesetzt – Migration bitte unter Admin → Betrieb ausführen."
             exit 0
           fi
-          out=$(curl -fsS --max-time 120 --get --data-urlencode "key=$MIGRATE_KEY" "${TEST_BASE_URL%/}/migrate.php")
+          out=$(curl -fsS --max-time 120 --get --data-urlencode "key=$MIGRATE_KEY" "${TEST_BASE_URL%/}/migrate")
           echo "$out" | grep -v '^= ' || true
           echo "$out" | grep -q '^Fertig\.' || { echo "Migration nicht vollständig durchgelaufen"; exit 1; }

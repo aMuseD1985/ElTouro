@@ -24,7 +24,7 @@ if (isPost()) {
         dbExec("INSERT INTO group_members (group_id, user_id, role, status) VALUES (?, ?, 'admin', 'active')", [$gid, $me['id']]);
         $pdo->commit();
         flash(t('crew.founded'));
-        redirect('/crew.php?s=' . rawurlencode($slug));
+        redirect('/crew/' . rawurlencode($slug));
     }
 }
 

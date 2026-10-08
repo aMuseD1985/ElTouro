@@ -1,7 +1,7 @@
 <?php
 /**
  * Maintained content pages. Reachable as /imprint, /privacy, /terms, /page/slug
- * (rewrite in .htaccess) or /page.php?s=slug. Publicly readable.
+ * (rewrite in .htaccess) or /page/slug. Publicly readable.
  * Placeholders {{…}} are filled from Admin → Einstellungen and the config.
  */
 declare(strict_types=1);

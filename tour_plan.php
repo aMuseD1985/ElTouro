@@ -72,7 +72,7 @@ if (isPost()) {
             $newId = (int)db()->lastInsertId();
         }
         flash(t('tour.saved'));
-        redirect('/tour.php?id=' . $newId);
+        redirect('/tour/' . $newId);
     }
 }
 

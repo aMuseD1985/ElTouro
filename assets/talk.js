@@ -4,7 +4,7 @@
   'use strict';
 
   function api(action, data, csrf) {
-    return fetch('/talk_api.php?action=' + action, {
+    return fetch('/api/talk?action=' + action, {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF': csrf },
@@ -184,7 +184,7 @@
       var button = form.querySelector('button[type="submit"]');
       button.disabled = true;
       api('reply', { topic: topic, text: text, reply_to: replyId }, csrf).then(function (j) {
-        if (moreBelow) { window.location = '/talk_topic.php?id=' + topic + '&end=1#p' + j.id; return; }
+        if (moreBelow) { window.location = '/talk/' + topic + '?end=1#p' + j.id; return; }
         box.appendChild(fragment(j.html));
         field.value = '';
         replyId = 0;

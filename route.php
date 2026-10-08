@@ -1,6 +1,6 @@
 <?php
 /**
- * POST /route.php  (JSON: {"points": [[lat,lng], …], "rule_set": "ekfv"|"ekfv2027"})
+ * POST /api/route  (JSON: {"points": [[lat,lng], …], "rule_set": "ekfv"|"ekfv2027"})
  * Response: {"geojson": FeatureCollection, "notice": "no_router"|"partly_freehand"|null}
  *
  * First the whole route is calculated in one go. If that fails (e.g. a point lies off permitted

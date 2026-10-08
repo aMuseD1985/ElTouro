@@ -6,7 +6,7 @@ require __DIR__ . '/account_lib.php';
 $token = (string)($_GET['t'] ?? $_POST['t'] ?? '');
 if (peekToken($token, 'reset') === null) {
     flash(t('verify.error'), 'error');
-    redirect('/password_forgot.php');
+    redirect('/password/forgot');
 }
 $error = '';
 
@@ -19,7 +19,7 @@ if (isPost()) {
         $uid = redeemToken($token, 'reset');
         if ($uid === null) {
             flash(t('verify.error'), 'error');
-            redirect('/password_forgot.php');
+            redirect('/password/forgot');
         }
         dbExec('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($pw, PASSWORD_DEFAULT), $uid]);
         logIn($uid);

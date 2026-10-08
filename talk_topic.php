@@ -25,9 +25,9 @@ if (isPost() && $moderator) {
     if ($action === 'lock') dbExec('UPDATE herd_topics SET is_locked = 1 - is_locked WHERE id = ?', [$tid]);
     if ($action === 'delete_topic') {
         dbExec('UPDATE herd_topics SET deleted_at = UTC_TIMESTAMP() WHERE id = ?', [$tid]);
-        redirect('/talk.php?s=' . rawurlencode($topic['crew_slug']));
+        redirect('/crew/' . rawurlencode($topic['crew_slug']) . '/talk');
     }
-    redirect('/talk_topic.php?id=' . $tid);
+    redirect('/talk/' . $tid);
 }
 
 $read = dbOne('SELECT last_read_post_id FROM herd_reads WHERE topic_id = ? AND user_id = ?', [$tid, $uid]);
@@ -62,10 +62,10 @@ $ride = dbOne("SELECT id FROM rides WHERE talk_topic_id = ? AND deleted_at IS NU
 
 pageHeader($topic['title']);
 ?>
-<p class="breadcrumbs"><a href="/crew.php?s=<?= e(rawurlencode($topic['crew_slug'])) ?>"><?= e($topic['crew_name']) ?></a> ›
-  <a href="/talk.php?s=<?= e(rawurlencode($topic['crew_slug'])) ?>"><?= te('talk.title') ?></a> ›</p>
+<p class="breadcrumbs"><a href="/crew/<?= e(rawurlencode($topic['crew_slug'])) ?>"><?= e($topic['crew_name']) ?></a> ›
+  <a href="/crew/<?= e(rawurlencode($topic['crew_slug'])) ?>/talk"><?= te('talk.title') ?></a> ›</p>
 <h1><?= e($topic['title']) ?></h1>
-<?php if ($ride): ?><p><a class="btn secondary" href="/ride.php?id=<?= (int)$ride['id'] ?>"><?= te('ride.to_ride') ?></a></p><?php endif; ?>
+<?php if ($ride): ?><p><a class="btn secondary" href="/ride/<?= (int)$ride['id'] ?>"><?= te('ride.to_ride') ?></a></p><?php endif; ?>
 <?php if ($topic['is_locked']): ?><p class="alert alert-info"><?= te('forum.locked_text') ?></p><?php endif; ?>
 
 <?php if ($moderator): ?>
@@ -98,7 +98,7 @@ pageHeader($topic['title']);
 <button type="button" id="new-notice" class="new-notice" hidden></button>
 
 <?php if (!$topic['is_locked'] || $moderator): ?>
-<form id="composer" class="composer" method="post" action="/talk_api.php?action=reply">
+<form id="composer" class="composer" method="post" action="/api/talk?action=reply">
   <div id="reply-to" class="reply-to" hidden><span></span> <button type="button" class="link" id="reply-clear" aria-label="<?= te('talk.reply_clear') ?>">✕</button></div>
   <label for="composer-text" class="visually-hidden"><?= te('forum.text') ?></label>
   <textarea id="composer-text" rows="3" maxlength="<?= TALK_POST_MAX ?>" placeholder="<?= te('talk.placeholder') ?>" required></textarea>

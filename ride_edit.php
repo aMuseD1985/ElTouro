@@ -18,7 +18,7 @@ if (isset($_GET['id']) || isset($_POST['id'])) {
     }
     if (!isRideOpen($ride)) {
         flash(t('ride.not_editable'), 'error');
-        redirect('/ride.php?id=' . (int)$ride['id']);
+        redirect('/ride/' . (int)$ride['id']);
     }
 }
 
@@ -36,12 +36,12 @@ if ($ride === null && $tour === null) {
     pageHeader(t('ride.new'));
     ?>
 <section class="narrow">
-  <p class="breadcrumbs"><a href="/rides.php"><?= te('rides.title') ?></a> ›</p>
+  <p class="breadcrumbs"><a href="/rides"><?= te('rides.title') ?></a> ›</p>
   <h1><?= te('ride.new') ?></h1>
   <p><?= te('ride.pick_tour_text') ?></p>
   <?php if (!$tours): ?>
     <p class="alert alert-info"><?= te('ride.no_tours') ?></p>
-    <p><a class="btn" href="/tour_plan.php"><?= te('tour.new') ?></a></p>
+    <p><a class="btn" href="/tour/plan"><?= te('tour.new') ?></a></p>
   <?php else: ?>
   <form method="get" class="form">
     <div class="field"><label for="tour"><?= te('ride.tour') ?></label>
@@ -152,7 +152,7 @@ if (isPost()) {
                 postRideUpdate($updated, $uid, t('ride.talk_changed', ['when' => formatRideTime($updated['starts_at']), 'meeting' => $updated['meeting_point']]));
             }
             flash(t($moved ? 'ride.saved_notified' : 'ride.saved'));
-            redirect('/ride.php?id=' . (int)$ride['id']);
+            redirect('/ride/' . (int)$ride['id']);
         }
 
         $pdo->beginTransaction();
@@ -173,7 +173,7 @@ if (isPost()) {
         }
         $pdo->commit();
         flash(t('ride.created'));
-        redirect('/ride.php?id=' . $rid);
+        redirect('/ride/' . $rid);
     }
 }
 
@@ -181,11 +181,11 @@ $jsTexts = ['meeting' => t('ride.meeting_point')];
 pageHeader($ride ? t('ride.edit') : t('ride.new'));
 ?>
 <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
-<p class="breadcrumbs"><a href="/rides.php"><?= te('rides.title') ?></a> ›<?php if ($ride): ?> <a href="/ride.php?id=<?= (int)$ride['id'] ?>"><?= e($ride['title']) ?></a> ›<?php endif; ?></p>
+<p class="breadcrumbs"><a href="/rides"><?= te('rides.title') ?></a> ›<?php if ($ride): ?> <a href="/ride/<?= (int)$ride['id'] ?>"><?= e($ride['title']) ?></a> ›<?php endif; ?></p>
 <h1><?= te($ride ? 'ride.edit' : 'ride.new') ?></h1>
 <?php foreach ($errors as $err): ?><p class="alert alert-error" role="alert"><?= e($err) ?></p><?php endforeach; ?>
-<p class="muted"><?= te('ride.tour') ?>: <a href="/tour.php?id=<?= (int)$tour['id'] ?>"><?= e($tour['title']) ?></a> · <?= e(formatKm((int)$tour['distance_m'])) ?>
-  <?php if (!$ride): ?> · <a href="/ride_edit.php"><?= te('ride.other_tour') ?></a><?php endif; ?></p>
+<p class="muted"><?= te('ride.tour') ?>: <a href="/tour/<?= (int)$tour['id'] ?>"><?= e($tour['title']) ?></a> · <?= e(formatKm((int)$tour['distance_m'])) ?>
+  <?php if (!$ride): ?> · <a href="/ride/new"><?= te('ride.other_tour') ?></a><?php endif; ?></p>
 
 <?php if (!$tour['deleted_at']): ?>
 <p class="hint"><?= te('ride.map_hint') ?></p>

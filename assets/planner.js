@@ -1,4 +1,4 @@
-/* ElTouro route planner – set waypoints, calculate the route via /route.php, write the result into the form. */
+/* ElTouro route planner – set waypoints, calculate the route via /api/route, write the result into the form. */
 (function () {
   'use strict';
   var el = document.getElementById('planner-map');
@@ -95,7 +95,7 @@
     var no = ++requestNo;
     saveButton.disabled = true;
     setStatus(T.calculating);
-    fetch('/route.php', {
+    fetch('/api/route', {
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF': d.csrf },

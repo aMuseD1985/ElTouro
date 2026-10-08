@@ -11,15 +11,17 @@ if (isPost()) {
     dbExec('UPDATE users SET locale = ? WHERE id = ?', [$lang, $me['id']]);
     setcookie('lang', $lang, ['expires' => time() + 31536000, 'path' => '/', 'secure' => isHttps(), 'httponly' => true, 'samesite' => 'Lax']);
     flash(t('profile.saved'));
-    redirect('/profile.php');
+    redirect('/profile');
 }
 
 $p = dbOne('SELECT bio, home_region FROM user_profiles WHERE user_id = ?', [$me['id']]) ?? ['bio' => '', 'home_region' => ''];
+$google = dbOne("SELECT email FROM user_identities WHERE provider = 'google' AND user_id = ?", [$me['id']]);
 pageHeader(t('profile.title'));
 ?>
 <section class="narrow">
   <h1><?= te('profile.title') ?></h1>
   <p class="muted"><?= e($me['display_name']) ?> · <?= e($me['email']) ?></p>
+  <?php if ($google): ?><p class="muted"><?= te('google.connected', ['email' => $google['email']]) ?></p><?php endif; ?>
   <form method="post" class="form">
     <?= csrfField() ?>
     <div class="field"><label for="region"><?= te('profile.region') ?></label>

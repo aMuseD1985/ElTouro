@@ -93,7 +93,7 @@ function makeSlug(string $name): string
 
 function inviteLink(array $crew): string
 {
-    return baseUrl() . '/crew.php?s=' . rawurlencode($crew['slug']) . '&code=' . rawurlencode($crew['invite_code']);
+    return baseUrl() . '/crew/' . rawurlencode($crew['slug']) . '?code=' . rawurlencode($crew['invite_code']);
 }
 
 /** Crews the user is an active member of (e.g. to assign a route or ride). */

@@ -8,4 +8,4 @@ if (isPost()) {
     session_regenerate_id(true);
     flash(t('logout.ok'));
 }
-redirect('/login.php');
+redirect('/login');

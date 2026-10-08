@@ -15,17 +15,17 @@ $topics = dbAll('SELECT t.id, t.title, t.is_pinned, t.is_locked, t.post_count, t
 
 pageHeader(categoryName($cat));
 ?>
-<p class="breadcrumbs"><a href="/forum.php"><?= te('forum.title') ?></a> ›</p>
+<p class="breadcrumbs"><a href="/forum"><?= te('forum.title') ?></a> ›</p>
 <div class="title-row">
   <h1><?= e(categoryName($cat)) ?></h1>
-  <a class="btn" href="/forum_new.php?c=<?= e(rawurlencode($cat['slug'])) ?>"><?= te('forum.new_topic') ?></a>
+  <a class="btn" href="/forum/<?= e(rawurlencode($cat['slug'])) ?>/new"><?= te('forum.new_topic') ?></a>
 </div>
 <?php if (!$topics): ?><p class="muted"><?= te('forum.no_topics') ?></p><?php endif; ?>
 <ul class="forum-list">
 <?php foreach ($topics as $t): ?>
   <li>
     <div>
-      <a href="/forum_topic.php?t=<?= (int)$t['id'] ?>"><?= e($t['title']) ?></a>
+      <a href="/forum/topic/<?= (int)$t['id'] ?>"><?= e($t['title']) ?></a>
       <?php if ($t['is_pinned']): ?><span class="badge"><?= te('forum.pinned') ?></span><?php endif; ?>
       <?php if ($t['is_locked']): ?><span class="badge muted"><?= te('forum.locked') ?></span><?php endif; ?>
       <p class="muted"><?= te('forum.by', ['name' => $t['display_name']]) ?></p>

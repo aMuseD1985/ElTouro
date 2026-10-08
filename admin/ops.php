@@ -66,7 +66,7 @@ if (isPost()) {
                     flash('Upload fehlgeschlagen (Code ' . (int)($f['error'] ?? -1) . '). Maximale Größe laut Server: ' . ini_get('upload_max_filesize') . '.', 'error');
                     break;
                 }
-                redirect('/admin/ops.php?package=' . stagePackage($f['tmp_name']) . '#preview');
+                redirect('/admin/ops?package=' . stagePackage($f['tmp_name']) . '#preview');
 
             case 'deploy':
                 $package = stagedPackage((string)($_POST['package'] ?? ''));
@@ -76,7 +76,7 @@ if (isPost()) {
                 }
                 if (!passwordConfirmed($me)) {
                     flash('Passwort stimmt nicht – nichts geändert.', 'error');
-                    redirect('/admin/ops.php?package=' . basename($package, '.zip') . '#preview');
+                    redirect('/admin/ops?package=' . basename($package, '.zip') . '#preview');
                 }
                 $v = comparePackage($package);
                 $allowed = [...$v['new'], ...$v['changed']];
@@ -124,7 +124,7 @@ if (isPost()) {
                     . ". Der Zustand davor liegt als $safety bereit.");
                 // After a DB restore the own session may be invalid – log in again cleanly
                 if (in_array('db', $parts, true)) {
-                    redirect('/login.php');
+                    redirect('/login');
                 }
                 break;
 
@@ -145,7 +145,7 @@ if (isPost()) {
         flash('Fehler: ' . $ex->getMessage(), 'error');
     }
     if (!$log) {
-        redirect('/admin/ops.php');
+        redirect('/admin/ops');
     }
 }
 

@@ -16,7 +16,7 @@ $numbers = [
 ];
 $empty = dbAll("SELECT slug, locale FROM pages WHERE TRIM(body) = '' ORDER BY slug, locale");
 require __DIR__ . '/../migrations.php';
-$noRides = pagesMissingRideSection();
+$legalTodo = legalPagesNeedingUpdate();
 
 pageHeader('Admin');
 require __DIR__ . '/_nav.php';
@@ -27,10 +27,10 @@ require __DIR__ . '/_nav.php';
 </table>
 <?php if ($empty): ?>
   <p class="alert alert-error">Noch leere Pflichtseiten:
-  <?php foreach ($empty as $s): ?><a href="/admin/pages.php?s=<?= e($s['slug']) ?>&amp;l=<?= e($s['locale']) ?>"><?= e($s['slug']) ?> (<?= e(strtoupper($s['locale'])) ?>)</a> <?php endforeach; ?></p>
+  <?php foreach ($empty as $s): ?><a href="/admin/pages?s=<?= e($s['slug']) ?>&amp;l=<?= e($s['locale']) ?>"><?= e($s['slug']) ?> (<?= e(strtoupper($s['locale'])) ?>)</a> <?php endforeach; ?></p>
 <?php endif; ?>
-<?php if ($noRides): ?>
-  <p class="alert alert-error">Diese Rechtstexte wurden von Hand angepasst und beschreiben die Ausfahrten noch nicht – bitte den passenden Abschnitt aus <code>legal_texts.php</code> übernehmen:
-  <?php foreach ($noRides as $p): [$s, $l] = explode('/', $p); ?><a href="/admin/pages.php?s=<?= e($s) ?>&amp;l=<?= e($l) ?>"><?= e($s) ?> (<?= e(strtoupper($l)) ?>)</a> <?php endforeach; ?></p>
+<?php if ($legalTodo): ?>
+  <p class="alert alert-error">Diese Rechtstexte wurden von Hand angepasst und beschreiben noch nicht alles, was die App tut – bitte die Abschnitte aus <code>legal_texts.php</code> übernehmen:
+  <?php foreach ($legalTodo as $p => $sections): [$s, $l] = explode('/', $p); ?><a href="/admin/pages?s=<?= e($s) ?>&amp;l=<?= e($l) ?>"><?= e($s) ?> (<?= e(strtoupper($l)) ?>): <?= e(implode(', ', $sections)) ?></a> <?php endforeach; ?></p>
 <?php endif; ?>
 <?php pageFooter();

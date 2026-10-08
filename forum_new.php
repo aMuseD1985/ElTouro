@@ -6,7 +6,7 @@ $me = requireLogin();
 
 $cat = dbOne('SELECT * FROM forum_categories WHERE slug = ?', [(string)($_GET['c'] ?? $_POST['c'] ?? '')]);
 if ($cat === null) {
-    redirect('/forum.php');
+    redirect('/forum');
 }
 $error = '';
 $subject = '';
@@ -30,13 +30,13 @@ if (isPost()) {
         $tid = (int)$pdo->lastInsertId();
         dbExec('INSERT INTO forum_posts (thread_id, user_id, body) VALUES (?, ?, ?)', [$tid, $me['id'], $text]);
         $pdo->commit();
-        redirect('/forum_topic.php?t=' . $tid);
+        redirect('/forum/topic/' . $tid);
     }
 }
 
 pageHeader(t('forum.new_topic'));
 ?>
-<p class="breadcrumbs"><a href="/forum.php"><?= te('forum.title') ?></a> › <a href="/forum_category.php?c=<?= e(rawurlencode($cat['slug'])) ?>"><?= e(categoryName($cat)) ?></a> ›</p>
+<p class="breadcrumbs"><a href="/forum"><?= te('forum.title') ?></a> › <a href="/forum/<?= e(rawurlencode($cat['slug'])) ?>"><?= e(categoryName($cat)) ?></a> ›</p>
 <h1><?= te('forum.new_topic') ?></h1>
 <?php if ($error): ?><p class="alert alert-error" role="alert"><?= e($error) ?></p><?php endif; ?>
 <form method="post" class="form wide">

@@ -27,14 +27,14 @@ if (isPost()) {
         $error = t('forum.too_fast');
     } else {
         [$tid] = createTalkTopic((int)$crew['id'], $uid, $subject, $text);
-        redirect('/talk_topic.php?id=' . $tid);
+        redirect('/talk/' . $tid);
     }
 }
 
 $topics = loadTalkTopics((int)$crew['id'], $uid, 0);
 pageHeader(t('talk.title') . ' · ' . $crew['name']);
 ?>
-<p class="breadcrumbs"><a href="/crew.php?s=<?= e(rawurlencode($crew['slug'])) ?>"><?= e($crew['name']) ?></a> ›</p>
+<p class="breadcrumbs"><a href="/crew/<?= e(rawurlencode($crew['slug'])) ?>"><?= e($crew['name']) ?></a> ›</p>
 <div class="title-row">
   <h1><?= te('talk.title') ?></h1>
 </div>

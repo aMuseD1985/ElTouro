@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/google_lib.php';
 
 if (currentUser()) {
     redirect('/');
@@ -39,6 +40,7 @@ pageHeader(t('login.title'));
 <section class="narrow">
   <h1><?= te('login.title') ?></h1>
   <?php if ($error): ?><p class="alert alert-error" role="alert"><?= e($error) ?></p><?php endif; ?>
+  <?= googleButton($next) ?>
   <form method="post" class="form">
     <?= csrfField() ?>
     <input type="hidden" name="next" value="<?= e($next) ?>">
@@ -48,6 +50,6 @@ pageHeader(t('login.title'));
       <input id="password" name="password" type="password" required autocomplete="current-password"></div>
     <button type="submit"><?= te('login.button') ?></button>
   </form>
-  <p><a href="/password_forgot.php"><?= te('login.forgot') ?></a></p>
+  <p><a href="/password/forgot"><?= te('login.forgot') ?></a></p>
 </section>
 <?php pageFooter();

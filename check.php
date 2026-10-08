@@ -35,11 +35,16 @@ if (!empty($CONFIG['access']['enabled'])) {
     check('Tester-Passwort-Hash gültig', $h !== '' && password_get_info($h)['algo'] !== null && password_get_info($h)['algoName'] !== 'unknown',
         'Hash mit password_hash() erzeugen, nicht das Klartext-Passwort eintragen', true);
 }
-$legacy = array_intersect(['zugang', 'karte', 'erster_admin'], array_keys(require __DIR__ . '/config.php'));
+$rawConfig = require __DIR__ . '/config.php';   // as written on the server, before the key mapping
+$legacy = array_intersect(['zugang', 'karte', 'erster_admin'], array_keys($rawConfig));
 check('config.php nutzt die neuen (englischen) Schlüssel', !$legacy,
     'Noch alte Schlüssel: ' . implode(', ', $legacy) . ' – funktioniert weiter, bitte bei Gelegenheit nach config.example.php umstellen', true);
+check('Anmeldung mit Google konfiguriert', !empty($CONFIG['google']['client_id']) && !empty($CONFIG['google']['client_secret']),
+    'Optional. Redirect-URI in der Google Cloud Console: ' . baseUrl() . '/auth/google/callback', true);
+check('GD für Vorschaubilder beim Teilen', function_exists('imagecreatetruecolor'), 'Ohne GD erscheinen geteilte Touren ohne Vorschaubild', true);
 check('Routing (BRouter) konfiguriert', !empty($CONFIG['brouter']['url']), 'Ohne BRouter verbindet der Planer Punkte gerade (Freihand) – zum Testen ok', true);
-check('Kartenkacheln konfiguriert', !empty($CONFIG['map']['tiles']), 'Block \'map\' aus config.example.php übernehmen', true);
+check('Kartenkacheln in config.php', !empty($rawConfig['map']['tiles'] ?? $rawConfig['karte']['kacheln'] ?? ''),
+    'Nicht konfiguriert – es werden die OSM-Kacheln verwendet. Vor live einen Anbieter wie MapTiler eintragen (Block map)', true);
 $opsEnabled = $CONFIG['ops']['enabled'] ?? !isLive();
 check('Betriebswerkzeuge (Admin → Betrieb) aktiv', (bool)$opsEnabled, 'In config.php \'ops\' => [\'enabled\' => true] setzen', true);
 $backupDir = dataDir('backups');

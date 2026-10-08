@@ -12,7 +12,7 @@ if ($topic === null) {
     notFound();
 }
 $tid = (int)$topic['id'];
-$self = '/forum_topic.php?t=' . $tid;
+$self = '/forum/topic/' . $tid;
 $error = '';
 $draft = '';
 
@@ -34,20 +34,20 @@ if (isPost()) {
             $new = (int)db()->lastInsertId();
             dbExec('UPDATE forum_threads SET post_count = post_count + 1, last_post_at = UTC_TIMESTAMP() WHERE id = ?', [$tid]);
             $count = (int)dbOne('SELECT COUNT(*) AS n FROM forum_posts WHERE thread_id = ?', [$tid])['n'];
-            redirect($self . '&p=' . (int)ceil($count / FORUM_POSTS_PER_PAGE) . '#b' . $new);
+            redirect($self . '?p=' . (int)ceil($count / FORUM_POSTS_PER_PAGE) . '#b' . $new);
         }
     } elseif ($action === 'delete_post') {
         // Own posts may be deleted, moderators may delete all
         dbExec('UPDATE forum_posts SET deleted_at = UTC_TIMESTAMP() WHERE id = ? AND thread_id = ? AND (user_id = ? OR ? = 1)',
             [$pid, $tid, $uid, $mod ? 1 : 0]);
-        redirect($self . '&p=' . max(1, (int)($_POST['p'] ?? 1)));
+        redirect($self . '?p=' . max(1, (int)($_POST['p'] ?? 1)));
     } elseif ($mod && in_array($action, ['pin', 'lock', 'delete_topic'], true)) {
         match ($action) {
             'pin'          => dbExec('UPDATE forum_threads SET is_pinned = 1 - is_pinned WHERE id = ?', [$tid]),
             'lock'         => dbExec('UPDATE forum_threads SET is_locked = 1 - is_locked WHERE id = ?', [$tid]),
             'delete_topic' => dbExec('UPDATE forum_threads SET deleted_at = UTC_TIMESTAMP() WHERE id = ?', [$tid]),
         };
-        redirect($action === 'delete_topic' ? '/forum_category.php?c=' . rawurlencode($topic['cat_slug']) : $self);
+        redirect($action === 'delete_topic' ? '/forum/' . rawurlencode($topic['cat_slug']) : $self);
     }
 }
 
@@ -60,7 +60,7 @@ $posts = dbAll('SELECT p.id, p.user_id, p.body, p.created_at, p.deleted_at, u.di
 
 pageHeader($topic['title']);
 ?>
-<p class="breadcrumbs"><a href="/forum.php"><?= te('forum.title') ?></a> › <a href="/forum_category.php?c=<?= e(rawurlencode($topic['cat_slug'])) ?>"><?= e(categoryName($topic)) ?></a> ›</p>
+<p class="breadcrumbs"><a href="/forum"><?= te('forum.title') ?></a> › <a href="/forum/<?= e(rawurlencode($topic['cat_slug'])) ?>"><?= e(categoryName($topic)) ?></a> ›</p>
 <h1><?= e($topic['title']) ?></h1>
 <?php if ($topic['is_locked']): ?><p class="alert alert-info"><?= te('forum.locked_text') ?></p><?php endif; ?>
 
@@ -83,7 +83,7 @@ pageHeader($topic['title']);
     <?php else: ?>
       <div class="post-text"><?= formatText($b['body']) ?></div>
       <footer>
-        <a href="/report.php?type=post&amp;id=<?= (int)$b['id'] ?>"><?= te('report.link') ?></a>
+        <a href="/report?type=post&amp;id=<?= (int)$b['id'] ?>"><?= te('report.link') ?></a>
         <?php if ((int)$b['user_id'] === $uid || $mod): ?>
           <form method="post" class="inline"><?= csrfField() ?><input type="hidden" name="action" value="delete_post"><input type="hidden" name="post" value="<?= (int)$b['id'] ?>"><input type="hidden" name="p" value="<?= $page ?>">
             <button class="link danger"><?= te('forum.delete') ?></button></form>
@@ -97,7 +97,7 @@ pageHeader($topic['title']);
 <?php if ($pages > 1): ?>
 <nav class="pagination" aria-label="<?= te('forum.pages') ?>">
   <?php for ($i = 1; $i <= $pages; $i++): ?>
-    <a href="<?= e($self) ?>&amp;p=<?= $i ?>" <?= $i === $page ? 'aria-current="page"' : '' ?>><?= $i ?></a>
+    <a href="<?= e($self) ?>?p=<?= $i ?>" <?= $i === $page ? 'aria-current="page"' : '' ?>><?= $i ?></a>
   <?php endfor; ?>
 </nav>
 <?php endif; ?>

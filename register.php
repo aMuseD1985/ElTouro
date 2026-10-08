@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/account_lib.php';
+require __DIR__ . '/google_lib.php';
 
 if (currentUser()) {
     redirect('/');
@@ -16,17 +17,11 @@ if ($open && isPost()) {
     $pw = (string)($_POST['password'] ?? '');
 
     if (!filter_var($values['email'], FILTER_VALIDATE_EMAIL)) $errors[] = t('register.error_email');
-    if (!preg_match('/^[\p{L}\p{N}._-]{3,30}$/u', $values['name'])) $errors[] = t('register.error_name');
-    $birth = DateTimeImmutable::createFromFormat('!Y-m-d', $values['birth']);
-    if (!$birth || $birth > new DateTimeImmutable('-' . MIN_AGE . ' years') || $birth < new DateTimeImmutable('-110 years')) {
-        $errors[] = t('register.error_age', ['age' => MIN_AGE]);
-    }
+    if ($nameError = displayNameError($values['name'])) $errors[] = $nameError;
+    $birth = validBirthDate($values['birth']);
+    if ($birth === null) $errors[] = t('register.error_age', ['age' => MIN_AGE]);
     if (mb_strlen($pw) < 10) $errors[] = t('register.error_password');
     if (($_POST['terms'] ?? '') !== '1') $errors[] = t('register.error_terms');
-
-    if (!$errors && dbOne('SELECT id FROM users WHERE display_name = ?', [$values['name']])) {
-        $errors[] = t('register.error_name_taken');
-    }
 
     if (!$errors) {
         try {
@@ -39,11 +34,11 @@ if ($open && isPost()) {
                 dbExec('INSERT INTO user_profiles (user_id) VALUES (?)', [$uid]);
                 $token = createToken($uid, 'verify', 48);
                 sendAccountMail($values['email'], 'mail.verify_subject', 'mail.verify_text',
-                    ['name' => $values['name'], 'link' => baseUrl() . '/verify.php?t=' . $token]);
+                    ['name' => $values['name'], 'link' => baseUrl() . '/verify?t=' . $token]);
             }
             // Same answer for an existing address – nobody should learn who is registered
             flash(t('register.done'));
-            redirect('/login.php');
+            redirect('/login');
         } catch (Throwable $ex) {
             error_log('ElTouro register: ' . $ex->getMessage());
             $errors[] = t('error.general');
@@ -62,6 +57,7 @@ pageHeader(t('register.title'));
     <p><?= te('register.closed') ?></p>
   <?php else: ?>
     <?php foreach ($errors as $err): ?><p class="alert alert-error" role="alert"><?= e($err) ?></p><?php endforeach; ?>
+    <?= googleButton('/', 'google.button_register') ?>
     <form method="post" class="form">
       <?= csrfField() ?>
       <div class="field"><label for="email"><?= te('register.email') ?></label>

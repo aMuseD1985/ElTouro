@@ -26,7 +26,7 @@ pageHeader(t('crews.title'));
 ?>
 <div class="title-row">
   <h1><?= te('crews.title') ?></h1>
-  <a class="btn" href="/crew_new.php"><?= te('crews.new') ?></a>
+  <a class="btn" href="/crews/new"><?= te('crews.new') ?></a>
 </div>
 
 <?php if ($mine): ?>
@@ -34,7 +34,7 @@ pageHeader(t('crews.title'));
   <h2><?= te('crews.mine') ?></h2>
   <ul class="list">
   <?php foreach ($mine as $c): ?>
-    <li><a href="/crew.php?s=<?= e(rawurlencode($c['slug'])) ?>"><?= e($c['name']) ?></a>
+    <li><a href="/crew/<?= e(rawurlencode($c['slug'])) ?>"><?= e($c['name']) ?></a>
       <?php if ($c['role'] === 'admin'): ?><span class="badge"><?= te('crew.lead') ?></span><?php endif; ?>
       <?php if ($c['status'] === 'pending'): ?><span class="badge muted"><?= te('crew.request_pending') ?></span><?php endif; ?>
       <?php if ($c['region']): ?><span class="muted"> · <?= e($c['region']) ?></span><?php endif; ?></li>
@@ -54,7 +54,7 @@ pageHeader(t('crews.title'));
   <ul class="cards">
   <?php foreach ($list as $c): ?>
     <li class="card">
-      <h3><a href="/crew.php?s=<?= e(rawurlencode($c['slug'])) ?>"><?= e($c['name']) ?></a></h3>
+      <h3><a href="/crew/<?= e(rawurlencode($c['slug'])) ?>"><?= e($c['name']) ?></a></h3>
       <p class="muted"><?= $c['region'] ? e($c['region']) . ' · ' : '' ?><?= te('crews.members', ['n' => (int)$c['members']]) ?></p>
       <?php if ($c['description']): ?><p><?= e(mb_strimwidth($c['description'], 0, 160, '…')) ?></p><?php endif; ?>
     </li>

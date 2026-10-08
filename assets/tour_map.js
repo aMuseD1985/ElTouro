@@ -29,8 +29,10 @@
   var first = gj.features[0].geometry.coordinates[0];
   var lastLine = gj.features[gj.features.length - 1].geometry.coordinates;
   var last = lastLine[lastLine.length - 1];
-  L.circleMarker([first[1], first[0]], { radius: 8, color: '#14263F', fillColor: '#D7A845', fillOpacity: 1, weight: 3 }).addTo(map).bindTooltip(el.dataset.start);
-  L.circleMarker([last[1], last[0]], { radius: 8, color: '#14263F', fillColor: '#14263F', fillOpacity: 1, weight: 3 }).addTo(map).bindTooltip(el.dataset.finish);
+  var startMarker = L.circleMarker([first[1], first[0]], { radius: 8, color: '#14263F', fillColor: '#D7A845', fillOpacity: 1, weight: 3 }).addTo(map);
+  var finishMarker = L.circleMarker([last[1], last[0]], { radius: 8, color: '#14263F', fillColor: '#14263F', fillOpacity: 1, weight: 3 }).addTo(map);
+  if (el.dataset.start) startMarker.bindTooltip(el.dataset.start);    // shared tours: no labels, the ends are cut off
+  if (el.dataset.finish) finishMarker.bindTooltip(el.dataset.finish);
   if (meeting) {
     L.marker(meeting, { title: el.dataset.meetingLabel || '' }).addTo(map)
       .bindTooltip(el.dataset.meetingLabel || '', { permanent: true, direction: 'top', offset: [0, -30] });

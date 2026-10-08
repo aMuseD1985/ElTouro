@@ -22,7 +22,7 @@ if (isPost()) {
             [$slug, $loc, $title, $body, $me['id']]);
         flash('Gespeichert.');
     }
-    redirect('/admin/pages.php?s=' . rawurlencode($slug) . '&l=' . $loc);
+    redirect('/admin/pages?s=' . rawurlencode($slug) . '&l=' . $loc);
 }
 
 $pages = dbAll("SELECT slug, locale, title, updated_at, TRIM(body) = '' AS is_empty FROM pages ORDER BY slug, locale");
@@ -40,7 +40,7 @@ require __DIR__ . '/_nav.php';
       <td><?= e($s['slug']) ?></td><td><?= e(strtoupper($s['locale'])) ?></td>
       <td><?= e($s['title']) ?><?= $s['is_empty'] ? ' <span class="badge danger">leer</span>' : '' ?></td>
       <td><?= e(substr($s['updated_at'], 0, 16)) ?></td>
-      <td><a href="?s=<?= e($s['slug']) ?>&amp;l=<?= e($s['locale']) ?>">Bearbeiten</a> · <a href="/page.php?s=<?= e($s['slug']) ?>&amp;lang=<?= e($s['locale']) ?>" target="_blank">Ansehen</a></td>
+      <td><a href="?s=<?= e($s['slug']) ?>&amp;l=<?= e($s['locale']) ?>">Bearbeiten</a> · <a href="/page/<?= e($s['slug']) ?>&amp;lang=<?= e($s['locale']) ?>" target="_blank">Ansehen</a></td>
     </tr>
   <?php endforeach; ?>
   </tbody>

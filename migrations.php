@@ -347,28 +347,70 @@ function runMigrations(): array
             }
         }
     }
-    foreach (pagesMissingRideSection() as $page) {
-        $log[] = "! $page wurde von Hand angepasst – Abschnitt zu Ausfahrten bitte aus legal_texts.php übernehmen";
+
+    /* ---------- Tour share links and Google sign-in (2026-10) ---------- */
+    if (!columnExists('tours', 'share_token')) {
+        db()->exec('ALTER TABLE tours ADD share_token CHAR(24) NULL, ADD share_created_at DATETIME NULL, ADD UNIQUE KEY uq_tours_share (share_token)');
+        $log[] = '~ tours.share_token angelegt';
+    }
+    $create('user_identities', "CREATE TABLE user_identities (
+      provider ENUM('google') NOT NULL, subject VARCHAR(255) NOT NULL, user_id BIGINT UNSIGNED NOT NULL,
+      email VARCHAR(254) NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, last_login_at DATETIME NULL,
+      PRIMARY KEY (provider, subject), KEY ix_ui_user (user_id),
+      CONSTRAINT fk_ui_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+
+    // Legal pages: default texts of earlier versions that were never edited get the current default.
+    $earlierDefaults = [
+        'privacy' => ['de' => ['7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814'],
+                      'en' => ['d626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074']],
+        'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab'],
+                      'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d']],
+    ];
+    foreach ($earlierDefaults as $slug => $byLang) {
+        foreach ($byLang as $loc => $hashes) {
+            $p = dbOne('SELECT body FROM pages WHERE slug = ? AND locale = ?', [$slug, $loc]);
+            if ($p !== null && in_array(hash('sha256', $p['body']), $hashes, true)) {
+                dbExec('UPDATE pages SET body = ? WHERE slug = ? AND locale = ?', [$texts[$slug][$loc], $slug, $loc]);
+                $log[] = "~ $slug/$loc: Standardtext aktualisiert (Teilen, Google-Anmeldung)";
+            }
+        }
+    }
+    foreach (legalPagesNeedingUpdate() as $page => $sections) {
+        $log[] = "! $page wurde von Hand angepasst – bitte aus legal_texts.php ergänzen: " . implode(', ', $sections);
     }
 
     return $log;
 }
 
 /**
- * Legal pages that do not yet describe rides (edited by hand before rides existed).
- * Checked by a phrase that only the ride sections contain. Also shown on the admin start page.
- * @return string[] e.g. ["terms/en"]
+ * Legal pages edited by hand that still lack a section the app needs (rides, sharing, Google sign-in).
+ * Checked by phrases that only those sections contain. Also shown on the admin start page.
+ * @return array<string, string[]> e.g. ["privacy/de" => ["Teilen", "Google-Anmeldung"]]
  */
-function pagesMissingRideSection(): array
+function legalPagesNeedingUpdate(): array
 {
-    $markers = ['privacy' => ['de' => 'Fotos und Videos:', 'en' => 'Photos and videos:'],
-                'terms'   => ['de' => 'legt eine Teilnehmergrenze fest', 'en' => 'sets a participant limit']];
+    $markers = [
+        'privacy' => [
+            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:'],
+            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:'],
+        ],
+        'terms' => [
+            'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst'],
+            'en' => ['Ausfahrten' => 'sets a participant limit', 'Teilen' => 'share a route via link'],
+        ],
+    ];
     $missing = [];
     foreach ($markers as $slug => $byLang) {
-        foreach ($byLang as $loc => $marker) {
+        foreach ($byLang as $loc => $sections) {
             $p = dbOne('SELECT body FROM pages WHERE slug = ? AND locale = ?', [$slug, $loc]);
-            if ($p !== null && trim($p['body']) !== '' && !str_contains($p['body'], $marker)) {
-                $missing[] = "$slug/$loc";
+            if ($p === null || trim($p['body']) === '') {
+                continue;
+            }
+            foreach ($sections as $section => $marker) {
+                if (!str_contains($p['body'], $marker)) {
+                    $missing["$slug/$loc"][] = $section;
+                }
             }
         }
     }
