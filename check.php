@@ -43,6 +43,34 @@ check('Anmeldung mit Google konfiguriert', !empty($CONFIG['google']['client_id']
     'Optional. Redirect-URI in der Google Cloud Console: ' . baseUrl() . '/auth/google/callback', true);
 check('GD für Vorschaubilder beim Teilen', function_exists('imagecreatetruecolor'), 'Ohne GD erscheinen geteilte Touren ohne Vorschaubild', true);
 check('Routing (BRouter) konfiguriert', !empty($CONFIG['brouter']['url']), 'Ohne BRouter verbindet der Planer Punkte gerade (Freihand) – zum Testen ok', true);
+
+/** Plain GET for the diagnostics below: [HTTP status, body, curl error, milliseconds]. */
+function probe(string $url, int $timeout): array
+{
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => min(5, $timeout),
+                            CURLOPT_USERAGENT => 'ElTouro/1.0 check']);
+    $t = microtime(true);
+    $body = curl_exec($ch);
+    $result = [(int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE), is_string($body) ? $body : '', curl_error($ch), (int)round((microtime(true) - $t) * 1000)];
+    unset($ch);
+    return $result;
+}
+
+// Outgoing address of this server – what a firewall in front of the routing service has to allow
+[$status, $ip] = probe('https://api.ipify.org', 5);
+check('Ausgehende IP dieses Servers', $status === 200 && filter_var(trim($ip), FILTER_VALIDATE_IP) !== false,
+    $status === 200 ? trim($ip) . ' – diese Adresse in der Firewall vor dem BRouter freigeben' : 'Konnte nicht ermittelt werden');
+
+if (!empty($CONFIG['brouter']['url'])) {
+    $b = $CONFIG['brouter'];
+    $url = rtrim((string)$b['url'], '?') . '?' . http_build_query(['lonlats' => '7.0982,50.7374|7.1166,50.7333', 'profile' => $b['profile'] ?? 'escooter',
+                                                                    'alternativeidx' => 0, 'format' => 'geojson']);
+    [$status, $body, $err, $ms] = probe($url, (int)($b['timeout'] ?? 10));
+    $coords = json_decode($body, true)['features'][0]['geometry']['coordinates'] ?? null;
+    check('BRouter antwortet (Testroute in Bonn, Profil „' . ($b['profile'] ?? 'escooter') . '“)', is_array($coords) && count($coords) >= 2,
+        $err !== '' ? 'Keine Verbindung: ' . $err : "HTTP $status nach {$ms} ms" . (is_array($coords) ? ', ' . count($coords) . ' Punkte' : ' – Antwort: ' . mb_substr(strip_tags($body), 0, 200)));
+}
 check('Kartenkacheln in config.php', !empty($rawConfig['map']['tiles'] ?? $rawConfig['karte']['kacheln'] ?? ''),
     'Nicht konfiguriert – es werden die OSM-Kacheln verwendet. Vor live einen Anbieter wie MapTiler eintragen (Block map)', true);
 $opsEnabled = $CONFIG['ops']['enabled'] ?? !isLive();
