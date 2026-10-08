@@ -1,5 +1,7 @@
 # ElTouro App (beta/test/live)
-Options -Indexes
+# -MultiViews: old files like seite.php are still on the server (deployments never delete) and would
+# otherwise answer /seite/x or /impressum before the rewrite rules get a chance
+Options -Indexes -MultiViews
 DirectoryIndex index.php
 
 # Libraries, includes and docs are never served directly
