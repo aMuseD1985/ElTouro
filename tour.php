@@ -4,6 +4,7 @@ require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/rides_lib.php';
 require __DIR__ . '/share_lib.php';
 require __DIR__ . '/rewards_lib.php';
+require __DIR__ . '/track_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 
@@ -27,6 +28,14 @@ if (isPost() && in_array($_POST['action'] ?? '', ['share', 'unshare'], true)) {
     redirect('/tour/' . (int)$tour['id'] . '#share');
 }
 
+if (isPost() && ($_POST['action'] ?? '') === 'delete_track') {
+    checkCsrf();
+    if (deleteTrack((int)($_POST['track_id'] ?? 0), $uid)) {
+        flash(t('tour.ride_deleted'));
+    }
+    redirect('/tour/' . (int)$tour['id'] . '#my-rides');
+}
+
 if (isPost() && ($_POST['action'] ?? '') === 'delete' && $canEdit) {
     checkCsrf();
     // Riders signed up for this route – the tour stays until those rides are over or cancelled
@@ -40,6 +49,7 @@ if (isPost() && ($_POST['action'] ?? '') === 'delete' && $canEdit) {
 }
 
 $tourRides = visibleRides($uid, true, 'r.tour_id = ?', [(int)$tour['id']], 10);
+$myTracks = ownTracksOfTour($uid, (int)$tour['id']);
 pageHeader($tour['title']);
 ?>
 <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
@@ -102,9 +112,27 @@ pageHeader($tour['title']);
 <?php endif; ?>
 
 <p class="action-bar">
+  <a class="btn" href="/tour/<?= (int)$tour['id'] ?>/go"><?= te('tour.go') ?></a>
+  <a class="btn secondary" href="/tour/<?= (int)$tour['id'] ?>/go?sim=1"><?= te('tour.simulate') ?></a>
   <a class="btn secondary" href="/tour/<?= (int)$tour['id'] ?>/gpx"><?= te('tour.gpx') ?></a>
   <a href="/report?type=tour&amp;id=<?= (int)$tour['id'] ?>"><?= te('report.link') ?></a>
 </p>
+
+<?php if ($myTracks): ?>
+<section class="panel" id="my-rides">
+  <h2><?= te('tour.my_rides') ?></h2>
+  <ul class="list">
+    <?php foreach ($myTracks as $tr): ?>
+      <li><?= te('tour.my_ride_line', ['date' => formatRideTime($tr['started_at']), 'km' => formatKm((int)$tr['distance_m']),
+                                        'min' => (int)round((int)$tr['moving_s'] / 60), 'max' => number_format((float)$tr['max_speed_kmh'], 1, t('common.decimal_point'), '')]) ?>
+        <form method="post" class="inline"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>">
+          <input type="hidden" name="action" value="delete_track"><input type="hidden" name="track_id" value="<?= (int)$tr['id'] ?>">
+          <button class="link danger"><?= te('tour.ride_delete') ?></button></form></li>
+    <?php endforeach; ?>
+  </ul>
+  <p class="hint"><?= te('tour.my_rides_hint') ?></p>
+</section>
+<?php endif; ?>
 
 <?php if ($canEdit): ?>
 <form method="post" class="spaced"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>"><input type="hidden" name="action" value="delete">

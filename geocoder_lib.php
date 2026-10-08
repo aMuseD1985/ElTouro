@@ -108,6 +108,40 @@ function placeLabel(array $r): string
     return mb_substr(implode(', ', $parts), 0, 120);
 }
 
+/**
+ * Street and house number at a waypoint ("Königsallee 1, Düsseldorf"), or the name of the place there.
+ * Rounded to four decimals (about 10 m) – coarser would give the wrong house number.
+ */
+function addressNear(float $lat, float $lng, string $lang): ?string
+{
+    $url = geocoderUrl('reverse');
+    if ($url === '') {
+        return null;
+    }
+    $lat = round($lat, 4);
+    $lng = round($lng, 4);
+    $lang = $lang === 'en' ? 'en' : 'de';
+    $cache = dataDir('geocode') . '/' . sprintf('addr_%.4f_%.4f_%s.json', $lat, $lng, $lang);
+    if (is_file($cache)) {
+        $hit = json_decode((string)file_get_contents($cache), true);
+        if (is_array($hit) && time() - (int)($hit['at'] ?? 0) < (($hit['label'] ?? null) === null ? 86400 : 90 * 86400)) {
+            return $hit['label'];
+        }
+    }
+    $data = geocoderGet($url, ['format' => 'jsonv2', 'lat' => $lat, 'lon' => $lng, 'zoom' => 18, 'addressdetails' => 1, 'accept-language' => $lang]);
+    if ($data === null) {
+        return null;
+    }
+    $a = (array)($data['address'] ?? []);
+    $street = trim(($a['road'] ?? $a['pedestrian'] ?? $a['cycleway'] ?? $a['footway'] ?? $a['path'] ?? '') . ' ' . ($a['house_number'] ?? ''));
+    $town = $a['city'] ?? $a['town'] ?? $a['village'] ?? $a['municipality'] ?? null;
+    $first = $street !== '' ? $street : (string)($data['name'] ?? $a['suburb'] ?? '');
+    $parts = array_values(array_unique(array_filter([$first, $street === '' ? ($a['suburb'] ?? null) : null, $town], fn($p) => $p !== null && $p !== '')));
+    $label = $parts ? mb_substr(implode(', ', array_slice($parts, 0, 2)), 0, 120) : null;
+    file_put_contents($cache, json_encode(['label' => $label, 'at' => time()], JSON_UNESCAPED_UNICODE), LOCK_EX);
+    return $label;
+}
+
 /** Name of the quarter, village or town at a point – or null if unknown, switched off or unreachable. */
 function placeNear(float $lat, float $lng, string $lang): ?string
 {

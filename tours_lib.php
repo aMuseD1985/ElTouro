@@ -150,6 +150,36 @@ function vehicleClass(mixed $value): int
     return isset(VEHICLE_CLASSES[$v]) ? $v : VEHICLE_CLASS_DEFAULT;
 }
 
+/**
+ * BRouter turn instructions kept for the navigation (VoiceHint commands): turn left/right, slight, sharp,
+ * keep left/right, U-turns, roundabouts (with exit number), exits. "Continue" and "end" are not stored.
+ */
+const GUIDANCE_COMMANDS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 17, 18];
+
+/** Checks guidance from the browser against the track: [[index, command, exit], …] sorted, or null if invalid. */
+function validateGuidance(mixed $guidance, string $geojson): ?array
+{
+    if (!is_array($guidance) || count($guidance) > 5000) {
+        return null;
+    }
+    $total = 0;
+    foreach (json_decode($geojson, true)['features'] ?? [] as $f) {
+        $total += count($f['geometry']['coordinates']);
+    }
+    $clean = [];
+    foreach ($guidance as $g) {
+        if (!is_array($g) || count($g) < 3 || !is_int($g[0]) || !is_int($g[1]) || !is_int($g[2])) {
+            return null;
+        }
+        if ($g[0] < 0 || $g[0] >= $total || !in_array($g[1], GUIDANCE_COMMANDS, true) || $g[2] < 0 || $g[2] > 20) {
+            continue;   // unknown commands are simply left out
+        }
+        $clean[] = [$g[0], $g[1], $g[2]];
+    }
+    usort($clean, fn($a, $b) => $a[0] <=> $b[0]);
+    return $clean;
+}
+
 /** Longest crow-flies distance between two waypoints the planner accepts (config brouter.max_leg_km). */
 function maxLegKm(): float
 {

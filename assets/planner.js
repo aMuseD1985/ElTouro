@@ -16,6 +16,7 @@
 
   var fieldWp = document.getElementById('waypoints_json');
   var fieldGj = document.getElementById('geojson');
+  var fieldGuidance = document.getElementById('guidance_json');
   var fieldRules = document.getElementById('rule_set');
   var fieldVehicle = document.getElementById('vehicle_class');
   var bullrunHint = document.getElementById('bullrun-hint');
@@ -125,6 +126,37 @@
   // ---- Waypoint editor: numbered pins on the map and the list below it
   var selected = -1;
   var pins = [];
+
+  // Speaking names for the waypoints ("Königsallee 1, Düsseldorf"), asked one at a time – the geocoder allows one request per second
+  var names = {};
+  var nameQueue = [];
+  var naming = false;
+  function nameKey(p) { return p[0].toFixed(4) + ',' + p[1].toFixed(4); }
+  function pointName(i) { var n = names[nameKey(points[i])]; return n || (T.point + ' ' + (i + 1)); }
+  function requestNames() {
+    points.forEach(function (p) {
+      var k = nameKey(p);
+      if (names[k] === undefined && nameQueue.indexOf(k) < 0) nameQueue.push(k);
+    });
+    nextName();
+  }
+  function nextName() {
+    if (naming || !nameQueue.length) return;
+    var k = nameQueue.shift();
+    if (names[k] !== undefined) { nextName(); return; }
+    naming = true;
+    var ll = k.split(',');
+    fetch('/api/place-name?lat=' + ll[0] + '&lng=' + ll[1], { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : { label: null }; })
+      .then(function (j) { names[k] = j.label || ''; })
+      .catch(function () { names[k] = ''; })
+      .then(function () {
+        naming = false;
+        renderList();
+        pins.forEach(function (m, i) { if (points[i]) m.options.title = pointName(i); });
+        nextName();
+      });
+  }
   var list = document.getElementById('waypoint-list');
   var listBox = document.getElementById('waypoints');
 
@@ -144,7 +176,7 @@
   function popupFor(i) {
     var box = document.createElement('div');
     var title = document.createElement('strong');
-    title.textContent = T.point + ' ' + (i + 1);
+    title.textContent = (i + 1) + ' · ' + pointName(i);
     var del = document.createElement('button');
     del.type = 'button'; del.className = 'link danger'; del.textContent = T.remove;
     del.addEventListener('click', function () { removePoint(i); });
@@ -172,6 +204,7 @@
       pins.push(m);
     });
     renderList();
+    requestNames();
   }
 
   function fmtKm(m) {
@@ -200,11 +233,11 @@
       main.type = 'button'; main.className = 'link wp-main';
       var leg = i === 0 ? T.start : T.leg.replace('{km}', fmtKm(distance([points[i - 1][1], points[i - 1][0]], [p[1], p[0]])));
       if (i > 0 && i === points.length - 1) leg += ' · ' + T.finish;
-      var legText = document.createElement('span');
+      var nameText = document.createElement('span');
+      nameText.textContent = pointName(i);
+      var legText = document.createElement('small');
       legText.textContent = leg;
-      var coords = document.createElement('small');
-      coords.textContent = p[0].toFixed(5) + ', ' + p[1].toFixed(5);
-      main.appendChild(legText); main.appendChild(coords);
+      main.appendChild(nameText); main.appendChild(legText);
       main.addEventListener('click', function () { select(i, true); });
       li.appendChild(num);
       li.appendChild(main);
@@ -295,6 +328,7 @@
     if (points.length < 2) {
       current = null;
       fieldGj.value = '';
+      if (fieldGuidance) fieldGuidance.value = '[]';
       drawRoute(null);
       showStats(null);
       stopLoading(true);
@@ -320,6 +354,7 @@
       stopLoading(false);
       current = j.geojson;
       fieldGj.value = JSON.stringify(current);
+      if (fieldGuidance) fieldGuidance.value = JSON.stringify(j.guidance || []);
       drawRoute(current);
       showStats(current);
       saveButton.disabled = false;

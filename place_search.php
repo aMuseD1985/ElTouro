@@ -26,6 +26,7 @@ if (count($recent) >= 20) {
 }
 $recent[] = $now;
 $_SESSION['place_searches'] = $recent;
+session_write_close();
 
 $results = searchPlaces(mb_substr((string)($_GET['q'] ?? ''), 0, 120), $LANG);
 if ($results === null) {

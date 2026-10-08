@@ -26,6 +26,7 @@ $w = [
     'vehicle'     => vehicleClass($tour['vehicle_class'] ?? VEHICLE_CLASS_DEFAULT),
     'waypoints'   => $tour['waypoints_json'] ?? '[]',
     'geojson'     => $tour['geojson'] ?? '',
+    'guidance'    => $tour['guidance_json'] ?? '[]',
 ];
 
 if (isPost()) {
@@ -41,9 +42,12 @@ if (isPost()) {
         'vehicle'     => vehicleClass($_POST['vehicle_class'] ?? VEHICLE_CLASS_DEFAULT),
         'waypoints'   => (string)($_POST['waypoints_json'] ?? '[]'),
         'geojson'     => (string)($_POST['geojson'] ?? ''),
+        'guidance'    => (string)($_POST['guidance_json'] ?? '[]'),
     ];
     $points = validateWaypoints(json_decode($w['waypoints'], true));
     $geo = validateGeometry($w['geojson']);
+    // Turn instructions belong to exactly this track; if they don't fit, the navigation works them out itself
+    $guidance = $geo !== null ? validateGuidance(json_decode($w['guidance'], true), $geo['geojson']) : null;
 
     if (mb_strlen($w['title']) < 3) $errors[] = t('tour.error_name');
     if ($points === null || $geo === null) $errors[] = t('tour.error_route');
@@ -60,18 +64,19 @@ if (isPost()) {
     if (!$errors) {
         $values = [$w['title'], $w['description'] ?: null, $LANG, $w['visibility'], $group, $w['difficulty'], $w['style'], $w['rule_set'], $w['vehicle'],
                    $geo['distance'], computeAscent($geo['geojson']), $geo['freehand_pct'], json_encode($points), $geo['geojson'],
+                   $guidance ? json_encode($guidance) : null,
                    $geo['start'][0], $geo['start'][1], $geo['bbox'][0], $geo['bbox'][1], $geo['bbox'][2], $geo['bbox'][3]];
         if ($tour) {
             dbExec('UPDATE tours SET title = ?, description = ?, content_lang = ?, visibility = ?, owner_group_id = ?, difficulty = ?, style = ?,
-                           rule_set = ?, vehicle_class = ?, distance_m = ?, ascent_m = ?, freehand_share_pct = ?, waypoints_json = ?, geojson = ?,
+                           rule_set = ?, vehicle_class = ?, distance_m = ?, ascent_m = ?, freehand_share_pct = ?, waypoints_json = ?, geojson = ?, guidance_json = ?,
                            start_lat = ?, start_lng = ?, bbox_min_lat = ?, bbox_min_lng = ?, bbox_max_lat = ?, bbox_max_lng = ?
                      WHERE id = ?', [...$values, $tour['id']]);
             $newId = (int)$tour['id'];
         } else {
             dbExec('INSERT INTO tours (title, description, content_lang, visibility, owner_group_id, difficulty, style, rule_set, vehicle_class,
-                           distance_m, ascent_m, freehand_share_pct, waypoints_json, geojson,
+                           distance_m, ascent_m, freehand_share_pct, waypoints_json, geojson, guidance_json,
                            start_lat, start_lng, bbox_min_lat, bbox_min_lng, bbox_max_lat, bbox_max_lng, owner_user_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [...$values, $uid]);
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [...$values, $uid]);
             $newId = (int)db()->lastInsertId();
             recordEvent($uid, 'tour_created', 'tour', $newId, null, (float)round($geo['distance'] / 1000, 2),
                 ['visibility' => $w['visibility'], 'group_id' => $group]);
@@ -142,6 +147,7 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <input type="hidden" name="id" value="<?= (int)($tour['id'] ?? 0) ?>">
   <input type="hidden" name="waypoints_json" id="waypoints_json" value="<?= e($w['waypoints']) ?>">
   <input type="hidden" name="geojson" id="geojson" value="<?= e($w['geojson']) ?>">
+  <input type="hidden" name="guidance_json" id="guidance_json" value="<?= e($w['guidance']) ?>">
 
   <div class="field"><label for="title"><?= te('tour.name') ?></label>
     <div class="input-with-button">
@@ -182,5 +188,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=11"></script>
+<script src="/assets/planner.js?v=12"></script>
 <?php pageFooter();

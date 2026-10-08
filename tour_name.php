@@ -24,6 +24,7 @@ if (currentUser() === null) {
 if (!isPost() || !checkCsrfHeader()) {
     respond(400, ['error' => 'csrf']);
 }
+session_write_close();   // geocoding can take a few seconds
 $input = json_decode((string)file_get_contents('php://input'), true);
 $geo = is_array($input['geojson'] ?? null) ? validateGeometry(json_encode($input['geojson'])) : null;
 if ($geo === null) {

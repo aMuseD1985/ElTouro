@@ -5,7 +5,7 @@ Options -Indexes -MultiViews
 DirectoryIndex index.php
 
 # Libraries, includes and docs are never served directly
-<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|rides_lib\.php|share_lib\.php|tour_name_lib\.php|geocoder_lib\.php|google_lib\.php|rewards_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
+<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|rides_lib\.php|share_lib\.php|tour_name_lib\.php|geocoder_lib\.php|track_lib\.php|google_lib\.php|rewards_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
     Require all denied
 </FilesMatch>
 <FilesMatch "^_">
@@ -56,9 +56,12 @@ RewriteRule ^tour/plan/?$ tour_plan.php [L,QSA]
 RewriteRule ^tour/([0-9]+)/?$ tour.php?id=$1 [L,QSA]
 RewriteRule ^tour/([0-9]+)/edit/?$ tour_plan.php?id=$1 [L,QSA]
 RewriteRule ^tour/([0-9]+)/gpx/?$ tour_gpx.php?id=$1 [L,QSA]
+RewriteRule ^tour/([0-9]+)/go/?$ tour_go.php?id=$1 [L,QSA]
 RewriteRule ^api/route/?$ route.php [L,QSA]
 RewriteRule ^api/tour-name/?$ tour_name.php [L,QSA]
 RewriteRule ^api/place-search/?$ place_search.php [L,QSA]
+RewriteRule ^api/place-name/?$ place_name.php [L,QSA]
+RewriteRule ^api/track/?$ track.php [L,QSA]
 RewriteRule ^s/([A-Za-z0-9_-]{24})/?$ share.php?token=$1 [L,QSA]
 RewriteRule ^s/([A-Za-z0-9_-]{24})/image\.png$ share.php?token=$1&image=1 [L,QSA]
 

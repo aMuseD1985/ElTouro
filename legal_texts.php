@@ -123,7 +123,11 @@ Eine Tour besteht aus den Wegpunkten, die du auf der Karte setzt, und der daraus
 
 **Ortssuche:** Wenn du im Planer nach einem Ort oder einer Adresse suchst, schickt unser Server deinen Suchbegriff an denselben Dienst (Nominatim) und zeigt dir die Treffer an. Deine IP-Adresse und dein Konto werden dabei nicht übermittelt; den Suchbegriff und die Treffer speichern wir bis zu 30 Tage zwischen, damit dieselbe Suche nicht erneut geschickt wird. Rechtsgrundlage ist unser berechtigtes Interesse an einer bequemen Tourenplanung (Art. 6 Abs. 1 lit. f DSGVO).
 
-Die Schaltfläche „Mein Standort“ fragt deinen Standort über deinen Browser ab, und nur nach deiner Zustimmung im Browser. Der Standort wird ausschließlich dazu genutzt, die Karte zu verschieben. Er wird nicht an uns übertragen und nicht gespeichert.
+**Namen der Wegpunkte:** Damit die Wegpunktliste im Planer Straße und Hausnummer zeigt, schickt unser Server die Koordinaten deiner Wegpunkte – auch Start und Ziel – auf etwa 10 Meter gerundet an Nominatim und erhält die Adresse zurück. Deine IP-Adresse und dein Konto werden dabei nicht übermittelt, gespeichert werden die Adressen nur als Zwischenspeicher pro Koordinate (bis zu 90 Tage), nicht an deiner Tour. Rechtsgrundlage ist unser berechtigtes Interesse an einer bequemen Tourenplanung (Art. 6 Abs. 1 lit. f DSGVO).
+
+**Fahrmodus:** Im Fahrmodus nutzt die Navigation deinen Standort, um dir Abbiegehinweise anzusagen. Das passiert nur in deinem Browser; ohne Aufzeichnung wird dein Standort nicht an uns übertragen. Schaltest du „Fahrt aufzeichnen“ ein, schickt die App während der Fahrt etwa alle zwei Sekunden deine Position samt Genauigkeit und Geschwindigkeit an unseren Server. Wir speichern die Aufzeichnung, berechnen daraus Strecke, Fahrzeit und Höchstgeschwindigkeit und vermerken die gefahrenen Kilometer für Punkte und Ränge. Die Aufzeichnung sieht nur du; du kannst sie auf der Tourseite jederzeit löschen, dann sind alle Positionen endgültig entfernt. Rechtsgrundlage ist der Nutzungsvertrag (Art. 6 Abs. 1 lit. b DSGVO); die Aufzeichnung ist freiwillig.
+
+Die Schaltfläche „Mein Standort“ fragt deinen Standort über deinen Browser ab, und nur nach deiner Zustimmung im Browser. Der Standort wird ausschließlich dazu genutzt, die Karte zu verschieben. Er wird nicht an uns übertragen und nicht gespeichert. Für die Navigation im Fahrmodus gilt der Abschnitt „Fahrmodus“.
 
 ## 7. Ausfahrten
 
@@ -207,13 +211,17 @@ Other logged-in users see your display name and the content you publish. Crew me
 
 ## 6. Routes and location
 
-A route consists of the waypoints you set on the map and the calculated track. We store it so you can find and share it (Art. 6(1)(b) GDPR). Make sure start and finish of public routes aren’t right outside your front door. The “My location” button asks your browser for your location, only with your consent, and only uses it to move the map. It is not sent to us or stored.
+A route consists of the waypoints you set on the map and the calculated track. We store it so you can find and share it (Art. 6(1)(b) GDPR). Make sure start and finish of public routes aren’t right outside your front door. The “My location” button asks your browser for your location, only with your consent, and only uses it to move the map. It is not sent to us or stored. For navigation in ride mode, see “Ride mode”.
 
 **Sharing routes:** You can create a link for a route, even if it is otherwise private. Anyone with the link can see, without logging in, the route’s name, length, climb, difficulty, riding style and the track without its first and last 300 metres. Who created it, which crew it belongs to and its description are not shown. You can deactivate the link at any time; the page is then gone. The buttons for WhatsApp, Telegram, Facebook, X and email are plain links: only when you click one does that service open with the link – nothing is transmitted before. For the preview, the service you share on fetches the shared page and a preview image of the track from us.
 
 **Name suggestions:** So the planner can suggest a name and description for your route, our server sends points inside the track – the middle and, for routes from 10 km, the two quarter points, each rounded to about 100 metres – to the place-name service Nominatim of the OpenStreetMap Foundation (United Kingdom) and receives the names of the neighbourhoods. Start and finish of the route, your IP address and your account are not transmitted. We cache the result so the same point is not looked up again. The United Kingdom is covered by an adequacy decision of the European Commission. Legal basis: our legitimate interest in convenient route planning (Art. 6(1)(f) GDPR). You can overwrite the suggestion at any time.
 
 **Place search:** When you search for a place or address in the planner, our server sends your search term to the same service (Nominatim) and shows you the hits. Your IP address and account are not transmitted; we cache the search term and its hits for up to 30 days so the same search is not sent again. Legal basis: our legitimate interest in convenient route planning (Art. 6(1)(f) GDPR).
+
+**Waypoint names:** So the planner's waypoint list can show street and house number, our server sends the coordinates of your waypoints – including start and finish – rounded to about 10 metres to Nominatim and receives the address. Your IP address and account are not transmitted; the addresses are only cached per coordinate (up to 90 days), not stored with your route. Legal basis: our legitimate interest in convenient route planning (Art. 6(1)(f) GDPR).
+
+**Ride mode:** In ride mode the navigation uses your location to announce turns. This happens only in your browser; without recording your location is not sent to us. If you switch on “Record ride”, the app sends your position with accuracy and speed to our server about every two seconds while you ride. We store the recording, calculate distance, riding time and top speed, and note the kilometres for points and ranks. Only you can see the recording; you can delete it on the route page at any time, which removes all positions for good. Legal basis: the user agreement (Art. 6(1)(b) GDPR); recording is voluntary.
 
 ## 7. Rides
 

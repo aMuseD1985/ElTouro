@@ -1,7 +1,10 @@
 <?php
 /**
  * POST /api/route  (JSON: {"points": [[lat,lng], …], "rule_set": "ekfv"|"ekfv2027"})
- * Response: {"geojson": FeatureCollection, "notice": "no_router"|"partly_freehand"|null}
+ * Response: {"geojson": FeatureCollection, "guidance": [[coordIndex, command, exit], …], "notice": "no_router"|"partly_freehand"|null}
+ *
+ * guidance are BRouter's turn instructions (VoiceHint commands, see tours_lib.php), with the index counted over the
+ * coordinates of all features in order – the navigation (assets/navigate.js) announces them.
  *
  * First the whole route is calculated in one go. If that fails (e.g. a point lies off permitted
  * paths), it is routed section by section; sections that cannot be routed are connected with a
@@ -25,6 +28,7 @@ if (currentUser() === null) {
 if (!isPost() || !checkCsrfHeader()) {
     respond(400, ['error' => 'csrf']);
 }
+session_write_close();   // routing can take a while – don't block the rider's other requests
 
 $input = json_decode((string)file_get_contents('php://input'), true);
 $points = validateWaypoints($input['points'] ?? null);
@@ -43,7 +47,7 @@ for ($i = 1; $i < count($points); $i++) {
 @set_time_limit(120);
 
 /**
- * Asks BRouter for a sequence of points. Returns coordinates [[lng,lat,ele], …] or null.
+ * Asks BRouter for a sequence of points. Returns ['coords' => [[lng,lat,ele], …], 'hints' => [[index, command, exit], …]] or null.
  * Vehicle class and rule set go to the profile as parameters; profiles without them simply ignore them.
  */
 function brouter(array $points, string $ruleSet, int $vehicle): ?array
@@ -59,6 +63,7 @@ function brouter(array $points, string $ruleSet, int $vehicle): ?array
         'profile'        => $ruleSet === 'ekfv2027' ? ($b['profile_2027'] ?? $b['profile'] ?? 'escooter') : ($b['profile'] ?? 'escooter'),
         'alternativeidx' => 0,
         'format'         => 'geojson',
+        'timode'         => 2,          // turn instructions (voicehints) for the ride mode – without it BRouter sends none
         'profile:scooter_class' => $vehicle,
         'profile:rules_2027'    => $ruleSet === 'ekfv2027' ? 1 : 0,
     ]);
@@ -83,7 +88,16 @@ function brouter(array $points, string $ruleSet, int $vehicle): ?array
     }
     $gj = json_decode($raw, true);
     $coords = $gj['features'][0]['geometry']['coordinates'] ?? null;
-    return is_array($coords) && count($coords) >= 2 ? $coords : null;
+    if (!is_array($coords) || count($coords) < 2) {
+        return null;
+    }
+    $hints = [];
+    foreach ((array)($gj['features'][0]['properties']['voicehints'] ?? []) as $h) {
+        if (is_array($h) && count($h) >= 3) {
+            $hints[] = [(int)$h[0], (int)$h[1], (int)$h[2]];
+        }
+    }
+    return ['coords' => $coords, 'hints' => $hints];
 }
 
 function line(array $coords, bool $freehand): array
@@ -93,13 +107,25 @@ function line(array $coords, bool $freehand): array
 }
 
 $features = [];
+$guidance = [];
+$offset = 0;   // coordinates of the features before the current one
 $notice = null;
+
+/** Adds a routed section and its turn instructions. */
+function addRouted(array $r, array &$features, array &$guidance, int &$offset): void
+{
+    $features[] = line($r['coords'], false);
+    foreach ($r['hints'] as [$i, $cmd, $exit]) {
+        $guidance[] = [$offset + $i, $cmd, $exit];
+    }
+    $offset += count($r['coords']);
+}
 
 if (empty($CONFIG['brouter']['url'])) {
     $features[] = line(array_map(fn($p) => [$p[1], $p[0]], $points), true);
     $notice = 'no_router';
 } elseif (($whole = brouter($points, $ruleSet, $vehicle)) !== null) {
-    $features[] = line($whole, false);
+    addRouted($whole, $features, $guidance, $offset);
 } elseif (count($points) === 2) {
     // Only one section: routing it again would just repeat the failed request
     $features[] = line(array_map(fn($p) => [$p[1], $p[0]], $points), true);
@@ -108,9 +134,14 @@ if (empty($CONFIG['brouter']['url'])) {
     for ($i = 0; $i < count($points) - 1; $i++) {
         $section = [$points[$i], $points[$i + 1]];
         $c = brouter($section, $ruleSet, $vehicle);
-        $features[] = $c !== null ? line($c, false) : line([[$section[0][1], $section[0][0]], [$section[1][1], $section[1][0]]], true);
-        if ($c === null) { $notice = 'partly_freehand'; }
+        if ($c !== null) {
+            addRouted($c, $features, $guidance, $offset);
+        } else {
+            $features[] = line([[$section[0][1], $section[0][0]], [$section[1][1], $section[1][0]]], true);
+            $offset += 2;
+            $notice = 'partly_freehand';
+        }
     }
 }
 
-respond(200, ['geojson' => ['type' => 'FeatureCollection', 'features' => $features], 'notice' => $notice]);
+respond(200, ['geojson' => ['type' => 'FeatureCollection', 'features' => $features], 'guidance' => $guidance, 'notice' => $notice]);
