@@ -12,11 +12,21 @@
   var current = null;
   var requestNo = 0;
   try { points = JSON.parse(d.waypoints || '[]') || []; } catch (e) { points = []; }
+  // A stop (charging, food, break, sight) travels with its waypoint as third element: [lat, lng, {type, name}]
+  try {
+    (JSON.parse(d.stops || '[]') || []).forEach(function (s) { if (points[s.i]) points[s.i][2] = { type: s.type, name: s.name || '' }; });
+  } catch (e) { /* no stops */ }
+  var P = {};
+  try { P = JSON.parse(d.poiTexts || '{}'); } catch (e) { P = {}; }
+  var STOP_ICON = { charge: '⚡', food: '🍽', break: '☕', sight: '👁' };
+  function clean(list) { return list.map(function (p) { return [p[0], p[1]]; }); }
   try { current = d.geojson ? JSON.parse(d.geojson) : null; } catch (e) { current = null; }
 
   var fieldWp = document.getElementById('waypoints_json');
   var fieldGj = document.getElementById('geojson');
   var fieldGuidance = document.getElementById('guidance_json');
+  var fieldStops = document.getElementById('stops_json');
+  var stopsButton = document.getElementById('pl-stops');
   var fieldRules = document.getElementById('rule_set');
   var fieldVehicle = document.getElementById('vehicle_class');
   var bullrunHint = document.getElementById('bullrun-hint');
@@ -161,8 +171,10 @@
   var listBox = document.getElementById('waypoints');
 
   function pinIcon(i) {
-    var cls = 'wp-pin' + (i === selected ? ' is-selected' : '') + (i === 0 ? ' is-start' : '');
-    return L.divIcon({ className: '', html: '<div class="' + cls + '">' + (i + 1) + '</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+    var stop = points[i] && points[i][2];
+    var cls = 'wp-pin' + (i === selected ? ' is-selected' : '') + (i === 0 ? ' is-start' : '') + (stop ? ' is-stop' : '');
+    var badge = stop ? '<span class="wp-badge">' + STOP_ICON[stop.type] + '</span>' : '';
+    return L.divIcon({ className: '', html: '<div class="' + cls + '">' + (i + 1) + badge + '</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
   }
 
   // Only the icons change – redrawing the markers would close an open popup
@@ -193,6 +205,7 @@
       m.on('dragend', function (e) {
         var ll = e.target.getLatLng();
         var moved = [ll.lat, ll.lng];
+        if (points[i][2]) moved.push(points[i][2]);   // a moved stop stays a stop
         if (!legOk(points[i - 1], moved) || !legOk(moved, points[i + 1])) { drawMarkers(); tooFar(); return; }
         points[i] = moved;
         selected = i;
@@ -234,19 +247,151 @@
       var leg = i === 0 ? T.start : T.leg.replace('{km}', fmtKm(distance([points[i - 1][1], points[i - 1][0]], [p[1], p[0]])));
       if (i > 0 && i === points.length - 1) leg += ' · ' + T.finish;
       var nameText = document.createElement('span');
-      nameText.textContent = pointName(i);
+      nameText.textContent = p[2] ? STOP_ICON[p[2].type] + ' ' + (p[2].name || pointName(i)) : pointName(i);
       var legText = document.createElement('small');
       legText.textContent = leg;
       main.appendChild(nameText); main.appendChild(legText);
       main.addEventListener('click', function () { select(i, true); });
       li.appendChild(num);
       li.appendChild(main);
+      li.appendChild(stopSelect(i));
       li.appendChild(listButton('▲', T.up + ' (' + (i + 1) + ')', function () { movePoint(i, -1); }, i === 0));
       li.appendChild(listButton('▼', T.down + ' (' + (i + 1) + ')', function () { movePoint(i, 1); }, i === points.length - 1));
       li.appendChild(listButton('✕', T.remove + ' (' + (i + 1) + ')', function () { removePoint(i); }, false, 'danger'));
       list.appendChild(li);
     });
   }
+
+  // Per waypoint: is it a stop, and what kind? Choosing a kind keeps the address as the stop's name.
+  function stopSelect(i) {
+    var sel = document.createElement('select');
+    sel.className = 'wp-stop';
+    sel.setAttribute('aria-label', P.stop_label + ' (' + (i + 1) + ')');
+    [''].concat(Object.keys(STOP_ICON)).forEach(function (type) {
+      var o = document.createElement('option');
+      o.value = type;
+      o.textContent = type ? STOP_ICON[type] + ' ' + P['type_' + type] : P.no_stop;
+      sel.appendChild(o);
+    });
+    sel.value = points[i][2] ? points[i][2].type : '';
+    sel.addEventListener('change', function () {
+      if (sel.value) points[i][2] = { type: sel.value, name: points[i][2] ? points[i][2].name : (names[nameKey(points[i])] || '') };
+      else points[i].length = 2;
+      selected = i;
+      drawMarkers();
+      fieldStops.value = JSON.stringify(points.map(function (p, k) { return p[2] ? { i: k, type: p[2].type, name: p[2].name } : null; })
+                                              .filter(function (x) { return x; }));
+    });
+    return sel;
+  }
+
+  // ---- Suggestions for stops along the route (server asks OpenStreetMap; see poi_lib.php)
+  var stopBox = document.getElementById('stop-suggestions');
+  var poiLayer = L.layerGroup().addTo(map);
+
+  function poiFacts(it) {
+    var f = [P['kind_' + it.kind] || it.kind, P.at_km.replace('{km}', it.km.toLocaleString(d.lang === 'de' ? 'de-DE' : 'en-GB'))];
+    f.push(it.off < 30 ? P.on_route : P.off_route.replace('{m}', Math.round(it.off / 10) * 10));
+    it.facts.forEach(function (x) { if (P['fact_' + x]) f.push(P['fact_' + x]); });
+    return f.join(' · ');
+  }
+
+  function planStop(it) {
+    if (points.length >= MAX) return;
+    poiLayer.clearLayers();
+    stopBox.hidden = true;
+    insertOnRoute([it.lat, it.lng, { type: it.type, name: it.name || P['kind_' + it.kind] || '' }]);
+  }
+
+  function poiRow(it, reason) {
+    var li = document.createElement('li');
+    var text = document.createElement('div');
+    var title = document.createElement('strong');
+    title.textContent = STOP_ICON[it.type] + ' ' + (it.name || P['kind_' + it.kind] || it.kind);
+    var small = document.createElement('small');
+    small.textContent = (reason ? P['reason_' + reason] + ' · ' : '') + poiFacts(it);
+    text.appendChild(title); text.appendChild(document.createElement('br')); text.appendChild(small);
+    if (it.opening_hours) {
+      var oh = document.createElement('small');
+      oh.className = 'muted-item';
+      oh.textContent = ' · ' + it.opening_hours;
+      text.appendChild(oh);
+    }
+    var show = listButton(P.show, P.show, function () { map.setView([it.lat, it.lng], 17); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    var add = listButton(P.add, P.add, function () { planStop(it); });
+    li.appendChild(text); li.appendChild(show); li.appendChild(add);
+    return li;
+  }
+
+  function poiMarker(it) {
+    var m = L.marker([it.lat, it.lng], { icon: L.divIcon({ className: '', html: '<div class="poi-pin poi-' + it.type + '">' + STOP_ICON[it.type] + '</div>',
+                                                            iconSize: [26, 26], iconAnchor: [13, 13] }), keyboard: true,
+                                         title: it.name || P['kind_' + it.kind] || '' });
+    m.bindPopup(function () {
+      var box = document.createElement('div');
+      var t = document.createElement('strong'); t.textContent = it.name || P['kind_' + it.kind] || '';
+      var f = document.createElement('div'); f.textContent = poiFacts(it);
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'link'; b.textContent = P.add;
+      b.addEventListener('click', function () { map.closePopup(); planStop(it); });
+      box.appendChild(t); box.appendChild(f); box.appendChild(b);
+      return box;
+    });
+    m.addTo(poiLayer);
+  }
+
+  function showSuggestions(j) {
+    stopBox.textContent = '';
+    poiLayer.clearLayers();
+    var h = document.createElement('h2'); h.textContent = P.title; stopBox.appendChild(h);
+    var note = document.createElement('p'); note.className = 'hint'; note.textContent = P.note; stopBox.appendChild(note);
+    var any = false;
+    if (j.plan && j.plan.length) {
+      var h3 = document.createElement('h3'); h3.textContent = P.plan; stopBox.appendChild(h3);
+      var ul = document.createElement('ul'); ul.className = 'poi-list';
+      j.plan.forEach(function (it) { ul.appendChild(poiRow(it, it.reason)); poiMarker(it); });
+      stopBox.appendChild(ul);
+      any = true;
+    }
+    Object.keys(STOP_ICON).forEach(function (type) {
+      var list = (j.by_type && j.by_type[type]) || [];
+      var det = document.createElement('details');
+      var sum = document.createElement('summary');
+      sum.textContent = STOP_ICON[type] + ' ' + P['type_' + type] + ' (' + list.length + ')';
+      det.appendChild(sum);
+      if (!list.length) {
+        var none = document.createElement('p'); none.className = 'hint';
+        none.textContent = type === 'charge' ? P.no_charge : P.none;
+        det.appendChild(none);
+      } else {
+        var ul2 = document.createElement('ul'); ul2.className = 'poi-list';
+        list.forEach(function (it) { ul2.appendChild(poiRow(it, '')); poiMarker(it); });
+        det.appendChild(ul2);
+        any = true;
+      }
+      stopBox.appendChild(det);
+    });
+    if (!any) { var p = document.createElement('p'); p.textContent = P.none_at_all; stopBox.appendChild(p); }
+    stopBox.hidden = false;
+  }
+
+  if (stopsButton) stopsButton.addEventListener('click', function () {
+    if (!current) return;
+    stopsButton.disabled = true;
+    stopBox.hidden = false;
+    stopBox.textContent = P.loading;
+    fetch('/api/stops', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF': d.csrf },
+      body: JSON.stringify({ geojson: current })
+    }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); })
+      .then(function (x) {
+        if (x.status === 429) stopBox.textContent = P.slow;
+        else if (x.status !== 200) stopBox.textContent = P.error;
+        else showSuggestions(x.j);
+      })
+      .catch(function () { stopBox.textContent = P.error; })
+      .then(function () { stopsButton.disabled = !current; });
+  });
 
   // Changes that would create a leg longer than allowed are refused, like clicks on the map
   function legsOk(candidate) {
@@ -324,7 +469,13 @@
 
   function calculate() {
     drawMarkers();
-    fieldWp.value = JSON.stringify(points);
+    fieldWp.value = JSON.stringify(clean(points));
+    if (fieldStops) {
+      var stops = [];
+      points.forEach(function (p, i) { if (p[2]) stops.push({ i: i, type: p[2].type, name: p[2].name }); });
+      fieldStops.value = JSON.stringify(stops);
+    }
+    if (stopsButton) stopsButton.disabled = true;
     if (points.length < 2) {
       current = null;
       fieldGj.value = '';
@@ -345,7 +496,7 @@
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF': d.csrf },
-      body: JSON.stringify({ points: points, rule_set: fieldRules ? fieldRules.value : 'ekfv', vehicle: fieldVehicle ? parseInt(fieldVehicle.value, 10) : 2 })
+      body: JSON.stringify({ points: clean(points), rule_set: fieldRules ? fieldRules.value : 'ekfv', vehicle: fieldVehicle ? parseInt(fieldVehicle.value, 10) : 2 })
     }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
@@ -358,6 +509,7 @@
       drawRoute(current);
       showStats(current);
       saveButton.disabled = false;
+      if (stopsButton) stopsButton.disabled = false;
       setStatus(j.notice ? T['notice_' + j.notice] : T.done);
       if (nameButton) nameButton.disabled = false;
       suggestName(false);
@@ -451,7 +603,7 @@
   document.getElementById('pl-loop').addEventListener('click', function () {
     if (points.length < 2 || points.length >= MAX) return;
     if (!legOk(points[points.length - 1], points[0])) { tooFar(); return; }
-    points.push(points[0].slice());
+    points.push(points[0].slice(0, 2));
     calculate();
   });
   document.getElementById('pl-locate').addEventListener('click', function () {
@@ -476,6 +628,7 @@
     map.fitBounds(L.geoJSON(current).getBounds(), { padding: [30, 30] });
     saveButton.disabled = false;
     if (nameButton) nameButton.disabled = false;
+    if (stopsButton) stopsButton.disabled = false;
   } else {
     saveButton.disabled = true;
     setStatus(T.empty);

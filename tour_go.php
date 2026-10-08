@@ -7,6 +7,7 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/tours_lib.php';
+require __DIR__ . '/poi_lib.php';
 $me = requireLogin();
 $tour = loadTour((int)($_GET['id'] ?? 0));
 if ($tour === null || !canSeeTour($tour, (int)$me['id'])) {
@@ -15,7 +16,7 @@ if ($tour === null || !canSeeTour($tour, (int)$me['id'])) {
 
 $keys = ['start', 'start_sim', 'arrive', 'halfway', 'offroute', 'back', 'speed', 'gps_wait', 'gps_error', 'gps_denied', 'wakelock',
          'in_m', 'in_km', 'now', 'remaining', 'eta_min', 'eta_h', 'speed_unit', 'sim_clock', 'follow', 'voice_on', 'voice_off',
-         'done_title', 'done_arrived', 'done_text', 'done_recorded', 'done_not_recorded', 'saving', 'no_hints'];
+         'far_stop', 'now_stop_charge', 'now_stop_food', 'now_stop_break', 'now_stop_sight', 'label_stop', 'done_title', 'done_arrived', 'done_text', 'done_recorded', 'done_not_recorded', 'saving', 'no_hints'];
 foreach (['left', 'slight_left', 'sharp_left', 'right', 'slight_right', 'sharp_right', 'keep_left', 'keep_right', 'uturn',
           'roundabout', 'exit_left', 'exit_right', 'straight'] as $m) {
     array_push($keys, 'far_' . $m, 'now_' . $m, 'label_' . $m);
@@ -31,6 +32,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
 <div class="ride-mode" id="ride"
      data-geojson="<?= e($tour['geojson']) ?>"
      data-guidance="<?= e($tour['guidance_json'] ?? '[]') ?>"
+     data-stops="<?= e(json_encode(array_map(fn($s) => ['lat' => $s['lat'], 'lng' => $s['lng'], 'type' => $s['type'], 'name' => $s['name'] !== '' ? $s['name'] : t('stop.type_' . $s['type'])], tourStops($tour)), JSON_UNESCAPED_UNICODE)) ?>"
      data-tiles="<?= e((string)$CONFIG['map']['tiles']) ?>"
      data-attribution="<?= e((string)$CONFIG['map']['attribution']) ?>"
      data-csrf="<?= e(csrfToken()) ?>"
@@ -81,5 +83,5 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
   </div>
 </div>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/navigate.js?v=2"></script>
+<script src="/assets/navigate.js?v=7"></script>
 <?php pageFooter();

@@ -73,6 +73,23 @@
       last = cum[j];
     }
   }
+  // Planned stops are announced like manoeuvres
+  var STOP_ICON = { charge: '⚡', food: '🍽', break: '☕', sight: '👁' };
+  function alongOf(p) {
+    var best = Infinity, at = 0, kx = Math.cos(p[0] * Math.PI / 180) * 111320, ky = 110540;
+    for (var s = 0; s < n - 1; s++) {
+      var ax = line[s][1] * kx, ay = line[s][0] * ky, vx = line[s + 1][1] * kx - ax, vy = line[s + 1][0] * ky - ay;
+      var l2 = vx * vx + vy * vy, r = l2 > 0 ? Math.max(0, Math.min(1, ((p[1] * kx - ax) * vx + (p[0] * ky - ay) * vy) / l2)) : 0;
+      var dd = Math.hypot(ax + vx * r - p[1] * kx, ay + vy * r - p[0] * ky);
+      if (dd < best) { best = dd; at = cum[s] + (cum[s + 1] - cum[s]) * r; }
+    }
+    return at;
+  }
+  try {
+    JSON.parse(d.stops || '[]').forEach(function (s) {
+      hints.push({ at: alongOf([s.lat, s.lng]), kind: 'stop', stop: s.type, name: s.name, exit: 0 });
+    });
+  } catch (e) { /* no stops */ }
   hints.sort(function (x, y) { return x.at - y.at; });
 
   // ---------------------------------------------------------------- map
@@ -121,13 +138,14 @@
   }
   if (window.speechSynthesis) speechSynthesis.onvoiceschanged = function () { voice = null; pickVoice(); };
   var subtitleTimer = null;
-  function say(text) {
+  // queue: wait for the current prompt instead of cutting it off (a stop right after a turn)
+  function say(text, queue) {
     ui.subtitle.textContent = text;
     ui.subtitle.hidden = false;
     clearTimeout(subtitleTimer);
     subtitleTimer = setTimeout(function () { ui.subtitle.hidden = true; }, 5000);
     if (!voiceOn || !window.speechSynthesis) return;
-    speechSynthesis.cancel();
+    if (!queue) speechSynthesis.cancel();
     var u = new SpeechSynthesisUtterance(text);
     u.lang = LOCALE;
     var v = pickVoice();
@@ -136,12 +154,17 @@
     speechSynthesis.speak(u);
   }
   function hintText(h, prefix) {
+    if (h.kind === 'stop') {
+      var key = prefix === 'now' ? 'now_stop_' + h.stop : prefix + '_stop';
+      return (T[key] || '').replace('{name}', h.name);
+    }
     var t = T[prefix + '_' + h.kind] || T[prefix + '_straight'];
     return t.replace('{n}', h.exit || 1);
   }
 
   // ---------------------------------------------------------------- following the track
   var state = { along: 0, seg: 0, off: 0, offRoute: false, halfway: false, arrived: false, lastSpeedWarn: 0, running: false };
+  if (/[?&]debug=1/.test(location.search)) window.__nav = { hints: hints, state: state, total: total };   // for testing only
 
   // Nearest point of the track to p, searched around the last position (a loop crosses itself – don't jump ahead)
   function project(p, wide) {
@@ -198,23 +221,38 @@
     var v = Math.max(speedMs, 2);
     if (next) {
       var togo = next.at - state.along;
-      ui.arrow.textContent = next.kind === 'roundabout' ? '⟳' : '⬆';
-      ui.arrow.style.transform = next.kind === 'roundabout' ? 'none' : 'rotate(' + (ARROW[next.kind] || 0) + 'deg)';
+      ui.arrow.textContent = next.kind === 'stop' ? STOP_ICON[next.stop] : next.kind === 'roundabout' ? '⟳' : '⬆';
+      ui.arrow.style.transform = next.kind === 'roundabout' || next.kind === 'stop' ? 'none' : 'rotate(' + (ARROW[next.kind] || 0) + 'deg)';
       ui.dist.textContent = shownDistance(togo);
       ui.text.textContent = hintText(next, 'label');
       if (!next.saidFar && togo > Math.max(60, 9 * v) && togo <= Math.max(160, 25 * v)) {
         next.saidFar = true;
         coverFollowing(nextIdx, 'saidFar');
-        say(hintText(next, 'far').replace('{d}', spokenDistance(togo)));
+        say(hintText(next, 'far').replace('{d}', spokenDistance(togo)), next.kind === 'stop');
       } else if (!next.saidNow && togo <= Math.max(30, 6 * v)) {
         next.saidNow = next.saidFar = true;
         coverFollowing(nextIdx, 'saidNow');
-        say(hintText(next, 'now'));
+        say(hintText(next, 'now'), next.kind === 'stop');
       }
     } else {
       ui.arrow.textContent = '🏁'; ui.arrow.style.transform = 'none';
       ui.dist.textContent = shownDistance(left);
       ui.text.textContent = T.label_straight;
+    }
+    // Stops get their early notice even while a turn comes first – the rider wants to know a few hundred metres ahead
+    for (var q = 0; q < hints.length; q++) {
+      var h = hints[q], ahead = h.at - state.along;
+      if (h.kind !== 'stop') continue;
+      if (ahead > Math.max(450, 70 * v)) break;
+      if (!h.saidFar && ahead > 100) {
+        h.saidFar = true;
+        say(hintText(h, 'far').replace('{d}', spokenDistance(ahead)), true);
+      }
+      // ...and are announced on arrival even when a turn sits on the same spot (a via point at the end of a cul-de-sac)
+      if (!h.saidNow && ahead <= Math.max(30, 6 * v) && ahead > -50) {
+        h.saidNow = h.saidFar = true;
+        say(hintText(h, 'now'), true);
+      }
     }
     if (!SIM && fix.speedMs != null && fix.speedMs * 3.6 > LEGAL_KMH + 4 && Date.now() - state.lastSpeedWarn > 120000) {
       state.lastSpeedWarn = Date.now();
@@ -225,6 +263,7 @@
   // Manoeuvres a few metres apart (two lefts across a junction) are one prompt for the rider, not two
   function coverFollowing(idx, flag) {
     for (var k = idx + 1; k < hints.length && hints[k].at - hints[idx].at < 25; k++) {
+      if (hints[k].kind === 'stop' || hints[idx].kind === 'stop') continue;   // a stop always gets its own prompt
       hints[k][flag] = true;
       if (flag === 'saidNow') hints[k].saidFar = true;
     }

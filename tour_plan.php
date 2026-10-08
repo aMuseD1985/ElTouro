@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/tours_lib.php';
+require __DIR__ . '/poi_lib.php';
 require __DIR__ . '/rewards_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
@@ -25,6 +26,7 @@ $w = [
     'rule_set'    => $tour['rule_set'] ?? currentRuleSet(),
     'vehicle'     => vehicleClass($tour['vehicle_class'] ?? VEHICLE_CLASS_DEFAULT),
     'waypoints'   => $tour['waypoints_json'] ?? '[]',
+    'stops'       => $tour['stops_json'] ?? '[]',
     'geojson'     => $tour['geojson'] ?? '',
     'guidance'    => $tour['guidance_json'] ?? '[]',
 ];
@@ -41,10 +43,12 @@ if (isPost()) {
         'rule_set'    => postField('rule_set') === 'ekfv2027' ? 'ekfv2027' : 'ekfv',
         'vehicle'     => vehicleClass($_POST['vehicle_class'] ?? VEHICLE_CLASS_DEFAULT),
         'waypoints'   => (string)($_POST['waypoints_json'] ?? '[]'),
+        'stops'       => (string)($_POST['stops_json'] ?? '[]'),
         'geojson'     => (string)($_POST['geojson'] ?? ''),
         'guidance'    => (string)($_POST['guidance_json'] ?? '[]'),
     ];
     $points = validateWaypoints(json_decode($w['waypoints'], true));
+    $stops = $points !== null ? validateStops(json_decode($w['stops'], true), count($points)) : null;
     $geo = validateGeometry($w['geojson']);
     // Turn instructions belong to exactly this track; if they don't fit, the navigation works them out itself
     $guidance = $geo !== null ? validateGuidance(json_decode($w['guidance'], true), $geo['geojson']) : null;
@@ -63,20 +67,20 @@ if (isPost()) {
 
     if (!$errors) {
         $values = [$w['title'], $w['description'] ?: null, $LANG, $w['visibility'], $group, $w['difficulty'], $w['style'], $w['rule_set'], $w['vehicle'],
-                   $geo['distance'], computeAscent($geo['geojson']), $geo['freehand_pct'], json_encode($points), $geo['geojson'],
+                   $geo['distance'], computeAscent($geo['geojson']), $geo['freehand_pct'], json_encode($points), $stops ? json_encode($stops, JSON_UNESCAPED_UNICODE) : null, $geo['geojson'],
                    $guidance ? json_encode($guidance) : null,
                    $geo['start'][0], $geo['start'][1], $geo['bbox'][0], $geo['bbox'][1], $geo['bbox'][2], $geo['bbox'][3]];
         if ($tour) {
             dbExec('UPDATE tours SET title = ?, description = ?, content_lang = ?, visibility = ?, owner_group_id = ?, difficulty = ?, style = ?,
-                           rule_set = ?, vehicle_class = ?, distance_m = ?, ascent_m = ?, freehand_share_pct = ?, waypoints_json = ?, geojson = ?, guidance_json = ?,
+                           rule_set = ?, vehicle_class = ?, distance_m = ?, ascent_m = ?, freehand_share_pct = ?, waypoints_json = ?, stops_json = ?, geojson = ?, guidance_json = ?,
                            start_lat = ?, start_lng = ?, bbox_min_lat = ?, bbox_min_lng = ?, bbox_max_lat = ?, bbox_max_lng = ?
                      WHERE id = ?', [...$values, $tour['id']]);
             $newId = (int)$tour['id'];
         } else {
             dbExec('INSERT INTO tours (title, description, content_lang, visibility, owner_group_id, difficulty, style, rule_set, vehicle_class,
-                           distance_m, ascent_m, freehand_share_pct, waypoints_json, geojson, guidance_json,
+                           distance_m, ascent_m, freehand_share_pct, waypoints_json, stops_json, geojson, guidance_json,
                            start_lat, start_lng, bbox_min_lat, bbox_min_lng, bbox_max_lat, bbox_max_lng, owner_user_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [...$values, $uid]);
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [...$values, $uid]);
             $newId = (int)db()->lastInsertId();
             recordEvent($uid, 'tour_created', 'tour', $newId, null, (float)round($geo['distance'] / 1000, 2),
                 ['visibility' => $w['visibility'], 'group_id' => $group]);
@@ -91,6 +95,14 @@ $jsTexts = [];
 foreach (['point', 'calculating', 'done', 'error', 'notice_no_router', 'notice_partly_freehand', 'empty', 'stats', 'freehand_share', 'locate_error',
           'leg_too_long', 'remove', 'up', 'down', 'leg', 'start', 'finish', 'searching', 'search_none', 'search_error', 'search_slow', 'add_point', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
     $jsTexts[$k] = t('planner.' . $k);
+}
+
+// Texts for stops and suggestions (stop.* in lang.php)
+$poiTexts = [];
+foreach ($TEXTS[$LANG] as $k => $v) {
+    if (str_starts_with($k, 'stop.')) {
+        $poiTexts[substr($k, 5)] = $v;
+    }
 }
 
 pageHeader($tour ? t('tour.edit') : t('tour.new'));
@@ -110,6 +122,7 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="button" class="link" id="pl-undo"><?= te('planner.undo') ?></button>
   <button type="button" class="link" id="pl-loop"><?= te('planner.loop') ?></button>
   <button type="button" class="link" id="pl-reverse"><?= te('planner.reverse') ?></button>
+  <button type="button" class="link" id="pl-stops" disabled><?= te('planner.suggest_stops') ?></button>
   <button type="button" class="link" id="pl-locate"><?= te('planner.locate') ?></button>
   <button type="button" class="link danger" id="pl-clear"><?= te('planner.clear') ?></button>
 </div>
@@ -118,6 +131,8 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
      data-tiles="<?= e((string)$CONFIG['map']['tiles']) ?>"
      data-attribution="<?= e((string)$CONFIG['map']['attribution']) ?>"
      data-waypoints="<?= e($w['waypoints']) ?>"
+     data-stops="<?= e($w['stops']) ?>"
+     data-poi-texts="<?= e(json_encode($poiTexts, JSON_UNESCAPED_UNICODE)) ?>"
      data-geojson="<?= e($w['geojson']) ?>"
      data-csrf="<?= e(csrfToken()) ?>"
      data-lang="<?= e($LANG) ?>"
@@ -137,6 +152,7 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
 </div>
 <p id="planner-status" class="muted" role="status" aria-live="polite"></p>
 <p id="planner-info" class="stats"></p>
+<section id="stop-suggestions" class="stop-suggestions" hidden aria-live="polite"></section>
 <section id="waypoints" class="waypoints" hidden>
   <h2><?= te('planner.waypoints') ?></h2>
   <ol id="waypoint-list" class="waypoint-list"></ol>
@@ -148,6 +164,7 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <input type="hidden" name="waypoints_json" id="waypoints_json" value="<?= e($w['waypoints']) ?>">
   <input type="hidden" name="geojson" id="geojson" value="<?= e($w['geojson']) ?>">
   <input type="hidden" name="guidance_json" id="guidance_json" value="<?= e($w['guidance']) ?>">
+  <input type="hidden" name="stops_json" id="stops_json" value="<?= e($w['stops']) ?>">
 
   <div class="field"><label for="title"><?= te('tour.name') ?></label>
     <div class="input-with-button">
@@ -188,5 +205,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=12"></script>
+<script src="/assets/planner.js?v=13"></script>
 <?php pageFooter();

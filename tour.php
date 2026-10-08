@@ -5,6 +5,7 @@ require __DIR__ . '/rides_lib.php';
 require __DIR__ . '/share_lib.php';
 require __DIR__ . '/rewards_lib.php';
 require __DIR__ . '/track_lib.php';
+require __DIR__ . '/poi_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 
@@ -50,6 +51,8 @@ if (isPost() && ($_POST['action'] ?? '') === 'delete' && $canEdit) {
 
 $tourRides = visibleRides($uid, true, 'r.tour_id = ?', [(int)$tour['id']], 10);
 $myTracks = ownTracksOfTour($uid, (int)$tour['id']);
+$stops = tourStops($tour);
+$stopIcons = ['charge' => '⚡', 'food' => '🍽', 'break' => '☕', 'sight' => '👁'];
 pageHeader($tour['title']);
 ?>
 <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
@@ -108,6 +111,17 @@ pageHeader($tour['title']);
         <button class="link danger"><?= te('share.revoke') ?></button></form>
     <?php endif; ?>
   <?php endif; ?>
+</section>
+<?php endif; ?>
+
+<?php if ($stops): ?>
+<section class="panel">
+  <h2><?= te('tour.stops') ?></h2>
+  <ul class="list">
+    <?php foreach ($stops as $st): ?>
+      <li><?= $stopIcons[$st['type']] ?> <?= te('tour.stop_line', ['km' => number_format($st['km'], 1, t('common.decimal_point'), ''), 'name' => $st['name'] !== '' ? $st['name'] : t('stop.type_' . $st['type'])]) ?></li>
+    <?php endforeach; ?>
+  </ul>
 </section>
 <?php endif; ?>
 

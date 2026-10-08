@@ -3,6 +3,7 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/tours_lib.php';
+require __DIR__ . '/poi_lib.php';
 $me = requireLogin();
 
 $tour = loadTour((int)($_GET['id'] ?? 0));
@@ -18,6 +19,10 @@ header('Content-Disposition: attachment; filename="eltouro-' . $file . '.gpx"');
 echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
 echo '<gpx version="1.1" creator="ElTouro" xmlns="http://www.topografix.com/GPX/1/1">' . "\n";
 echo '<metadata><name>' . $x($tour['title']) . '</name></metadata>' . "\n";
+foreach (tourStops($tour) as $st) {
+    echo '<wpt lat="' . $st['lat'] . '" lon="' . $st['lng'] . '"><name>' . $x($st['name'] !== '' ? $st['name'] : t('stop.type_' . $st['type'])) . '</name>'
+       . '<type>' . $x(t('stop.type_' . $st['type'])) . "</type></wpt>\n";
+}
 echo '<trk><name>' . $x($tour['title']) . "</name>\n";
 foreach (json_decode($tour['geojson'], true)['features'] as $f) {
     echo "<trkseg>\n";
