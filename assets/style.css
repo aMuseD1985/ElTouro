@@ -230,3 +230,6 @@ details summary { cursor: pointer; }
 .share-targets a:hover { background: var(--night); color: #fff; }
 .share-kicker { margin: 0; font-weight: 600; color: var(--denim); text-transform: uppercase; letter-spacing: .06em; font-size: .85rem; }
 .share-cta h2:first-child { margin-top: 0; }
+
+.input-with-button { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.input-with-button input { flex: 1 1 18rem; }

@@ -48,7 +48,7 @@ Seiten, die ohne Tester-Passwort erreichbar sein müssen (`access.php`, `migrate
 | Belohnung | `rewards_lib.php` (Stufe 1: Herkunft `referrals` per `rememberReferral()`/`storeReferral()`, Ereignisse `recordEvent()` in `activity_events`, Einladungscode), `join.php` (`/join/<code>`) – Konzept `docs/rewards.md` |
 | Teilen | `share_lib.php` (Rechte, Token, `trimRouteEnds()`, Vorschaubild mit GD), `share.php` (`/s/<token>`), `assets/share.js` |
 | Herden | `crews_lib.php` (Zugriffsschicht), `crews.php`, `crew_new.php`, `crew.php`, `_crew_form.php` |
-| Touren | `tours_lib.php` (Zugriff, Geometrie-Prüfung, Kennzahlen), `tours.php`, `tour_plan.php`, `tour.php`, `tour_gpx.php`, `route.php` (BRouter-Proxy), `assets/planner.js`, `assets/tour_map.js` |
+| Touren | `tours_lib.php` (Zugriff, Geometrie-Prüfung, Kennzahlen), `tours.php`, `tour_plan.php`, `tour.php`, `tour_gpx.php`, `route.php` (BRouter-Proxy), `assets/planner.js`, `assets/tour_map.js`, `tour_name_lib.php` + `tour_name.php` (`/api/tour-name`: Namensvorschlag „Rodeo Rheinhausen“, Ort der Streckenmitte per Nominatim – nur serverseitig, auf 100 m gerundet, gecacht, max. 1 Anfrage/s; Vorlagen `tourname.*` in `lang.php`, Anzahl in `TOUR_NAME_POOLS`) |
 | Ausfahrten | `rides_lib.php` (Zugriff, Anmeldung/Warteliste mit Zeilensperre, Mails, Tränke-Posts), `rides.php`, `ride.php`, `ride_edit.php`, `assets/ride_form.js` |
 | Forum | `forum_lib.php`, `forum.php`, `forum_category.php`, `forum_topic.php`, `forum_new.php` |
 | Tränke | `talk_lib.php`, `talk.php`, `talk_topic.php`, `talk_api.php` (JSON), `assets/talk.js` |

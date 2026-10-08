@@ -116,7 +116,10 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <input type="hidden" name="geojson" id="geojson" value="<?= e($w['geojson']) ?>">
 
   <div class="field"><label for="title"><?= te('tour.name') ?></label>
-    <input id="title" name="title" required minlength="3" maxlength="120" value="<?= e($w['title']) ?>"></div>
+    <div class="input-with-button">
+      <input id="title" name="title" required minlength="3" maxlength="120" value="<?= e($w['title']) ?>">
+      <button type="button" class="secondary-submit" id="tour-name-suggest" disabled><?= te('planner.suggest_name') ?></button>
+    </div></div>
   <div class="field"><label for="description"><?= te('tour.description') ?></label>
     <textarea id="description" name="description" rows="4" maxlength="4000"><?= e($w['description']) ?></textarea></div>
 
@@ -146,5 +149,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=2"></script>
+<script src="/assets/planner.js?v=3"></script>
 <?php pageFooter();

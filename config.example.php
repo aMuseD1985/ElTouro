@@ -76,4 +76,10 @@ return [
         'profile_2027' => 'escooter-2027',
         'timeout'      => 10,
     ],
+
+    // Place names for tour name suggestions (server-side reverse geocoding, see tour_name_lib.php).
+    // Missing block = Nominatim of the OpenStreetMap Foundation; '' = off (names without a place).
+    'geocoder' => [
+        'url' => 'https://nominatim.openstreetmap.org/reverse',
+    ],
 ];

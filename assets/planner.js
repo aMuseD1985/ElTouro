@@ -19,6 +19,9 @@
   var saveButton = document.getElementById('tour-save');
   var status = document.getElementById('planner-status');
   var info = document.getElementById('planner-info');
+  var fieldTitle = document.getElementById('title');
+  var nameButton = document.getElementById('tour-name-suggest');
+  var autoName = '';   // the last suggestion we filled in ourselves – may be replaced, a typed name never
 
   var map = L.map(el, { zoomControl: true }).setView([51.2, 10.4], 6);
   L.tileLayer(d.tiles, { maxZoom: 19, attribution: d.attribution }).addTo(map);
@@ -80,6 +83,29 @@
     });
   }
 
+  // Name suggestion from the server (place in the middle of the track, length, loop)
+  function suggestName(force) {
+    if (!current || !fieldTitle || !nameButton) return;
+    var untouched = function () { return fieldTitle.value.trim() === '' || fieldTitle.value === autoName; };
+    if (!force && !untouched()) return;
+    nameButton.disabled = true;
+    fetch('/api/tour-name', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF': d.csrf },
+      body: JSON.stringify({ geojson: current, exclude: fieldTitle.value })
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (j) {
+      if (!j.name || (!force && !untouched())) return;
+      autoName = j.name;
+      fieldTitle.value = j.name;
+    }).catch(function () { /* no suggestion – the field simply stays as it is */ }).then(function () {
+      nameButton.disabled = !current;
+    });
+  }
+
   function calculate() {
     drawMarkers();
     fieldWp.value = JSON.stringify(points);
@@ -89,6 +115,7 @@
       drawRoute(null);
       showStats(null);
       saveButton.disabled = true;
+      if (nameButton) nameButton.disabled = true;
       setStatus(T.empty);
       return;
     }
@@ -111,6 +138,8 @@
       showStats(current);
       saveButton.disabled = false;
       setStatus(j.notice ? T['notice_' + j.notice] : T.done);
+      if (nameButton) nameButton.disabled = false;
+      suggestName(false);
     }).catch(function () {
       if (no !== requestNo) return;
       setStatus(T.error);
@@ -135,6 +164,7 @@
       map.setView([pos.coords.latitude, pos.coords.longitude], 14);
     }, function () { setStatus(T.locate_error); }, { enableHighAccuracy: false, timeout: 8000 });
   });
+  if (nameButton) nameButton.addEventListener('click', function () { suggestName(true); });
   if (fieldRules) fieldRules.addEventListener('change', function () { if (points.length >= 2) calculate(); });
 
   // Initial state: show a saved route without recalculating
@@ -144,6 +174,7 @@
     showStats(current);
     map.fitBounds(L.geoJSON(current).getBounds(), { padding: [30, 30] });
     saveButton.disabled = false;
+    if (nameButton) nameButton.disabled = false;
   } else {
     saveButton.disabled = true;
     setStatus(T.empty);

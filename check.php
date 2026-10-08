@@ -71,6 +71,13 @@ if (!empty($CONFIG['brouter']['url'])) {
     check('BRouter antwortet (Testroute in Bonn, Profil „' . ($b['profile'] ?? 'escooter') . '“)', is_array($coords) && count($coords) >= 2,
         $err !== '' ? 'Keine Verbindung: ' . $err : "HTTP $status nach {$ms} ms" . (is_array($coords) ? ', ' . count($coords) . ' Punkte' : ' – Antwort: ' . mb_substr(strip_tags($body), 0, 200)));
 }
+$geocoderUrl = (string)($CONFIG['geocoder']['url'] ?? 'https://nominatim.openstreetmap.org/reverse');
+if ($geocoderUrl !== '') {
+    [$status, $body, $err, $ms] = probe($geocoderUrl . '?format=jsonv2&lat=50.737&lon=7.098&zoom=14&addressdetails=1', 5);
+    $gcPlace = json_decode($body, true)['address'] ?? null;
+    check('Ortsnamen für Namensvorschläge (Geocoder)', is_array($gcPlace),
+        $err !== '' ? 'Keine Verbindung: ' . $err : "HTTP $status nach {$ms} ms" . (is_array($gcPlace) ? ', ' . implode(', ', array_slice(array_values($gcPlace), 0, 3)) : ''));
+}
 check('Kartenkacheln in config.php', !empty($rawConfig['map']['tiles'] ?? $rawConfig['karte']['kacheln'] ?? ''),
     'Nicht konfiguriert – es werden die OSM-Kacheln verwendet. Vor live einen Anbieter wie MapTiler eintragen (Block map)', true);
 $opsEnabled = $CONFIG['ops']['enabled'] ?? !isLive();
