@@ -69,7 +69,11 @@ jobs:
           fi
           # niemals auf die Produktion hochladen
           case "$FTP_DIR" in *test*|*beta*) ;; *) echo "FTP_DIR enthält weder 'test' noch 'beta' – Abbruch (Schutz vor Versehen)"; exit 1;; esac
-          lftp -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST" <<'LFTP'
+          git rev-parse HEAD > deploy-version.txt
+          # Unquoted heredoc on purpose: bash must insert $FTP_DIR – lftp itself does not expand environment
+          # variables (with <<'LFTP' everything went into a directory literally named "$FTP_DIR").
+          # The "$" in the exclude patterns is therefore escaped.
+          lftp -u "$FTP_USER","$FTP_PASSWORD" "$FTP_HOST" <<LFTP
           set ftp:ssl-force true
           set ftp:ssl-protect-data true
           set ssl:verify-certificate yes
@@ -78,12 +82,32 @@ jobs:
           set cmd:fail-exit yes
           mirror -R --verbose --parallel=4 --no-perms \
             -x '^\.git' -x '^\.github/' \
-            -x '^config\.php$' -x '^data/' -x '^daten/' \
-            -x '^CLAUDE\.md$' -x '^README\.md$' \
+            -x '^config\.php\$' -x '^data/' -x '^daten/' \
+            -x '^CLAUDE\.md\$' -x '^README\.md\$' \
             ./ "$FTP_DIR"
+          echo "--- Inhalt des Zielordners:"
+          cls -1 "$FTP_DIR"
           bye
           LFTP
           echo "Hochgeladen: $(git rev-parse --short HEAD)"
+
+      - name: Prüfen, ob die Version auf dem Testserver ankommt
+        env:
+          TEST_BASE_URL: ${{ secrets.TEST_BASE_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${TEST_BASE_URL:-}" ]; then
+            echo "::warning::TEST_BASE_URL nicht gesetzt – ob der Upload im richtigen Ordner landet, wird nicht geprüft."
+            exit 0
+          fi
+          want=$(git rev-parse HEAD)
+          got=$(curl -fsS --max-time 30 "${TEST_BASE_URL%/}/deploy-version.txt?nocache=$(date +%s)" || true)
+          if [ "$got" != "$want" ]; then
+            echo "::error::Hochgeladen, aber ${TEST_BASE_URL%/}/deploy-version.txt zeigt nicht diese Version – FTP_DIR/FTP_SERVER_DIR ist nicht das Dokumentverzeichnis der Subdomain."
+            exit 1
+          fi
+          echo "Version $want ist auf ${TEST_BASE_URL%/} angekommen."
 
       - name: Migration ausführen
         env:
