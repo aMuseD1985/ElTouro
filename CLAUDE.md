@@ -107,6 +107,8 @@ Hintergrundprozesse (Datenbank, `php -S`) mit `nohup … &` starten, sonst häng
 - Leaflet: Kartenausschnitt (`fitBounds`/`setView`) **vor** dem ersten `addTo(map)` einer Ebene setzen, sonst bricht `_clipPoints` ab und nichts wird gezeichnet.
 - Die Tränke-Bremse (5 s zwischen Beiträgen) zählt auch automatische Beiträge (Änderungen an Ausfahrten).
 - Ohne Kachel-URL in der Server-Config bleibt die Karte grau (war auf test.eltouro.de so) – `bootstrap.php` fällt jetzt auf OSM zurück.
+- Deployments löschen nie – alte Dateien (z. B. `seite.php`) bleiben auf dem Server. Mit Apaches MultiViews beantworteten sie `/seite/x` und `/impressum`, bevor die Rewrite-Regeln griffen. Deshalb `Options -Indexes -MultiViews` in der `.htaccess`.
+- lftp ersetzt keine Umgebungsvariablen: In einem Heredoc mit Anführungszeichen (`<<'LFTP'`) landete der Upload in einem Ordner, der wörtlich `$FTP_DIR` heißt – die Action war trotzdem grün. Der Workflow prüft seitdem über `deploy-version.txt`, ob die Version wirklich auf dem Server ankommt.
 - GD kann nur TTF-Schriften rendern; die Schriften liegen als WOFF2 vor, deshalb hat das Vorschaubild beim Teilen keinen Text.
 
 ## Backlog (Reihenfolge mit Marco abstimmen)
