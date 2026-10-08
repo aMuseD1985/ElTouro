@@ -111,32 +111,152 @@
   function drawRoute(gj) {
     routeLayer.clearLayers();
     if (!gj) return;
+    // A click on the line inserts a waypoint there (it must not also reach the map, which would append one)
     L.geoJSON(gj, {
+      bubblingMouseEvents: false,
       style: function (f) {
         return f.properties && f.properties.freehand
-          ? { color: '#A3261B', weight: 5, opacity: 0.9, dashArray: '8 8' }
-          : { color: '#2F5E8C', weight: 5, opacity: 0.9 };
+          ? { color: '#A3261B', weight: 6, opacity: 0.9, dashArray: '8 8' }
+          : { color: '#2F5E8C', weight: 6, opacity: 0.9 };
       }
-    }).addTo(routeLayer);
+    }).on('click', function (e) { insertOnRoute([e.latlng.lat, e.latlng.lng]); }).addTo(routeLayer);
+  }
+
+  // ---- Waypoint editor: numbered pins on the map and the list below it
+  var selected = -1;
+  var pins = [];
+  var list = document.getElementById('waypoint-list');
+  var listBox = document.getElementById('waypoints');
+
+  function pinIcon(i) {
+    var cls = 'wp-pin' + (i === selected ? ' is-selected' : '') + (i === 0 ? ' is-start' : '');
+    return L.divIcon({ className: '', html: '<div class="' + cls + '">' + (i + 1) + '</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+  }
+
+  // Only the icons change – redrawing the markers would close an open popup
+  function select(i, pan) {
+    selected = i;
+    pins.forEach(function (m, k) { m.setIcon(pinIcon(k)); m.setZIndexOffset(k === i ? 1000 : 0); });
+    renderList();
+    if (pan && points[i]) map.panTo(points[i]);
+  }
+
+  function popupFor(i) {
+    var box = document.createElement('div');
+    var title = document.createElement('strong');
+    title.textContent = T.point + ' ' + (i + 1);
+    var del = document.createElement('button');
+    del.type = 'button'; del.className = 'link danger'; del.textContent = T.remove;
+    del.addEventListener('click', function () { removePoint(i); });
+    box.appendChild(title); box.appendChild(document.createElement('br')); box.appendChild(del);
+    return box;
   }
 
   function drawMarkers() {
     markerLayer.clearLayers();
+    pins = [];
     points.forEach(function (p, i) {
-      var m = L.marker(p, { draggable: true, keyboard: true, title: T.point + ' ' + (i + 1) });
+      var m = L.marker(p, { draggable: true, keyboard: true, title: T.point + ' ' + (i + 1), icon: pinIcon(i),
+                            zIndexOffset: i === selected ? 1000 : 0 });
       m.on('dragend', function (e) {
         var ll = e.target.getLatLng();
         var moved = [ll.lat, ll.lng];
         if (!legOk(points[i - 1], moved) || !legOk(moved, points[i + 1])) { drawMarkers(); tooFar(); return; }
         points[i] = moved;
+        selected = i;
         calculate();
       });
-      m.on('click', function () {
-        points.splice(i, 1);
-        calculate();
-      });
+      m.on('click', function () { select(i, false); });
+      m.bindPopup(function () { return popupFor(i); }, { closeButton: false, offset: [0, -10] });
       m.addTo(markerLayer);
+      pins.push(m);
     });
+    renderList();
+  }
+
+  function fmtKm(m) {
+    return (m / 1000).toLocaleString(d.lang === 'de' ? 'de-DE' : 'en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  }
+
+  function listButton(text, label, onClick, disabled, extra) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'link' + (extra ? ' ' + extra : ''); b.textContent = text;
+    b.setAttribute('aria-label', label); b.title = label; b.disabled = !!disabled;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function renderList() {
+    if (!list) return;
+    list.textContent = '';
+    listBox.hidden = points.length === 0;
+    points.forEach(function (p, i) {
+      var li = document.createElement('li');
+      if (i === selected) li.className = 'is-selected';
+      var num = document.createElement('span');
+      num.className = 'wp-pin' + (i === 0 ? ' is-start' : '') + (i === selected ? ' is-selected' : '');
+      num.textContent = i + 1;
+      var main = document.createElement('button');
+      main.type = 'button'; main.className = 'link wp-main';
+      var leg = i === 0 ? T.start : T.leg.replace('{km}', fmtKm(distance([points[i - 1][1], points[i - 1][0]], [p[1], p[0]])));
+      if (i > 0 && i === points.length - 1) leg += ' · ' + T.finish;
+      var legText = document.createElement('span');
+      legText.textContent = leg;
+      var coords = document.createElement('small');
+      coords.textContent = p[0].toFixed(5) + ', ' + p[1].toFixed(5);
+      main.appendChild(legText); main.appendChild(coords);
+      main.addEventListener('click', function () { select(i, true); });
+      li.appendChild(num);
+      li.appendChild(main);
+      li.appendChild(listButton('▲', T.up + ' (' + (i + 1) + ')', function () { movePoint(i, -1); }, i === 0));
+      li.appendChild(listButton('▼', T.down + ' (' + (i + 1) + ')', function () { movePoint(i, 1); }, i === points.length - 1));
+      li.appendChild(listButton('✕', T.remove + ' (' + (i + 1) + ')', function () { removePoint(i); }, false, 'danger'));
+      list.appendChild(li);
+    });
+  }
+
+  // Changes that would create a leg longer than allowed are refused, like clicks on the map
+  function legsOk(candidate) {
+    for (var i = 1; i < candidate.length; i++) if (!legOk(candidate[i - 1], candidate[i])) return false;
+    return true;
+  }
+
+  function apply(candidate, newSelected) {
+    if (!legsOk(candidate)) { tooFar(); return; }
+    points = candidate;
+    selected = newSelected;
+    calculate();
+  }
+
+  function movePoint(i, delta) {
+    var j = i + delta;
+    if (j < 0 || j >= points.length) return;
+    var c = points.slice();
+    var tmp = c[i]; c[i] = c[j]; c[j] = tmp;
+    apply(c, j);
+  }
+
+  function removePoint(i) {
+    map.closePopup();
+    var c = points.slice();
+    c.splice(i, 1);
+    points = c;
+    selected = -1;
+    calculate();
+  }
+
+  // Insert where the detour is smallest: between the two waypoints the click lies "between"
+  function insertOnRoute(p) {
+    if (points.length < 2 || points.length >= MAX) return;
+    var best = 1, bestCost = Infinity;
+    for (var i = 0; i < points.length - 1; i++) {
+      var a = [points[i][1], points[i][0]], b = [points[i + 1][1], points[i + 1][0]], q = [p[1], p[0]];
+      var cost = distance(a, q) + distance(q, b) - distance(a, b);
+      if (cost < bestCost) { bestCost = cost; best = i + 1; }
+    }
+    var c = points.slice();
+    c.splice(best, 0, p);
+    apply(c, best);
   }
 
   // Suggestions from the server (places along the track, length, climb): name, description, difficulty, style.
@@ -281,11 +401,18 @@
     var p = [e.latlng.lat, e.latlng.lng];
     if (!legOk(points[points.length - 1], p)) { tooFar(); return; }
     points.push(p);
+    selected = points.length - 1;
     calculate();
   });
 
   document.getElementById('pl-undo').addEventListener('click', function () { points.pop(); calculate(); });
-  document.getElementById('pl-clear').addEventListener('click', function () { points = []; calculate(); });
+  document.getElementById('pl-clear').addEventListener('click', function () { points = []; selected = -1; calculate(); });
+  document.getElementById('pl-reverse').addEventListener('click', function () {
+    if (points.length < 2) return;
+    points = points.slice().reverse();
+    selected = -1;
+    calculate();
+  });
   document.getElementById('pl-loop').addEventListener('click', function () {
     if (points.length < 2 || points.length >= MAX) return;
     if (!legOk(points[points.length - 1], points[0])) { tooFar(); return; }

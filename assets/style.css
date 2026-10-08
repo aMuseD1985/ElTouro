@@ -264,3 +264,18 @@ details summary { cursor: pointer; }
 .place-results li .link + .link { flex: none; white-space: nowrap; font-size: .9rem; }
 .place-results li:first-child { border-top: 0; }
 .place-results .muted-item { color: #46566C; }
+
+/* Waypoint editor: numbered pins on the map and in the list */
+.wp-pin { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-sizing: border-box;
+  background: var(--denim); color: #fff; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, .45); font-weight: 700; font-size: .85rem; cursor: grab; }
+.wp-pin.is-start { background: var(--night); }
+.wp-pin.is-selected { background: var(--gold); color: var(--night); border-color: var(--night); }
+.waypoints h2 { font-size: 1.1rem; margin: 1rem 0 .4rem; }
+.waypoint-list { list-style: none; padding: 0; margin: 0 0 1rem; border: 1px solid #D5DCE5; border-radius: 8px; background: #fff; max-height: 50vh; overflow-y: auto; }
+.waypoint-list li { display: flex; align-items: center; gap: .5rem; padding: .35rem .6rem; border-top: 1px solid #E8ECF1; }
+.waypoint-list li:first-child { border-top: 0; }
+.waypoint-list li.is-selected { background: #FBF4E4; }
+.waypoint-list .wp-pin { flex: none; cursor: default; }
+.waypoint-list .wp-main { flex: 1; display: flex; flex-direction: column; align-items: flex-start; text-align: left; text-decoration: none; }
+.waypoint-list .wp-main small { color: #46566C; font-weight: 400; }
+.waypoint-list li > .link:not(.wp-main) { flex: none; min-width: 32px; min-height: 32px; text-decoration: none; }
