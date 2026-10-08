@@ -23,6 +23,45 @@
   var nameButton = document.getElementById('tour-name-suggest');
   var autoName = '';   // the last suggestion we filled in ourselves – may be replaced, a typed name never
 
+  // Loading animation: only shown if the calculation takes a moment, progress is an estimate
+  var loading = document.getElementById('planner-loading');
+  var saying = document.getElementById('planner-saying');
+  var bar = document.getElementById('planner-progress');
+  var sayings = [];
+  for (var k = 1; T['loading_' + k]; k++) sayings.push(T['loading_' + k]);
+  var loadTimer = null, tickTimer = null, loadGen = 0;
+
+  function startLoading() {
+    stopLoading(true);
+    if (!loading) return;
+    var gen = ++loadGen;
+    loadTimer = setTimeout(function () {
+      var started = Date.now(), ticks = 0, no = Math.floor(Math.random() * sayings.length);
+      saying.textContent = sayings[no] || '';
+      bar.style.width = '0%';
+      loading.hidden = false;
+      tickTimer = setInterval(function () {
+        if (gen !== loadGen) return;
+        var t = (Date.now() - started) / 1000;
+        bar.style.width = (92 * (1 - Math.exp(-t / 3))).toFixed(1) + '%';
+        if (++ticks % 9 === 0 && sayings.length > 1) {
+          no = (no + 1) % sayings.length;
+          saying.textContent = sayings[no];
+        }
+      }, 200);
+    }, 300);
+  }
+
+  function stopLoading(immediate) {
+    clearTimeout(loadTimer);
+    clearInterval(tickTimer);
+    if (!loading || loading.hidden) return;
+    if (immediate) { loading.hidden = true; return; }
+    var gen = loadGen;
+    bar.style.width = '100%';
+    setTimeout(function () { if (gen === loadGen) loading.hidden = true; }, 350);
+  }
+
   var map = L.map(el, { zoomControl: true }).setView([51.2, 10.4], 6);
   L.tileLayer(d.tiles, { maxZoom: 19, attribution: d.attribution }).addTo(map);
   var routeLayer = L.layerGroup().addTo(map);
@@ -114,6 +153,7 @@
       fieldGj.value = '';
       drawRoute(null);
       showStats(null);
+      stopLoading(true);
       saveButton.disabled = true;
       if (nameButton) nameButton.disabled = true;
       setStatus(T.empty);
@@ -122,6 +162,7 @@
     var no = ++requestNo;
     saveButton.disabled = true;
     setStatus(T.calculating);
+    startLoading();
     fetch('/api/route', {
       method: 'POST',
       credentials: 'same-origin',
@@ -132,6 +173,7 @@
       return r.json();
     }).then(function (j) {
       if (no !== requestNo) return;          // ignore outdated responses
+      stopLoading(false);
       current = j.geojson;
       fieldGj.value = JSON.stringify(current);
       drawRoute(current);
@@ -142,6 +184,7 @@
       suggestName(false);
     }).catch(function () {
       if (no !== requestNo) return;
+      stopLoading(false);
       setStatus(T.error);
     });
   }

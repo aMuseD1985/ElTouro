@@ -233,3 +233,24 @@ details summary { cursor: pointer; }
 
 .input-with-button { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
 .input-with-button input { flex: 1 1 18rem; }
+
+/* Loading animation while the planner calculates: logo in the middle, bulls on e-scooters circling it */
+.planner-wrap { position: relative; }
+.planner-loading { position: absolute; inset: 0; z-index: 1100; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(20, 38, 63, .78); color: #fff; border-radius: inherit; padding: 1rem; text-align: center; }
+.loading-orbit { --size: 240px; position: relative; width: var(--size); height: var(--size); flex: none; }
+.loading-logo { position: absolute; width: 44%; height: 44%; left: 28%; top: 28%; border-radius: 50%; box-shadow: 0 0 0 4px var(--gold), 0 6px 18px rgba(0, 0, 0, .35); }
+.orbit { position: absolute; inset: 0; animation: et-orbit 2.6s linear infinite; }
+.orbit .slot { position: absolute; inset: 0; }
+.orbit .slot:nth-child(2) { transform: rotate(120deg); }
+.orbit .slot:nth-child(3) { transform: rotate(240deg); }
+.orbit .rider { position: absolute; width: 31%; left: 34.5%; top: -4%; animation: et-hop .35s ease-in-out infinite alternate; }
+.orbit .slot:nth-child(2) .rider { animation-delay: .12s; }
+.orbit .slot:nth-child(3) .rider { animation-delay: .24s; }
+.loading-saying { min-height: 1.5em; margin: 1rem 0 .7rem; font-weight: 600; font-style: italic; font-size: 1.1rem; }
+.loading-bar { width: min(320px, 80%); height: 10px; border-radius: 999px; background: rgba(255, 255, 255, .2); overflow: hidden; }
+.loading-bar span { display: block; width: 0; height: 100%; background: var(--gold); transition: width .25s ease-out; }
+@keyframes et-orbit { to { transform: rotate(360deg); } }
+@keyframes et-hop { to { transform: translateY(-4px) rotate(-3deg); } }
+@media (max-width: 520px), (max-height: 520px) { .loading-orbit { --size: 150px; } .loading-saying { font-size: 1rem; } }
+@media (prefers-reduced-motion: reduce) { .orbit, .orbit .rider { animation: none; } }

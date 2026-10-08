@@ -81,7 +81,8 @@ if (isPost()) {
 
 // Texts for the script (i18n in the browser)
 $jsTexts = [];
-foreach (['point', 'calculating', 'done', 'error', 'notice_no_router', 'notice_partly_freehand', 'empty', 'stats', 'freehand_share', 'locate_error'] as $k) {
+foreach (['point', 'calculating', 'done', 'error', 'notice_no_router', 'notice_partly_freehand', 'empty', 'stats', 'freehand_share', 'locate_error',
+          'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
     $jsTexts[$k] = t('planner.' . $k);
 }
 
@@ -98,6 +99,7 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="button" class="link" id="pl-locate"><?= te('planner.locate') ?></button>
   <button type="button" class="link danger" id="pl-clear"><?= te('planner.clear') ?></button>
 </div>
+<div class="planner-wrap">
 <div id="planner-map" class="map-large"
      data-tiles="<?= e((string)$CONFIG['map']['tiles']) ?>"
      data-attribution="<?= e((string)$CONFIG['map']['attribution']) ?>"
@@ -106,6 +108,18 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
      data-csrf="<?= e(csrfToken()) ?>"
      data-lang="<?= e($LANG) ?>"
      data-texts="<?= e(json_encode($jsTexts, JSON_UNESCAPED_UNICODE)) ?>"></div>
+  <!-- Shown while the route is calculated; the status line below says the same for screen readers -->
+  <div id="planner-loading" class="planner-loading" hidden aria-hidden="true">
+    <div class="loading-orbit">
+      <img class="loading-logo" src="/assets/img/apple-touch-icon.png" alt="">
+      <div class="orbit">
+        <?php for ($i = 0; $i < 3; $i++): ?><div class="slot"><img class="rider" src="/assets/img/scooter-bull.svg" alt=""></div><?php endfor; ?>
+      </div>
+    </div>
+    <p class="loading-saying" id="planner-saying"></p>
+    <div class="loading-bar"><span id="planner-progress"></span></div>
+  </div>
+</div>
 <p id="planner-status" class="muted" role="status" aria-live="polite"></p>
 <p id="planner-info" class="stats"></p>
 
@@ -149,5 +163,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=3"></script>
+<script src="/assets/planner.js?v=4"></script>
 <?php pageFooter();

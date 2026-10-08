@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- A bull on an e-scooter, riding to the right (used in the planner's loading animation) -->
+  <g stroke="#D7A845" stroke-width="2" stroke-linecap="round" opacity=".85">
+    <line x1="2" y1="30" x2="11" y2="30"/>
+    <line x1="4" y1="37" x2="14" y2="37"/>
+    <line x1="2" y1="44" x2="10" y2="44"/>
+  </g>
+  <!-- scooter -->
+  <line x1="47" y1="17" x2="51" y2="52" stroke="#14263F" stroke-width="3.5" stroke-linecap="round"/>
+  <line x1="42" y1="17" x2="50" y2="17" stroke="#14263F" stroke-width="3.5" stroke-linecap="round"/>
+  <rect x="15" y="48" width="36" height="5" rx="2.5" fill="#2F5E8C" stroke="#14263F" stroke-width="1.5"/>
+  <circle cx="18" cy="55" r="6" fill="#14263F" stroke="#E8ECF1" stroke-width="2"/>
+  <circle cx="50" cy="55" r="6" fill="#14263F" stroke="#E8ECF1" stroke-width="2"/>
+  <circle cx="18" cy="55" r="1.6" fill="#D7A845"/>
+  <circle cx="50" cy="55" r="1.6" fill="#D7A845"/>
+  <!-- bull: legs, body, arm -->
+  <g stroke="#5A3A20" stroke-width="4" stroke-linecap="round">
+    <line x1="26" y1="42" x2="24" y2="48"/>
+    <line x1="32" y1="42" x2="34" y2="48"/>
+  </g>
+  <ellipse cx="29" cy="34" rx="7.5" ry="10" fill="#7A4E2B" stroke="#5A3A20" stroke-width="1.5"/>
+  <line x1="32" y1="28" x2="43" y2="18.5" stroke="#5A3A20" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- head with helmet, horns, shades -->
+  <path d="M23 13 Q20 6 23 2 Q25 7 27 10 Z" fill="#F3E9D2" stroke="#5A3A20" stroke-width="1"/>
+  <path d="M37 10 Q41 5 39 1 Q43 5 41 12 Z" fill="#F3E9D2" stroke="#5A3A20" stroke-width="1"/>
+  <ellipse cx="32" cy="18" rx="8.5" ry="7.5" fill="#7A4E2B" stroke="#5A3A20" stroke-width="1.5"/>
+  <path d="M23.5 16 Q24 8.5 32 8.5 Q40 8.5 40.5 15.5 Z" fill="#2F5E8C" stroke="#14263F" stroke-width="1.2"/>
+  <ellipse cx="39.5" cy="21" rx="4.5" ry="3.5" fill="#C99A72" stroke="#5A3A20" stroke-width="1"/>
+  <circle cx="41" cy="21" r=".9" fill="#5A3A20"/>
+  <path d="M38 24 Q39.5 26.5 41.5 24" fill="none" stroke="#D7A845" stroke-width="1.4"/>
+  <rect x="33" y="15" width="7.5" height="3.2" rx="1.2" fill="#14263F"/>
+</svg>
