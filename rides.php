@@ -20,7 +20,7 @@ pageHeader(t('rides.title'));
   <h1><?= te('rides.title') ?></h1>
   <a class="btn" href="/ride/new"><?= te('ride.new') ?></a>
 </div>
-<p class="muted"><?= te('rides.intro') ?></p>
+<p class="muted"><?= te('rides.intro') ?> <a href="/live"><?= te('live.link') ?></a></p>
 <h2><?= te('rides.mine') ?></h2><?php rideCards($mine, 'rides.none_mine'); ?>
 <h2><?= te('rides.upcoming') ?></h2><?php rideCards($others, 'rides.none'); ?>
 <?php if ($past): ?><h2><?= te('rides.past') ?></h2><?php rideCards($past, 'rides.none'); endif; ?>

@@ -64,6 +64,9 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
         <button type="button" id="ride-start" class="btn"><?= te('nav.start_sim_button') ?></button>
       <?php else: ?>
         <label class="ride-record"><input type="checkbox" id="ride-record"> <?= te('nav.record') ?></label>
+        <label class="ride-record"><input type="checkbox" id="ride-live"> <?= te('nav.live') ?>
+          <select id="ride-live-scope" aria-label="<?= te('nav.live_scope') ?>">
+            <option value="crews"><?= te('nav.live_crews') ?></option><option value="all"><?= te('nav.live_all') ?></option></select></label>
         <button type="button" id="ride-start" class="btn"><?= te('nav.start_button') ?></button>
       <?php endif; ?>
       <button type="button" id="ride-stop" class="btn secondary" hidden><?= te('nav.stop_button') ?></button>
@@ -72,7 +75,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
       <button type="button" id="ride-follow" class="secondary-submit" title="<?= te('nav.follow') ?>" aria-label="<?= te('nav.follow') ?>">⌖</button>
       <a class="secondary-submit ride-close" href="/tour/<?= (int)$tour['id'] ?>" aria-label="<?= te('nav.close') ?>">✕</a>
     </div>
-    <?php if (!$sim): ?><p class="ride-hint"><?= te('nav.record_hint') ?></p><?php endif; ?>
+    <?php if (!$sim): ?><p class="ride-hint"><?= te('nav.record_hint') ?> <?= te('nav.live_hint') ?></p><?php endif; ?>
   </div>
 
   <div class="ride-done" id="ride-done" hidden>
@@ -84,5 +87,5 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
   </div>
 </div>
 <script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
-<script src="/assets/navigate.js?v=10"></script>
+<script src="/assets/navigate.js?v=11"></script>
 <?php pageFooter();

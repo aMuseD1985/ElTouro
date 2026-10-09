@@ -426,6 +426,17 @@ function runMigrations(): array
         $log[] = '~ tours.stops_json angelegt';
     }
 
+    /* ---------- Live positions: latest position of riders who share it (2026-10, live_lib.php) ---------- */
+    $create('live_positions', "CREATE TABLE live_positions (
+      user_id BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+      lat DECIMAL(8,5) NOT NULL, lng DECIMAL(8,5) NOT NULL, heading SMALLINT UNSIGNED NULL, speed_kmh DECIMAL(4,1) NULL,
+      scope ENUM('crews','all') NOT NULL DEFAULT 'crews', tour_id BIGINT UNSIGNED NULL,
+      origin_lat DECIMAL(8,5) NOT NULL, origin_lng DECIMAL(8,5) NOT NULL, visible TINYINT(1) NOT NULL DEFAULT 0,
+      updated_at DATETIME NOT NULL,
+      KEY ix_live_box (visible, lat, lng), KEY ix_live_updated (updated_at),
+      CONSTRAINT fk_live_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
         'privacy' => ['de' => ['7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
@@ -433,13 +444,15 @@ function runMigrations(): array
                              '5020a23f093159124a269bbe8b151bcb3c6009d314befbf9ae5cb29cde3f3a1c',
                              '9bb92bbe55987f3de8a55cd7711ca553faa325e04600c69a49baa642defb77ad',
                              'cb593a7e30ded0d3335a0bbb9592c902346b30e7a10b2701a47aaf099d7ae748',
-                             '7138011091b3de4b6f57285f571dd5afef90525aa2f2bb45add76e9999ffc7f5'],
+                             '7138011091b3de4b6f57285f571dd5afef90525aa2f2bb45add76e9999ffc7f5',
+                             '003ae2085ccf42b074041c51e3f4095f7be1e9d76f53d3fb3e982f958860270f'],
                       'en' => ['d626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024',
                              '97ec6abe9fd9c9dafcd7f9bf64af86374052b671234a1c8b3b4cbcfd8524b93d',
                              'aad225fefb56e29cc0c861f4a05f7f448e8b226d93e0ee18366cd6eb8fb240c4',
                              '1bdb2d4a39f593ef2343d1e87df96f3a77f24ab7e357242e7e2fe27779010bb8',
                              '45465297f7907a6f2e7b75334d9b12ca5da7a81cc9d69393954b945f947bc7b4',
-                             'cf1fd4c7a5d5f41a31b25595e37dca64b136fb9d6b707f984bcfc610c6d6e244']],
+                             'cf1fd4c7a5d5f41a31b25595e37dca64b136fb9d6b707f984bcfc610c6d6e244',
+                             'd38e6bb8f7a70aecf2705f9b1fcf76f21c9642fbfbaae45592686616f2e5584e']],
         'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab', 'feaac83164b6aa8d5cb9441fc8bf1a9ab32abc0c9c34f0c69c777f46fd29cc44'],
                       'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d', '63498436ed4f625110f2b427930d9feb7e2d6dd1c5ec947d7bd74de655560d81']],
     ];
@@ -468,8 +481,8 @@ function legalPagesNeedingUpdate(): array
 {
     $markers = [
         'privacy' => [
-            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:'],
-            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:'],
+            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:'],
+            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:'],
         ],
         'terms' => [
             'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run'],

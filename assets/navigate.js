@@ -178,7 +178,8 @@
     remaining: document.getElementById('ride-remaining'), eta: document.getElementById('ride-eta'), speed: document.getElementById('ride-speed'),
     subtitle: document.getElementById('ride-subtitle'), start: document.getElementById('ride-start'), stop: document.getElementById('ride-stop'),
     voice: document.getElementById('ride-voice'), follow: document.getElementById('ride-follow'), record: document.getElementById('ride-record'),
-    factor: document.getElementById('ride-factor'), done: document.getElementById('ride-done'), view: document.getElementById('ride-view')
+    factor: document.getElementById('ride-factor'), done: document.getElementById('ride-done'), view: document.getElementById('ride-view'),
+    live: document.getElementById('ride-live'), liveScope: document.getElementById('ride-live-scope')
   };
   function fmt(x, digits) { return x.toLocaleString(LOCALE, { minimumFractionDigits: digits, maximumFractionDigits: digits }); }
   function spokenDistance(m) {
@@ -265,6 +266,12 @@
     }
     camera(shown, heading, false);
     lastPos = shown; lastHeading = heading;
+    if (sharing && fix.t - lastShared >= 10000) {
+      lastShared = fix.t;
+      api('/api/live', { action: 'update', lat: +fix.lat.toFixed(5), lng: +fix.lng.toFixed(5), heading: Math.round(heading),
+                         speed: fix.speedMs != null ? +(fix.speedMs * 3.6).toFixed(1) : null, scope: ui.liveScope.value,
+                         tour_id: parseInt(d.tour, 10) }).catch(function () { /* next round */ });
+    }
 
     var speedMs = fix.speedMs != null ? fix.speedMs : CRUISE_KMH / 3.6;
     guide(speedMs, fix);
@@ -382,10 +389,49 @@
     }, 250);
   }
 
+  // ---------------------------------------------------------------- live: share my position, see the others
+  var sharing = false, lastShared = 0, others = {};
+  function stopSharing() {
+    if (!sharing) return;
+    sharing = false;
+    api('/api/live', { action: 'stop' }, true).catch(function () { /* the server forgets us after two minutes anyway */ });
+  }
+  window.addEventListener('pagehide', stopSharing);
+
+  function otherMarker(r) {
+    var box = document.createElement('div');
+    box.className = 'live-rider';
+    var img = document.createElement('img'); img.src = '/assets/img/scooter-bull.svg'; img.alt = '';
+    var label = document.createElement('span');
+    box.appendChild(img); box.appendChild(label);
+    return { el: box, label: label, marker: new maplibregl.Marker({ element: box, anchor: 'bottom' }) };
+  }
+  function loadOthers() {
+    if (!ready || document.visibilityState !== 'visible') return;
+    var c = map.getCenter(), b = map.getBounds();
+    var s = Math.max(b.getSouth(), c.lat - 0.25), n = Math.min(b.getNorth(), c.lat + 0.25);
+    var w = Math.max(b.getWest(), c.lng - 0.4), e = Math.min(b.getEast(), c.lng + 0.4);   // a tilted view reaches to the horizon
+    fetch('/api/live?box=' + [s, w, n, e].map(function (x) { return x.toFixed(4); }).join(','), { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : { riders: [] }; })
+      .then(function (j) {
+        var seen = {};
+        j.riders.forEach(function (r) {
+          seen[r.id] = true;
+          var o = others[r.id] || (others[r.id] = otherMarker(r));
+          o.label.textContent = r.name + (r.crew ? ' · ' + r.crew : '');
+          o.marker.setLngLat([r.lng, r.lat]).addTo(map);
+        });
+        Object.keys(others).forEach(function (id) { if (!seen[id]) { others[id].marker.remove(); delete others[id]; } });
+      }).catch(function () { /* next round */ });
+  }
+  map.on('load', loadOthers);
+  setInterval(loadOthers, 10000);
+
   // ---------------------------------------------------------------- recording (opt-in, GPS only)
   var record = null;
-  function api(body, keepalive) {
-    return fetch('/api/track', { method: 'POST', credentials: 'same-origin', keepalive: !!keepalive,
+  function api(url, body, keepalive) {
+    if (typeof url !== 'string') { keepalive = body; body = url; url = '/api/track'; }
+    return fetch(url, { method: 'POST', credentials: 'same-origin', keepalive: !!keepalive,
       headers: { 'Content-Type': 'application/json', 'X-CSRF': d.csrf }, body: JSON.stringify(body) })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   }
@@ -414,6 +460,10 @@
 
   // ---------------------------------------------------------------- start / stop
   try { if (ui.record && localStorage.getItem('eltouro.record') === '1') ui.record.checked = true; } catch (e) { /* private mode */ }
+  try { if (ui.liveScope && localStorage.getItem('eltouro.liveScope')) ui.liveScope.value = localStorage.getItem('eltouro.liveScope'); } catch (e) { /* ignore */ }
+  if (ui.liveScope) ui.liveScope.addEventListener('change', function () {
+    try { localStorage.setItem('eltouro.liveScope', ui.liveScope.value); } catch (e) { /* ignore */ }
+  });
   if (ui.record) ui.record.addEventListener('change', function () {
     try { localStorage.setItem('eltouro.record', ui.record.checked ? '1' : '0'); } catch (e) { /* ignore */ }
   });
@@ -430,6 +480,9 @@
     if (SIM) startSim();
     else {
       if (ui.record && ui.record.checked) record = new Recorder();
+      // Live sharing is asked for on every ride – it is never switched on from an earlier one
+      if (ui.live && ui.live.checked) sharing = true;
+      if (ui.live) { ui.live.disabled = true; ui.liveScope.disabled = true; }
       startGps();
     }
   });
@@ -466,6 +519,7 @@
     if (watchId !== null) navigator.geolocation.clearWatch(watchId);
     clearInterval(simTimer);
     if (wakeLock) { wakeLock.release().catch(function () {}); wakeLock = null; }
+    stopSharing();
     ui.stop.hidden = true;
     document.getElementById('ride-done-title').textContent = arrived ? T.done_arrived : T.done_title;
     var text = document.getElementById('ride-done-text');
