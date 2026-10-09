@@ -322,23 +322,112 @@
     insertOnRoute([it.lat, it.lng, { type: it.type, name: it.name || P['kind_' + it.kind] || '' }]);
   }
 
+  // ---- Opening hours (OSM syntax, e.g. "Mo-Th 12:00-22:00; Fr-Sa 12:00-24:00; Su,PH off") as a week table.
+  // Returns null when the text uses something we do not understand – then the raw text is shown instead.
+  var DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+  function parseHours(text) {
+    var week = [[], [], [], [], [], [], []], holiday = null, t = String(text || '').trim();
+    if (!t) return null;
+    if (/^24\/7$/i.test(t)) { return { week: week.map(function () { return ['00:00–24:00']; }), holiday: null }; }
+    var rules = t.split(';');
+    for (var r = 0; r < rules.length; r++) {
+      var rule = rules[r].trim();
+      if (!rule) continue;
+      var m = rule.match(/^((?:(?:Mo|Tu|We|Th|Fr|Sa|Su|PH)(?:-(?:Mo|Tu|We|Th|Fr|Sa|Su))?)(?:\s*,\s*(?:Mo|Tu|We|Th|Fr|Sa|Su|PH)(?:-(?:Mo|Tu|We|Th|Fr|Sa|Su))?)*)?\s*(off|closed|\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2}(?:\s*,\s*\d{1,2}:\d{2}\s*-\s*\d{1,2}:\d{2})*)$/i);
+      if (!m) return null;
+      var days = [], hol = false;
+      if (m[1]) {
+        m[1].split(',').forEach(function (part) {
+          part = part.trim();
+          if (part === 'PH') { hol = true; return; }
+          var ab = part.split('-'), a = DAYS.indexOf(ab[0]), b = ab[1] ? DAYS.indexOf(ab[1]) : a;
+          for (var k = a; ; k = (k + 1) % 7) { days.push(k); if (k === b) break; }
+        });
+      } else {
+        days = [0, 1, 2, 3, 4, 5, 6];
+      }
+      var closed = /^(off|closed)$/i.test(m[2]);
+      var times = closed ? [] : m[2].split(',').map(function (x) { return x.replace(/\s+/g, '').replace('-', '–'); });
+      days.forEach(function (k) { week[k] = times.slice(); });   // a later rule overrides an earlier one
+      if (hol) holiday = times;
+    }
+    return { week: week, holiday: holiday };
+  }
+
+  function dayName(i) {
+    return new Date(2024, 0, 1 + i).toLocaleDateString(d.lang === 'de' ? 'de-DE' : 'en-GB', { weekday: 'short' });
+  }
+
+  function hoursBlock(raw) {
+    var parsed = parseHours(raw);
+    var det = document.createElement('details');
+    det.className = 'poi-hours';
+    var sum = document.createElement('summary');
+    if (!parsed) {
+      sum.textContent = '🕒 ' + P.hours;
+      det.appendChild(sum);
+      var p = document.createElement('p'); p.className = 'poi-hours-raw'; p.textContent = raw; det.appendChild(p);
+      return det;
+    }
+    var today = (new Date().getDay() + 6) % 7;
+    var todayTimes = parsed.week[today];
+    sum.textContent = '🕒 ' + P.hours + ' · ' + P.today + ': ' + (todayTimes.length ? todayTimes.join(', ') : P.closed);
+    det.appendChild(sum);
+    var table = document.createElement('table');
+    parsed.week.forEach(function (times, i) {
+      var tr = document.createElement('tr');
+      if (i === today) tr.className = 'is-today';
+      var th = document.createElement('th'); th.scope = 'row'; th.textContent = dayName(i);
+      var td = document.createElement('td');
+      td.textContent = times.length ? times.join(' · ') : P.closed;
+      if (!times.length) td.className = 'is-closed';
+      tr.appendChild(th); tr.appendChild(td); table.appendChild(tr);
+    });
+    if (parsed.holiday) {
+      var tr2 = document.createElement('tr');
+      var th2 = document.createElement('th'); th2.scope = 'row'; th2.textContent = P.holidays;
+      var td2 = document.createElement('td'); td2.textContent = parsed.holiday.length ? parsed.holiday.join(' · ') : P.closed;
+      if (!parsed.holiday.length) td2.className = 'is-closed';
+      tr2.appendChild(th2); tr2.appendChild(td2); table.appendChild(tr2);
+    }
+    det.appendChild(table);
+    return det;
+  }
+
+  function chip(text, cls) {
+    var c = document.createElement('span'); c.className = 'poi-chip' + (cls ? ' ' + cls : ''); c.textContent = text; return c;
+  }
+
+  // One tile per place: name and kind, what and where, why we suggest it, opening hours as a table, buttons
   function poiRow(it, reason) {
     var li = document.createElement('li');
-    var text = document.createElement('div');
-    var title = document.createElement('strong');
-    title.textContent = STOP_ICON[it.type] + ' ' + (it.name || P['kind_' + it.kind] || it.kind);
-    var small = document.createElement('small');
-    small.textContent = (reason ? P['reason_' + reason] + ' · ' : '') + poiFacts(it);
-    text.appendChild(title); text.appendChild(document.createElement('br')); text.appendChild(small);
-    if (it.opening_hours) {
-      var oh = document.createElement('small');
-      oh.className = 'muted-item';
-      oh.textContent = ' · ' + it.opening_hours;
-      text.appendChild(oh);
-    }
-    var show = listButton(P.show, P.show, function () { map.setView([it.lat, it.lng], 17); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-    var add = listButton(P.add, P.add, function () { planStop(it); });
-    li.appendChild(text); li.appendChild(show); li.appendChild(add);
+    li.className = 'poi-card poi-type-' + it.type;
+    var head = document.createElement('div'); head.className = 'poi-head';
+    var badge = document.createElement('span'); badge.className = 'poi-badge'; badge.textContent = STOP_ICON[it.type]; badge.setAttribute('aria-hidden', 'true');
+    var names = document.createElement('div');
+    var title = document.createElement('strong'); title.className = 'poi-name';
+    title.textContent = it.name || P['kind_' + it.kind] || it.kind;
+    var kind = document.createElement('span'); kind.className = 'poi-kind'; kind.textContent = P['kind_' + it.kind] || it.kind;
+    names.appendChild(title); names.appendChild(kind);
+    head.appendChild(badge); head.appendChild(names);
+    li.appendChild(head);
+
+    var chips = document.createElement('div'); chips.className = 'poi-chips';
+    chips.appendChild(chip('📍 ' + P.at_km.replace('{km}', it.km.toLocaleString(d.lang === 'de' ? 'de-DE' : 'en-GB'))));
+    chips.appendChild(chip(it.off < 30 ? '✔ ' + P.on_route : '↔ ' + P.off_route.replace('{m}', Math.round(it.off / 10) * 10), it.off < 30 ? 'is-good' : ''));
+    it.facts.forEach(function (x) { if (P['fact_' + x]) chips.appendChild(chip(P['fact_' + x], 'is-fact')); });
+    li.appendChild(chips);
+
+    if (reason) { var why = document.createElement('p'); why.className = 'poi-reason'; why.textContent = P['reason_' + reason]; li.appendChild(why); }
+    if (it.opening_hours) li.appendChild(hoursBlock(it.opening_hours));
+
+    var actions = document.createElement('div'); actions.className = 'poi-actions';
+    var show = document.createElement('button'); show.type = 'button'; show.className = 'secondary-submit'; show.textContent = P.show;
+    show.addEventListener('click', function () { map.setView([it.lat, it.lng], 17); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    var add = document.createElement('button'); add.type = 'button'; add.textContent = P.add;
+    add.addEventListener('click', function () { planStop(it); });
+    actions.appendChild(show); actions.appendChild(add);
+    li.appendChild(actions);
     return li;
   }
 
@@ -363,6 +452,7 @@
     poiLayer.clearLayers();
     var h = document.createElement('h2'); h.textContent = P.title; stopBox.appendChild(h);
     var note = document.createElement('p'); note.className = 'hint'; note.textContent = P.note; stopBox.appendChild(note);
+    if (j.partial) { var part = document.createElement('p'); part.className = 'alert alert-info'; part.textContent = P.partial; stopBox.appendChild(part); }
     var any = false;
     if (j.plan && j.plan.length) {
       var h3 = document.createElement('h3'); h3.textContent = P.plan; stopBox.appendChild(h3);

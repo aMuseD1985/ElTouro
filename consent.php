@@ -43,9 +43,10 @@ $row = dbOne('SELECT consent_version, consent_at FROM users WHERE id = ?', [$uid
 $vars = ['days' => RIDE_SIGNUP_RETENTION_DAYS, 'logdays' => setting('log_days', '7')];
 pageHeader(t('consent.title'));
 ?>
-<article class="text narrow-text consent">
+<article class="text narrow-text consent<?= $has ? '' : ' is-gate' ?>">
   <h1><?= te('consent.title') ?></h1>
-  <p><?= te('consent.intro') ?></p>
+  <p class="consent-intro"><?= te('consent.intro') ?></p>
+  <div class="consent-scroll" tabindex="0" role="region" aria-label="<?= te('consent.title') ?>">
   <?php for ($i = 1; $i <= 8; $i++): ?>
     <section class="consent-item">
       <h2><?= te('consent.i' . $i . '_title') ?></h2>
@@ -57,6 +58,7 @@ pageHeader(t('consent.title'));
     </section>
   <?php endfor; ?>
   <p><?= t('consent.rights') ?></p>
+  </div>
 
   <?php if ($has): ?>
     <p class="alert alert-info"><?= te('consent.given', ['when' => formatRideTime((string)$row['consent_at']), 'version' => (int)$row['consent_version']]) ?></p>

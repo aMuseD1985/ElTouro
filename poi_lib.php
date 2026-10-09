@@ -14,6 +14,7 @@ require_once __DIR__ . '/share_lib.php';
 const STOP_TYPES = ['charge', 'food', 'break', 'sight'];
 const STOP_INTERVAL_KM = 25;   // a charging or food stop roughly this often on long tours
 const POI_DEFAULT_URLS = ['https://lz4.overpass-api.de/api/interpreter', 'https://z.overpass-api.de/api/interpreter',
+                          'https://overpass.private.coffee/api/interpreter', 'https://overpass.openstreetmap.fr/api/interpreter',
                           'https://overpass-api.de/api/interpreter'];
 
 /** Stops as stored with a tour: [{i: waypoint index, type, name}], or null if invalid. */
@@ -131,19 +132,28 @@ function overpass(string $query): ?array
             return $hit;
         }
     }
-    foreach ($urls as $url) {
+    // A mirror that just failed is skipped for five minutes (a busy one would cost 10–15 s per piece), unless all are bad
+    $badDir = dataDir('pois');
+    $fresh = array_values(array_filter($urls, fn($u) => !is_file($badDir . '/bad-' . md5($u)) || time() - filemtime($badDir . '/bad-' . md5($u)) > 300));
+    foreach ($fresh ?: $urls as $url) {
         $ch = curl_init($url);
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_POST => true,
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 40, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_POST => true,
                                 CURLOPT_POSTFIELDS => http_build_query(['data' => $query]),
                                 CURLOPT_USERAGENT => 'ElTouro/1.0 (+' . baseUrl() . ')']);
         $raw = curl_exec($ch);
         $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        $err = curl_error($ch);
         unset($ch);
         $data = is_string($raw) && $status === 200 ? json_decode($raw, true) : null;
-        if (is_array($data) && isset($data['elements'])) {
+        // A busy server answers 200 with a "remark" ("Query timed out", "out of memory") and incomplete or no elements:
+        // never cache that, ask the next mirror
+        if (is_array($data) && isset($data['elements']) && empty($data['remark'])) {
             file_put_contents($cache, json_encode($data['elements'], JSON_UNESCAPED_UNICODE), LOCK_EX);
+            @unlink($badDir . '/bad-' . md5($url));
             return $data['elements'];
         }
+        @touch($badDir . '/bad-' . md5($url));
+        error_log('ElTouro Overpass ' . $url . ': HTTP ' . $status . ' ' . $err . ' ' . (is_array($data) ? (string)($data['remark'] ?? '') : ''));
     }
     return null;
 }
@@ -207,18 +217,57 @@ function suggestStops(array $geo): ?array
         $line = simplifyLine($inner, $tolerance);
         $tolerance *= 1.6;
     } while (count($line) > 250);
-    $poly = implode(',', array_map(fn($p) => sprintf('%.5f,%.5f', $p[0], $p[1]), $line));
-    $query = "[out:json][timeout:25];("
-           . "nwr(around:250,$poly)[amenity~\"^(cafe|restaurant|biergarten|ice_cream|fast_food)$\"][name];"
-           . "nwr(around:400,$poly)[amenity=charging_station];"
-           . "nwr(around:500,$poly)[tourism~\"^(viewpoint|attraction|museum)$\"];"
-           . "nwr(around:500,$poly)[historic~\"^(castle|ruins)$\"];"
-           . "nwr(around:200,$poly)[amenity~\"^(drinking_water|toilets)$\"];"
-           . ");out center tags 500;";
-    $elements = overpass($query);
-    if ($elements === null) {
+    // The track in pieces about 9 km across: one bounding-box query per piece is fast, an "around" query along a long line is not
+    // (it times out on the public servers). Distance to the track is checked here afterwards.
+    $pad = [0.006, 0.010];                       // about 650 m
+    $pieces = [];
+    $cur = [];
+    foreach ($line as $p) {
+        $cur[] = $p;
+        $lat = array_column($cur, 0); $lng = array_column($cur, 1);
+        if (max($lat) - min($lat) > 0.08 || max($lng) - min($lng) > 0.12) {
+            array_pop($cur);
+            $pieces[] = $cur;
+            $cur = [$cur[count($cur) - 1], $p];   // pieces share their joint
+        }
+    }
+    if (count($cur) >= 2) {
+        $pieces[] = $cur;
+    }
+    $pieces = array_slice($pieces, 0, 40);
+    $elements = [];
+    $answered = 0;
+    $asked = 0;
+    $deadline = microtime(true) + 75;
+    foreach ($pieces as $piece) {
+        if (microtime(true) > $deadline) {
+            break;
+        }
+        $lat = array_column($piece, 0); $lng = array_column($piece, 1);
+        // snapped to a 0.01° grid, so neighbouring tours share cache entries
+        $bbox = sprintf('%.2f,%.2f,%.2f,%.2f', floor((min($lat) - $pad[0]) * 100) / 100, floor((min($lng) - $pad[1]) * 100) / 100,
+                                              ceil((max($lat) + $pad[0]) * 100) / 100, ceil((max($lng) + $pad[1]) * 100) / 100);
+        $query = "[out:json][timeout:25][bbox:$bbox];("
+               . "nwr[amenity~\"^(cafe|restaurant|biergarten|ice_cream|fast_food)$\"][name];"
+               . "nwr[amenity=charging_station];"
+               . "nwr[tourism~\"^(viewpoint|attraction|museum)$\"];"
+               . "nwr[historic~\"^(castle|ruins)$\"];"
+               . "nwr[amenity~\"^(drinking_water|toilets)$\"];"
+               . ");out center tags 1500;";
+        $asked++;
+        $part = overpass($query);
+        if ($part === null) {
+            continue;
+        }
+        $answered++;
+        foreach ($part as $el) {
+            $elements[($el['type'] ?? 'n') . ($el['id'] ?? 0)] = $el;   // pieces overlap: one entry per element
+        }
+    }
+    if ($answered === 0) {
         return null;
     }
+    $elements = array_values($elements);
 
     $items = [];
     foreach ($elements as $el) {
@@ -230,6 +279,9 @@ function suggestStops(array $geo): ?array
             continue;
         }
         $pos = projectOnRoute($route, $lat, $lng);
+        if ($pos['off'] > ['food' => 250, 'charge' => 400, 'sight' => 500, 'break' => 200][$c['type']]) {
+            continue;   // the query is a box around a piece of the track: far-off places are dropped here
+        }
         if ($pos['along'] < SHARE_PRIVACY_METERS || $pos['along'] > $total - SHARE_PRIVACY_METERS) {
             continue;
         }
@@ -288,5 +340,5 @@ function suggestStops(array $geo): ?array
     if ($sights && $sights[0]['score'] >= 2) $plan[] = $sights[0] + ['reason' => 'sight'];
     usort($plan, fn($a, $b) => $a['km'] <=> $b['km']);
 
-    return ['plan' => $plan, 'by_type' => $byType];
+    return ['plan' => $plan, 'by_type' => $byType, 'partial' => $answered < $asked || count($pieces) >= 40];
 }

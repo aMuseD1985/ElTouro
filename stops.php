@@ -35,7 +35,7 @@ $geo = is_array($input['geojson'] ?? null) ? validateGeometry(json_encode($input
 if ($geo === null) {
     respond(422, ['error' => 'geojson']);
 }
-@set_time_limit(90);
+@set_time_limit(120);
 $result = suggestStops($geo);
 if ($result === null) {
     respond(503, ['error' => 'unavailable']);
