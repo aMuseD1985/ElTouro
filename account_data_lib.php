@@ -102,6 +102,8 @@ function exportAccountData(int $userId): array
         'forum_posts' => $all('SELECT id, thread_id, body, created_at, edited_at, deleted_at FROM forum_posts WHERE user_id = ? ORDER BY id', [$userId]),
         'notification_settings' => $all('SELECT push_social, push_rides_near, push_rides_soon, mail_rides_near, radius_km, home_lat, home_lng FROM notify_prefs WHERE user_id = ?', [$userId]),
         'push_devices' => $all('SELECT endpoint, created_at, last_ok_at FROM push_subscriptions WHERE user_id = ?', [$userId]),
+        'crew_photos' => $all('SELECT id, group_id, caption, width, height, created_at FROM crew_photos WHERE user_id = ? AND deleted_at IS NULL', [$userId]),
+        'crew_photo_likes' => $all('SELECT photo_id, created_at FROM crew_photo_likes WHERE user_id = ?', [$userId]),
         'ratings' => $all('SELECT target_type, target_id, stars, comment, created_at, updated_at FROM ratings WHERE user_id = ? AND deleted_at IS NULL', [$userId]),
         'spots_added' => $all("SELECT id, type, kind, name, lat, lng, website, opening_hours, note, status, created_at FROM spots WHERE created_by = ?", [$userId]),
         'spot_notes' => $all('SELECT spot_id, field, value, status, created_at FROM spot_reports WHERE user_id = ?', [$userId]),
@@ -147,6 +149,12 @@ function buildExportZip(int $userId): ?string
     $avatar = avatarFileFor($userId);
     if ($avatar !== null) {
         $zip->addFile($avatar, 'profilfoto.' . pathinfo($avatar, PATHINFO_EXTENSION));
+    }
+    foreach (dbAll('SELECT id FROM crew_photos WHERE user_id = ? AND deleted_at IS NULL', [$userId]) as $ph) {   // photos of the photo wall
+        $f = DATA_DIR . '/photos/' . (int)$ph['id'] . '.jpg';
+        if (is_file($f)) {
+            $zip->addFile($f, 'fotowand/foto-' . (int)$ph['id'] . '.jpg');
+        }
     }
     $zip->close();
     return $path;
@@ -261,6 +269,8 @@ function deleteAccount(int $userId): void
     foreach (['webp', 'jpg'] as $ext) {
         @unlink(DATA_DIR . '/avatars/' . $userId . '.' . $ext);
     }
+    require_once __DIR__ . '/photos_lib.php';
+    purgeOrphanPhotos();   // photo wall files of the account (and of crews that went with it)
 
     // Mails after the fact; problems are only logged
     foreach ($cancelled as $ride) {

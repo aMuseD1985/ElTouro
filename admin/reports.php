@@ -20,6 +20,7 @@ if (isPost()) {
                 'ride'     => dbExec('UPDATE rides SET deleted_at = UTC_TIMESTAMP() WHERE id = ?', [$r['target_id']]),
                 'rating'   => dbExec('UPDATE ratings SET deleted_at = UTC_TIMESTAMP() WHERE id = ?', [$r['target_id']]),
                 'spot'     => dbExec('UPDATE spots SET hidden = 1 WHERE id = ?', [$r['target_id']]),
+                'photo'    => (function () use ($r) { require_once __DIR__ . '/../photos_lib.php'; deletePhoto((int)$r['target_id']); })(),
             };
             $decision = '[Inhalt entfernt] ' . $decision;
         }
@@ -59,6 +60,11 @@ function reportTarget(array $r): array
         'rating' => (function () use ($r, $gone) {
             $x = dbOne('SELECT r.stars, r.comment, r.target_type, r.target_id, u.display_name FROM ratings r JOIN users u ON u.id = r.user_id WHERE r.id = ?', [$r['target_id']]);
             return $x ? [($x['target_type'] === 'tour' ? '/tour/' : '/spot/') . $x['target_id'], $x['display_name'] . ' (' . $x['stars'] . '★): ' . mb_strimwidth((string)$x['comment'], 0, 250, '…')] : ['', $gone];
+        })(),
+        'photo'  => (function () use ($r, $gone) {
+            $x = dbOne('SELECT p.caption, u.display_name, g.name AS crew FROM crew_photos p JOIN users u ON u.id = p.user_id JOIN rider_groups g ON g.id = p.group_id WHERE p.id = ? AND p.deleted_at IS NULL', [$r['target_id']]);
+            // a reported photo can be opened by admins while the report is open
+            return $x ? ['/photo/' . $r['target_id'] . '/full', '[' . $x['crew'] . '] Foto von ' . $x['display_name'] . ($x['caption'] ? ': ' . $x['caption'] : '')] : ['', $gone];
         })(),
         'spot'   => ['/spot/' . $r['target_id'], (string)(dbOne('SELECT name FROM spots WHERE id = ?', [$r['target_id']])['name'] ?? $gone)],
         default  => ['', $gone],

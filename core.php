@@ -5,7 +5,7 @@
 declare(strict_types=1);
 
 // Bump when what we store or why changes: everybody is then asked for consent again (consent.php)
-const CONSENT_VERSION = 4;
+const CONSENT_VERSION = 5;
 // Stand-in author for content that stays after an account is deleted (see account_data_lib.php)
 const DELETED_USER_EMAIL = 'deleted-user@eltouro.invalid';
 
@@ -560,7 +560,7 @@ function pageHeader(string $title, array $meta = []): void
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/assets/app-pref.js?v=2"></script>
 <script src="/assets/map_styles.js?v=2"></script>
-<link rel="stylesheet" href="/assets/style.css?v=49">
+<link rel="stylesheet" href="/assets/style.css?v=50">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>

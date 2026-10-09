@@ -138,6 +138,15 @@ pageHeader($crew['name']);
 </section>
 <?php endif; ?>
 
+<?php if ($isMember): $photoCount = (int)dbOne('SELECT COUNT(*) AS n FROM crew_photos WHERE group_id = ? AND deleted_at IS NULL', [$gid])['n']; ?>
+<section class="talk-teaser">
+  <div class="title-row">
+    <h2><?= te('photo.title') ?><?php if ($photoCount): ?> <span class="muted small">(<?= $photoCount ?>)</span><?php endif; ?></h2>
+    <a class="btn" href="/crew/<?= e(rawurlencode($crew['slug'])) ?>/photos"><?= te('photo.open') ?></a>
+  </div>
+</section>
+<?php endif; ?>
+
 <?php if ($isMember):
   require_once __DIR__ . '/rides_lib.php';
   $crewRides = visibleRides($uid, true, 'r.group_id = ?', [$gid], 12); ?>

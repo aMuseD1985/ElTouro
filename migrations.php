@@ -576,9 +576,31 @@ function runMigrations(): array
     // The first admin may use the API right away; everybody else needs the admin's approval
     dbExec('UPDATE users SET api_access = 1 WHERE is_admin = 1 AND api_access = 0');
 
+    /* ---------- Photo wall of a crew (2026-10, photos_lib.php) ---------- */
+    $create('crew_photos', "CREATE TABLE crew_photos (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, group_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL,
+      caption VARCHAR(200) NULL, width SMALLINT UNSIGNED NOT NULL, height SMALLINT UNSIGNED NOT NULL, bytes INT UNSIGNED NOT NULL DEFAULT 0,
+      like_count INT UNSIGNED NOT NULL DEFAULT 0, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, deleted_at DATETIME NULL,
+      KEY ix_photos_group (group_id, deleted_at, id), KEY ix_photos_user (user_id),
+      CONSTRAINT fk_photos_group FOREIGN KEY (group_id) REFERENCES rider_groups(id) ON DELETE CASCADE,
+      CONSTRAINT fk_photos_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    $create('crew_photo_likes', "CREATE TABLE crew_photo_likes (
+      photo_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (photo_id, user_id),
+      CONSTRAINT fk_plike_photo FOREIGN KEY (photo_id) REFERENCES crew_photos(id) ON DELETE CASCADE,
+      CONSTRAINT fk_plike_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+
+    // Reports now also cover ratings, places and photos: the ENUM of target types becomes a plain string (idempotent)
+    $rt = dbOne("SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'reports' AND COLUMN_NAME = 'target_type'");
+    if ($rt !== null && strtolower((string)$rt['DATA_TYPE']) === 'enum') {
+        db()->exec("ALTER TABLE reports MODIFY target_type VARCHAR(12) NOT NULL");
+        $log[] = '~ reports.target_type: ENUM → VARCHAR (Meldungen zu Bewertungen, Orten und Fotos)';
+    }
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
-        'privacy' => ['de' => ['d1fd3d0814e71f30d20659d660c744d8c41e25ba28297f881a3d1f556fa76e15', 'f8b5527c07daaa6fff2cca20f8df52aee270b872ede74f6c558b7e3a10c027de', '0b48a1a125758f83b569b8b147f16ab6a28f5a5bf999449649641f5d27dfbba1', '7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
+        'privacy' => ['de' => ['7e4ba2126ff6c8f44d235eb02218c42fc71858a57579da1cf8ecbbbd4055f6f8', 'd1fd3d0814e71f30d20659d660c744d8c41e25ba28297f881a3d1f556fa76e15', 'f8b5527c07daaa6fff2cca20f8df52aee270b872ede74f6c558b7e3a10c027de', '0b48a1a125758f83b569b8b147f16ab6a28f5a5bf999449649641f5d27dfbba1', '7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
                              '7adde85362cc9775f7d29d005875c3605475e1d6f9f6dee10f37ead2d8d4065c',
                              '5020a23f093159124a269bbe8b151bcb3c6009d314befbf9ae5cb29cde3f3a1c',
                              '9bb92bbe55987f3de8a55cd7711ca553faa325e04600c69a49baa642defb77ad',
@@ -634,8 +656,8 @@ function legalPagesNeedingUpdate(): array
 {
     $markers = [
         'privacy' => [
-            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:', 'Kartenstil' => 'Kartenstil und Zwischenspeicher:', 'Einwilligung' => 'Einwilligung zu Beginn der Nutzung:', 'Benachrichtigungen' => 'Benachrichtigungen:', 'Google Maps' => 'Link zu Google Maps:', 'Bewertungen und Orte' => 'Bewertungen und Orte:', 'Push' => 'Push-Nachrichten und Gebiet:'],
-            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:', 'Kartenstil' => 'Map style and cache:', 'Einwilligung' => 'Consent at the start of use:', 'Benachrichtigungen' => 'Notifications:', 'Google Maps' => 'Link to Google Maps:', 'Bewertungen und Orte' => 'Ratings and places:', 'Push' => 'Push messages and area:'],
+            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:', 'Kartenstil' => 'Kartenstil und Zwischenspeicher:', 'Einwilligung' => 'Einwilligung zu Beginn der Nutzung:', 'Benachrichtigungen' => 'Benachrichtigungen:', 'Google Maps' => 'Link zu Google Maps:', 'Bewertungen und Orte' => 'Bewertungen und Orte:', 'Push' => 'Push-Nachrichten und Gebiet:', 'Fotowand' => 'Fotowand:'],
+            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:', 'Kartenstil' => 'Map style and cache:', 'Einwilligung' => 'Consent at the start of use:', 'Benachrichtigungen' => 'Notifications:', 'Google Maps' => 'Link to Google Maps:', 'Bewertungen und Orte' => 'Ratings and places:', 'Push' => 'Push messages and area:', 'Fotowand' => 'Photo wall:'],
         ],
         'terms' => [
             'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run', 'Profilfoto' => 'Als Profilfoto nimm nur', 'Selbst löschen' => 'Profil → „Meine Daten“'],

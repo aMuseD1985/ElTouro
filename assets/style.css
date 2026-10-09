@@ -700,3 +700,19 @@ html[data-theme="dark"] .content:has(.ride-mode) * { filter: none !important; }
 
 .token-show { display: block; margin-top: .4rem; padding: .5rem; background: var(--chalk); border-radius: 6px; word-break: break-all; color: var(--night); }
 .swagger-box { margin: 1.5rem 0; background: #fff; border-radius: 10px; padding: .5rem; color: #3b4151; }
+
+/* Photo wall */
+.photo-grid { list-style: none; padding: 0; margin: 1rem 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr)); gap: .8rem; }
+.photo-card { background: #fff; border: 1px solid #D5DCE5; border-radius: 10px; overflow: hidden; color: var(--night); }
+.photo-link { display: block; background: var(--chalk); }
+.photo-link img { display: block; width: 100%; height: 9.5rem; object-fit: cover; }
+.photo-meta { display: flex; justify-content: space-between; align-items: center; gap: .4rem; padding: .35rem .6rem 0; }
+.photo-caption { margin: .2rem .6rem 0; font-size: .9rem; }
+.photo-actions { margin: .2rem .6rem .5rem; display: flex; gap: .8rem; align-items: center; }
+.like-btn { background: none; border: 0; color: #8A96A5; font-size: 1.05rem; padding: .2rem .3rem; cursor: pointer; }
+.like-btn.is-on { color: #C2553F; }
+.photo-view { max-width: min(96vw, 1100px); max-height: 94vh; padding: 0; border: 0; border-radius: 12px; background: #0b1524; color: #fff; }
+.photo-view::backdrop { background: rgba(10, 20, 34, .85); }
+.photo-view img { display: block; max-width: 100%; max-height: 82vh; margin: 0 auto; }
+.photo-view-caption { margin: 0; padding: .6rem 1rem; }
+.photo-close { position: absolute; right: .5rem; top: .5rem; background: rgba(0, 0, 0, .55); color: #fff; border: 0; border-radius: 50%; width: 2.2rem; height: 2.2rem; cursor: pointer; }
