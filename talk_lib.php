@@ -181,6 +181,20 @@ function addTalkPost(int $topicId, int $userId, string $body, ?int $replyTo = nu
     dbExec('UPDATE herd_topics SET post_count = post_count + 1, last_post_at = UTC_TIMESTAMP(), last_post_id = ?, last_post_user_id = ? WHERE id = ?',
         [$pid, $userId, $topicId]);
     markTalkRead($topicId, $userId, $pid);
+    require_once __DIR__ . '/notify_lib.php';
+    $topic = dbOne('SELECT user_id, title, group_id FROM herd_topics WHERE id = ?', [$topicId]);
+    if ($topic !== null) {
+        $nv = ['name' => displayNameOf($userId), 'title' => (string)$topic['title']];
+        $link = '/talk/' . $topicId;
+        $who = [(int)$topic['user_id']];
+        if ($replyTo) {
+            $who[] = (int)(dbOne('SELECT user_id FROM herd_posts WHERE id = ?', [$replyTo])['user_id'] ?? 0);
+        }
+        // only active members of the crew hear about a crew conversation
+        $who = array_filter($who, fn($id) => dbOne("SELECT 1 AS x FROM group_members WHERE group_id = ? AND user_id = ? AND status = 'active'", [$topic['group_id'], $id]) !== null);
+        notifyMany($who, $userId, 'talk_reply', $link, $nv);
+        notifyMany(array_diff(mentionedUsers($body, $userId, (int)$topic['group_id']), $who), $userId, 'mention', $link, $nv);
+    }
     return $pid;
 }
 

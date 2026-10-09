@@ -34,6 +34,12 @@ if (isPost()) {
             dbExec('INSERT INTO forum_posts (thread_id, user_id, body) VALUES (?, ?, ?)', [$tid, $uid, $draft]);
             $new = (int)db()->lastInsertId();
             dbExec('UPDATE forum_threads SET post_count = post_count + 1, last_post_at = UTC_TIMESTAMP() WHERE id = ?', [$tid]);
+            require_once __DIR__ . '/notify_lib.php';
+            $th = dbOne('SELECT user_id, title FROM forum_threads WHERE id = ?', [$tid]);
+            $nv = ['name' => (string)$me['display_name'], 'title' => (string)($th['title'] ?? '')];
+            $mentioned = mentionedUsers($draft, $uid);
+            notifyUser((int)($th['user_id'] ?? 0), $uid, 'forum_reply', '/forum/topic/' . $tid . '#b' . $new, $nv);
+            notifyMany($mentioned, $uid, 'mention', '/forum/topic/' . $tid . '#b' . $new, $nv);
             $count = (int)dbOne('SELECT COUNT(*) AS n FROM forum_posts WHERE thread_id = ?', [$tid])['n'];
             redirect($self . '?p=' . (int)ceil($count / FORUM_POSTS_PER_PAGE) . '#b' . $new);
         }

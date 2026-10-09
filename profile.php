@@ -25,6 +25,9 @@ if (isPost()) {
     dbExec('UPDATE user_profiles SET bio = ?, home_region = ? WHERE user_id = ?',
         [postField('bio', 1000) ?: null, postField('region', 100) ?: null, $me['id']]);
     dbExec('UPDATE users SET locale = ? WHERE id = ?', [$lang, $me['id']]);
+    if (isset($_POST['digest'])) {
+        dbExec('UPDATE users SET mail_digest = ? WHERE id = ?', [in_array($_POST['digest'], ['off', 'daily', 'weekly'], true) ? $_POST['digest'] : 'off', $me['id']]);
+    }
     setcookie('lang', $lang, ['expires' => time() + 31536000, 'path' => '/', 'secure' => isHttps(), 'httponly' => true, 'samesite' => 'Lax']);
     flash(t('profile.saved'));
     redirect('/profile');
@@ -33,6 +36,7 @@ if (isPost()) {
 $p = dbOne('SELECT bio, home_region FROM user_profiles WHERE user_id = ?', [$me['id']]) ?? ['bio' => '', 'home_region' => ''];
 $avatarVersion = dbOne('SELECT avatar_version FROM users WHERE id = ?', [$me['id']])['avatar_version'] ?? null;
 $google = dbOne("SELECT email FROM user_identities WHERE provider = 'google' AND user_id = ?", [$me['id']]);
+$digest = (string)(dbOne('SELECT mail_digest FROM users WHERE id = ?', [$me['id']])['mail_digest'] ?? 'off');
 $consentRow = dbOne('SELECT consent_version, consent_at FROM users WHERE id = ?', [$me['id']]);
 require_once __DIR__ . '/rides_lib.php';
 $inviteUrl = inviteUrl(userInviteCode((int)$me['id']));
@@ -75,6 +79,10 @@ pageHeader(t('profile.title'));
         <option value="de" <?= $me['locale'] === 'de' ? 'selected' : '' ?>>Deutsch</option>
         <option value="en" <?= $me['locale'] === 'en' ? 'selected' : '' ?>>English</option>
       </select></div>
+    <div class="field" id="notifications"><label for="digest"><?= te('notif.digest') ?></label>
+      <select id="digest" name="digest">
+        <?php foreach (['off', 'daily', 'weekly'] as $o): ?><option value="<?= $o ?>" <?= $digest === $o ? 'selected' : '' ?>><?= te('notif.digest_' . $o) ?></option><?php endforeach; ?></select>
+      <p class="hint"><?= te('notif.digest_hint') ?></p></div>
     <button type="submit"><?= te('profile.button') ?></button>
   </form>
 </section>

@@ -195,6 +195,9 @@ function signUpForRide(int $rideId, int $userId, bool $photoConsent): string
                                         photo_consent = VALUES(photo_consent), queued_at = VALUES(queued_at)',
             [$rideId, $userId, $status, $photoConsent ? 1 : 0]);
         $pdo->commit();
+        require_once __DIR__ . '/notify_lib.php';
+        $r = dbOne('SELECT organizer_user_id, title FROM rides WHERE id = ?', [$rideId]);
+        notifyUser((int)($r['organizer_user_id'] ?? 0), $userId, 'ride_signup', '/ride/' . $rideId, ['name' => displayNameOf($userId), 'title' => (string)($r['title'] ?? '')]);
         return $status;
     } catch (Throwable $ex) {
         if ($pdo->inTransaction()) {
@@ -324,6 +327,8 @@ function notifyRiders(array $ride, string $kind, ?array $userIds = null, int $ex
             'meeting' => $ride['meeting_point'],
             'link'    => baseUrl() . '/ride/' . (int)$ride['id'],
         ]);
+        require_once __DIR__ . '/notify_lib.php';
+        notifyUser((int)$u['id'], $exceptUserId, 'ride_' . $kind, '/ride/' . (int)$ride['id'], ['title' => (string)$ride['title']]);
         try {
             sendMail($u['email'], tl($u['locale'], 'mail.ride_' . $kind . '_subject', ['title' => $ride['title']]), mailHtml($text), $text);
             $sent++;

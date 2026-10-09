@@ -5,7 +5,7 @@
 declare(strict_types=1);
 
 // Bump when what we store or why changes: everybody is then asked for consent again (consent.php)
-const CONSENT_VERSION = 1;
+const CONSENT_VERSION = 2;
 // Stand-in author for content that stays after an account is deleted (see account_data_lib.php)
 const DELETED_USER_EMAIL = 'deleted-user@eltouro.invalid';
 
@@ -560,7 +560,7 @@ function pageHeader(string $title, array $meta = []): void
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/assets/app-pref.js?v=1"></script>
 <script src="/assets/map_styles.js?v=1"></script>
-<link rel="stylesheet" href="/assets/style.css?v=42">
+<link rel="stylesheet" href="/assets/style.css?v=43">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>
@@ -586,6 +586,9 @@ function pageHeader(string $title, array $meta = []): void
       <?php if (setting('registration_open', '1') === '1'): ?><a href="/register"><?= te('nav.register') ?></a><?php endif; ?>
     <?php endif; ?>
   </nav>
+  <?php if ($u): require_once __DIR__ . '/notify_lib.php'; $bell = unreadNotificationCount((int)$u['id']); ?>
+  <a class="bell" href="/notifications" aria-label="<?= te('notif.title') ?><?= $bell ? ' (' . $bell . ')' : '' ?>">🔔<?php if ($bell): ?><span class="bell-n"><?= $bell > 99 ? '99+' : $bell ?></span><?php endif; ?></a>
+  <?php endif; ?>
   <nav class="lang-switch" aria-label="<?= te('nav.language') ?>">
     <a href="<?= e($path) ?>?lang=de" <?= $LANG === 'de' ? 'aria-current="true"' : '' ?>>DE</a>
     <a href="<?= e($path) ?>?lang=en" <?= $LANG === 'en' ? 'aria-current="true"' : '' ?>>EN</a>

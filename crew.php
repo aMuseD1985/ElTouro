@@ -33,6 +33,11 @@ if (isPost()) {
             if ($m === null && ($status = joinStatus($crew, $code)) !== null) {
                 dbExec("INSERT INTO group_members (group_id, user_id, role, status) VALUES (?, ?, 'member', ?)", [$gid, $uid, $status]);
                 flash(t($status === 'active' ? 'crew.joined' : 'crew.requested'));
+                if ($status === 'pending') {
+                    require_once __DIR__ . '/notify_lib.php';
+                    $leads = array_column(dbAll("SELECT user_id FROM group_members WHERE group_id = ? AND role = 'admin' AND status = 'active'", [$gid]), 'user_id');
+                    notifyMany($leads, $uid, 'crew_request', '/crew/' . rawurlencode($crew['slug']), ['name' => (string)$me['display_name'], 'crew' => (string)$crew['name']]);
+                }
             }
             break;
 
@@ -61,6 +66,8 @@ if (isPost()) {
             }
             if ($action === 'accept') {
                 dbExec("UPDATE group_members SET status = 'active' WHERE group_id = ? AND user_id = ? AND status = 'pending'", [$gid, $target]);
+                require_once __DIR__ . '/notify_lib.php';
+                notifyUser($target, $uid, 'crew_accepted', '/crew/' . rawurlencode($crew['slug']), ['crew' => (string)$crew['name']]);
             } elseif ($action === 'decline') {
                 dbExec("DELETE FROM group_members WHERE group_id = ? AND user_id = ? AND status = 'pending'", [$gid, $target]);
             } elseif ($action === 'remove' && $target !== $uid) {

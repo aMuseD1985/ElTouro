@@ -172,6 +172,11 @@ if (isPost()) {
             dbExec('UPDATE rides SET talk_topic_id = ? WHERE id = ?', [$topicId, $rid]);
         }
         $pdo->commit();
+        if ($groupId !== null) {
+            require_once __DIR__ . '/notify_lib.php';
+            $members = array_column(dbAll("SELECT user_id FROM group_members WHERE group_id = ? AND status = 'active'", [$groupId]), 'user_id');
+            notifyMany($members, $uid, 'ride_new', '/ride/' . $rid, ['title' => $w['title'], 'crew' => (string)(loadCrewById($groupId)['name'] ?? '')]);
+        }
         flash(t('ride.created'));
         redirect('/ride/' . $rid);
     }

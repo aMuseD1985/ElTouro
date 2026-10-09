@@ -108,6 +108,8 @@ function exportAccountData(int $userId): array
         'reports_filed' => $all('SELECT id, target_type, target_id, reason, status, created_at FROM reports WHERE reporter_user_id = ? ORDER BY id', [$userId]),
         'activity' => array_map(fn($e) => decodeJsonColumns($e, ['meta']),
             $all('SELECT type, subject_type, subject_id, value, meta, occurred_at, voided_at, void_reason FROM activity_events WHERE user_id = ? ORDER BY id', [$userId])),
+        'notifications' => $all('SELECT type, link, vars, created_at, read_at FROM notifications WHERE user_id = ? ORDER BY id', [$userId]),
+        'mail_digest' => $one('SELECT mail_digest, digest_sent_at FROM users WHERE id = ?', [$userId]),
         'recorded_rides' => $tracks,
         'live_position' => $one('SELECT lat, lng, heading, speed_kmh, scope, tour_id, visible, updated_at FROM live_positions WHERE user_id = ?', [$userId]),
         'not_included' => [

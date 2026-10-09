@@ -620,3 +620,12 @@ details.panel[open] > summary { margin-bottom: .5rem; }
 .after-post { display: flex; gap: .5rem; flex-wrap: wrap; }
 .after-post select { flex: 1 1 8rem; width: auto; }
 .after-ride .btn { flex: 1 1 auto; }
+
+/* ---- Notifications ---- */
+.bell { position: relative; color: #fff; text-decoration: none; font-size: 1.35rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; }
+.bell:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.bell-n { position: absolute; top: 3px; right: 1px; min-width: 1.15rem; padding: 0 .3rem; border-radius: 999px; background: var(--gold); color: var(--night); font: 700 .72rem/1.15rem var(--body); text-align: center; }
+.notif-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+.notif-list li { background: #fff; border-radius: 10px; padding: .7rem .9rem; border-left: 4px solid transparent; display: flex; flex-direction: column; gap: .15rem; }
+.notif-list li.is-new { border-left-color: var(--gold); background: #FFF9EA; }
+.notif-list a { font-weight: 600; }

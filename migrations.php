@@ -468,6 +468,18 @@ function runMigrations(): array
         $log[] = '+ Platzhalter-Nutzer für gelöschte Konten angelegt';
     }
 
+    /* ---------- Notifications and mail digest (2026-10, notify_lib.php) ---------- */
+    $create('notifications', "CREATE TABLE notifications (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, type VARCHAR(40) NOT NULL,
+      link VARCHAR(200) NOT NULL, vars TEXT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, read_at DATETIME NULL,
+      KEY ix_notif_user (user_id, read_at, id),
+      CONSTRAINT fk_notif_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    if (!columnExists('users', 'mail_digest')) {
+        db()->exec("ALTER TABLE users ADD mail_digest VARCHAR(8) NOT NULL DEFAULT 'off', ADD digest_sent_at DATETIME NULL");
+        $log[] = '~ users.mail_digest, digest_sent_at angelegt';
+    }
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
         'privacy' => ['de' => ['7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
@@ -482,7 +494,8 @@ function runMigrations(): array
                              '8e68a6134dd7e5694a5b11f1cb995167833924cc938f9142b8d0721bc40ef2e7',
                              '5d08b09e1e406db8a52ff934fa4941942bdf06bc49ac6b4e5d1857ddb1c7b551',
                              '39f261e45c9bf5334febf30f5466086cbba8a9366ba19634dfa1f5fbb4cc3b39',
-                             'e7ef24531894553916fce2187cb809a283a6da926fc19558a73843ec752979c6'],
+                             'e7ef24531894553916fce2187cb809a283a6da926fc19558a73843ec752979c6',
+                             'daced4f00cbd462a1348e804914816beeb3e6843f0b1716174bf272c15a972f4'],
                       'en' => ['d626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024',
                              '97ec6abe9fd9c9dafcd7f9bf64af86374052b671234a1c8b3b4cbcfd8524b93d',
                              'aad225fefb56e29cc0c861f4a05f7f448e8b226d93e0ee18366cd6eb8fb240c4',
@@ -495,7 +508,8 @@ function runMigrations(): array
                              '324ead27ecaf38bbabc0ac23f4446377a456af781bcafe9f9890e399a76ed4f6',
                              'ff48317ce6cc0553b30725e70a9923202eb7c6dd1eb349e8e3e2a947993e3a47',
                              'b7591cca65c336b3807569f7ccc80738610693179a3d787015fa8eada2e47d0d',
-                             'c218e90891907e0341fbae4a8baae51a4e714cb6cf6ad91b3602060faa9aab25']],
+                             'c218e90891907e0341fbae4a8baae51a4e714cb6cf6ad91b3602060faa9aab25',
+                             '5f9599ccbfbaa0fa4b87e1e3a2e9035a7813270c44dd50b1aaa87aeda6926e06']],
         'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab', 'feaac83164b6aa8d5cb9441fc8bf1a9ab32abc0c9c34f0c69c777f46fd29cc44', 'dc5f8ddd572ab58b3741a32db8a468c60073ace583c934c62f299f650cbc972b', '75b1f4e84a84c1c7e7a25109060f5ec1efd0212fd330740929345f6c3fd34760'],
                       'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d', '63498436ed4f625110f2b427930d9feb7e2d6dd1c5ec947d7bd74de655560d81', 'a0a3110ea0dab0f4759f757a08a9250654931353e03a1e742c6f776f320e08b9', '0c6fa707fc188c146fd501b82c95d3ce71490e01c912d2e8fc8acdd5d82a965f']],
     ];
@@ -524,8 +538,8 @@ function legalPagesNeedingUpdate(): array
 {
     $markers = [
         'privacy' => [
-            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:', 'Kartenstil' => 'Kartenstil und Zwischenspeicher:', 'Einwilligung' => 'Einwilligung zu Beginn der Nutzung:', 'Google Maps' => 'Link zu Google Maps:'],
-            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:', 'Kartenstil' => 'Map style and cache:', 'Einwilligung' => 'Consent at the start of use:', 'Google Maps' => 'Link to Google Maps:'],
+            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:', 'Kartenstil' => 'Kartenstil und Zwischenspeicher:', 'Einwilligung' => 'Einwilligung zu Beginn der Nutzung:', 'Benachrichtigungen' => 'Benachrichtigungen:', 'Google Maps' => 'Link zu Google Maps:'],
+            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:', 'Kartenstil' => 'Map style and cache:', 'Einwilligung' => 'Consent at the start of use:', 'Benachrichtigungen' => 'Notifications:', 'Google Maps' => 'Link to Google Maps:'],
         ],
         'terms' => [
             'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run', 'Profilfoto' => 'Als Profilfoto nimm nur', 'Selbst löschen' => 'Profil → „Meine Daten“'],
