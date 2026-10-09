@@ -297,9 +297,7 @@
       if (sel.value) points[i][2] = { type: sel.value, name: points[i][2] ? points[i][2].name : (names[nameKey(points[i])] || '') };
       else points[i].length = 2;
       selected = i;
-      drawMarkers();
-      fieldStops.value = JSON.stringify(points.map(function (p, k) { return p[2] ? { i: k, type: p[2].type, name: p[2].name } : null; })
-                                              .filter(function (x) { return x; }));
+      calcNow();   // a stop changes the route (no U-turn cut at stops) – no waiting for the ring
     });
     return sel;
   }
@@ -319,7 +317,15 @@
     if (points.length >= MAX) return;
     poiLayer.clearLayers();
     stopBox.hidden = true;
+    var before = points.length;
     insertOnRoute([it.lat, it.lng, { type: it.type, name: it.name || P['kind_' + it.kind] || '' }]);
+    if (points.length > before) computeRoute();
+  }
+
+  // Calculate right now instead of waiting for the ring (used when a stop is chosen)
+  function calcNow() {
+    calculate();
+    if (points.length >= 2) computeRoute();
   }
 
   // ---- Opening hours (OSM syntax, e.g. "Mo-Th 12:00-22:00; Fr-Sa 12:00-24:00; Su,PH off") as a week table.
