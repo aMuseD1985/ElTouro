@@ -93,7 +93,7 @@ if (isPost()) {
 // Texts for the script (i18n in the browser)
 $jsTexts = [];
 foreach (['point', 'calculating', 'done', 'error', 'notice_no_router', 'notice_partly_freehand', 'empty', 'stats', 'freehand_share', 'locate_error',
-          'leg_too_long', 'open_maps', 'optimize_few', 'optimize_none', 'optimize_done', 'uturns_avoided', 'uturns_left', 'remove', 'up', 'down', 'leg', 'start', 'finish', 'searching', 'search_none', 'search_error', 'search_slow', 'add_point', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
+          'leg_too_long', 'pause_1', 'pause_2', 'pause_3', 'pause_4', 'open_maps', 'optimize_few', 'optimize_none', 'optimize_done', 'uturns_avoided', 'uturns_left', 'remove', 'up', 'down', 'leg', 'start', 'finish', 'searching', 'search_none', 'search_error', 'search_slow', 'add_point', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
     $jsTexts[$k] = t('planner.' . $k);
 }
 
@@ -140,6 +140,17 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
      data-lang="<?= e($LANG) ?>"
      data-max-leg-km="<?= e((string)maxLegKm()) ?>"
      data-texts="<?= e(json_encode($jsTexts, JSON_UNESCAPED_UNICODE)) ?>"></div>
+  <!-- Shown while stops are searched (takes a while): four lunch scenes with the bull, crossfading -->
+  <div id="stops-loading" class="planner-loading stops-loading" hidden aria-hidden="true">
+    <div class="pause-stage">
+      <?php foreach (['doener', 'pizza', 'burger', 'coffee'] as $i => $scene): ?>
+        <img class="pause-scene" data-i="<?= $i ?>" src="/assets/img/pause/<?= $scene ?>.jpg" alt="" loading="lazy">
+      <?php endforeach; ?>
+      <span class="pause-steam" aria-hidden="true"></span>
+    </div>
+    <p class="loading-saying" id="pause-saying"></p>
+    <div class="loading-bar indeterminate"><span></span></div>
+  </div>
   <!-- Shown while the route is calculated; the status line below says the same for screen readers -->
   <div id="planner-loading" class="planner-loading" hidden aria-hidden="true">
     <div class="loading-stage">
@@ -206,5 +217,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=20"></script>
+<script src="/assets/planner.js?v=21"></script>
 <?php pageFooter();

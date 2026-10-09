@@ -392,8 +392,31 @@
     stopBox.hidden = false;
   }
 
+  // Lunch scenes while the stops are searched – only if it takes longer than a second
+  var pauseBox = document.getElementById('stops-loading');
+  var pauseTimer = null, pauseShow = null, pauseIdx = 0;
+  function pauseStart() {
+    if (!pauseBox) return;
+    var scenes = pauseBox.querySelectorAll('.pause-scene'), saying = document.getElementById('pause-saying');
+    function show(i) {
+      pauseIdx = i % scenes.length;
+      Array.prototype.forEach.call(scenes, function (s, k) { s.classList.toggle('is-on', k === pauseIdx); });
+      saying.textContent = T['pause_' + (pauseIdx + 1)] || '';
+    }
+    pauseShow = setTimeout(function () {
+      show(Math.floor(Math.random() * scenes.length));
+      pauseBox.hidden = false;
+      pauseTimer = setInterval(function () { show(pauseIdx + 1); }, 3200);
+    }, 1000);
+  }
+  function pauseStop() {
+    clearTimeout(pauseShow); clearInterval(pauseTimer);
+    if (pauseBox) pauseBox.hidden = true;
+  }
+
   if (stopsButton) stopsButton.addEventListener('click', function () {
     if (!current) return;
+    pauseStart();
     stopsButton.disabled = true;
     stopBox.hidden = false;
     stopBox.textContent = P.loading;
@@ -408,7 +431,7 @@
         else showSuggestions(x.j);
       })
       .catch(function () { stopBox.textContent = P.error; })
-      .then(function () { stopsButton.disabled = !current; });
+      .then(function () { pauseStop(); stopsButton.disabled = !current; });
   });
 
   // Changes that would create a leg longer than allowed are refused, like clicks on the map
