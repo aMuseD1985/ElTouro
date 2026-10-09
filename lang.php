@@ -192,6 +192,10 @@ return [
     'notif.crew_accepted' => 'Du bist jetzt in der Herde {crew}.',
     'mail.digest_subject' => 'ElTouro: {n} Neuigkeiten für dich',
     'mail.digest_text' => "Hallo {name},\n\nseit deinem letzten Besuch gibt es {n} Neuigkeiten:\n\n{list}\nAlle Benachrichtigungen findest du in der App. Diese Zusammenfassung kannst du hier abstellen: {link}\n\nDein ElTouro-Team",
+    'profile.theme' => 'Darstellung',
+    'profile.theme_auto' => 'Automatisch (wie das Gerät)',
+    'profile.theme_light' => 'Hell',
+    'profile.theme_dark' => 'Dunkel',
     'profile.more' => 'Mehr',
     'profile.more_live' => 'Wer fährt gerade?',
 
@@ -922,6 +926,10 @@ return [
     'notif.crew_accepted' => 'You are now in the crew {crew}.',
     'mail.digest_subject' => 'ElTouro: {n} updates for you',
     'mail.digest_text' => "Hi {name},\n\nsince your last visit there are {n} updates:\n\n{list}\nYou will find all notifications in the app. You can switch this summary off here: {link}\n\nThe ElTouro team",
+    'profile.theme' => 'Appearance',
+    'profile.theme_auto' => 'Automatic (like the device)',
+    'profile.theme_light' => 'Light',
+    'profile.theme_dark' => 'Dark',
     'profile.more' => 'More',
     'profile.more_live' => 'Who is riding now?',
 

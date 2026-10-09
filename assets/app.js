@@ -59,6 +59,14 @@
     if (e.target.closest && e.target.closest(SELECTABLE)) return;
     e.preventDefault();
   });
+  var themePick = document.getElementById('theme-pick');
+  if (themePick) {
+    themePick.value = store.get('eltouro.theme') || 'auto';
+    themePick.addEventListener('change', function () {
+      store.set('eltouro.theme', themePick.value);
+      if (window.elApplyTheme) window.elApplyTheme();
+    });
+  }
   var allow = document.getElementById('allow-select');
   if (allow) {
     allow.checked = html.classList.contains('allow-select');

@@ -629,3 +629,13 @@ details.panel[open] > summary { margin-bottom: .5rem; }
 .notif-list li { background: #fff; border-radius: 10px; padding: .7rem .9rem; border-left: 4px solid transparent; display: flex; flex-direction: column; gap: .15rem; }
 .notif-list li.is-new { border-left-color: var(--gold); background: #FFF9EA; }
 .notif-list a { font-weight: 600; }
+
+/* ---- Dark appearance: the content area is inverted, pictures, maps and gold elements are turned back ---- */
+html[data-theme="dark"] { color-scheme: dark; }
+html[data-theme="dark"] body { background: #1E232A; }
+html[data-theme="dark"] .content { filter: invert(1) hue-rotate(180deg) brightness(.93) contrast(.92); background: #DDE3EB; }
+html[data-theme="dark"] .content :is(img, video, canvas, svg.profile-svg, .leaflet-container, .maplibregl-map, .btn:not(.secondary), .badge, .poi-pin, .calc-ring, .tool-toggle:has(input:checked), .bell-n, .landing-mascot, .pause-stage, .wp-pin, .avatar, .reaction.mine) {
+  filter: invert(1) hue-rotate(180deg) contrast(1.09) brightness(1.08); }
+html[data-theme="dark"] .content .leaflet-container, html[data-theme="dark"] .content .maplibregl-map { filter: invert(1) hue-rotate(180deg) contrast(1.09) brightness(1.08); }
+html[data-theme="dark"] .site-footer, html[data-theme="dark"] .site-header, html[data-theme="dark"] .tabbar { filter: none; }
+html[data-theme="dark"] .content:has(.ride-mode) { filter: none; background: transparent; }   /* a filter would break position: fixed of the ride mode */

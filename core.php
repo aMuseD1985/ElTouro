@@ -558,9 +558,9 @@ function pageHeader(string $title, array $meta = []): void
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ElTouro">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<script src="/assets/app-pref.js?v=1"></script>
+<script src="/assets/app-pref.js?v=2"></script>
 <script src="/assets/map_styles.js?v=1"></script>
-<link rel="stylesheet" href="/assets/style.css?v=43">
+<link rel="stylesheet" href="/assets/style.css?v=46">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>
@@ -620,7 +620,7 @@ foreach (['install_title', 'install_text', 'install_button', 'later', 'ios_text'
 } ?>
 <?= tabBar() ?>
 <div id="app-texts" data-texts="<?= e(json_encode($appTexts, JSON_UNESCAPED_UNICODE)) ?>" hidden></div>
-<script src="/assets/app.js?v=3"></script>
+<script src="/assets/app.js?v=4"></script>
 </body>
 </html>
 <?php
