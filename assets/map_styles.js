@@ -113,7 +113,8 @@
   function maplibre(el, centre) {
     var cfg = read(el);
     if (!cfg || !cfg.styles.length) return null;
-    var map = null, shown = resolve(cfg, choice(), centre);
+    var map = null, shown = resolve(cfg, choice(), centre), listeners = [];
+    function night(s) { return !!(s.night || s.id === 'satellite'); }
 
     function swap(s) {
       if (!map || s.id === shown.id) return;
@@ -124,6 +125,7 @@
       map.addSource('tiles', source(s));
       map.addLayer(layerSpec(s), before);
       shown = s;
+      listeners.forEach(function (fn) { fn(night(s)); });
     }
     function where() {
       if (!map) return centre;
@@ -145,7 +147,10 @@
         swap(resolve(cfg, nextChoice.id, where()));
         return cfg.texts.switched.replace('{name}', nextChoice.id === 'auto' ? cfg.texts.auto + ' · ' + shown.label : nextChoice.label);
       },
-      multiple: cfg.styles.length > 1
+      multiple: cfg.styles.length > 1,
+      /** Is the shown map dark (night style, satellite)? */
+      isNight: function () { return night(shown); },
+      onStyleChange: function (fn) { listeners.push(fn); }
     };
   }
 

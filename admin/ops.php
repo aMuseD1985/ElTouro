@@ -33,7 +33,7 @@ if (isset($_GET['download'])) {
         http_response_code(400);
         exit('Ungültiger Link.');
     }
-    $p = backupPath((string)$_GET['download']);
+    $p = str_starts_with((string)$_GET['download'], 'eltouro-release-') ? releasePath((string)$_GET['download']) : backupPath((string)$_GET['download']);
     if ($p === null) {
         http_response_code(404);
         exit('Backup nicht gefunden.');
@@ -53,6 +53,19 @@ if (isPost()) {
             case 'migrate':
                 $log = runMigrations();
                 flash('Migration ausgeführt.');
+                break;
+
+            case 'release':
+                $r = buildRelease();
+                flash('Release-Paket gebaut: ' . $r['name'] . ' (' . $r['files'] . ' Dateien, ' . formatSize($r['size']) . ')');
+                break;
+
+            case 'release_delete':
+                $p = releasePath((string)($_POST['name'] ?? ''));
+                if ($p !== null) {
+                    unlink($p);
+                    flash('Release-Paket gelöscht.');
+                }
                 break;
 
             case 'backup':
@@ -239,6 +252,22 @@ $package = $packageId !== '' ? stagedPackage($packageId) : null;
   </form>
 </section>
 <?php endif; ?>
+
+<section class="panel">
+  <h2>Release für Produktion</h2>
+  <p>Packt den Stand, der auf diesem Server läuft, in ein ZIP (Ordner <code>eltouro-app/</code>) – genau das, was du auf Produktion brauchst, samt <code>assets/voice</code>.
+     <code>config.php</code> und <code>data/</code> sind nie enthalten, die Produktions-Config und die Datenbank bleiben unberührt (die Migration legt nur fehlende Tabellen und Spalten an).
+     Einspielen auf Produktion: <strong>Admin → Betrieb → Deployment</strong> (Vorschau, Vollbackup, Migration).</p>
+  <form method="post"><?= csrfField() ?><input type="hidden" name="action" value="release"><button type="submit">Release-Paket bauen</button></form>
+  <?php $releases = listReleases(); if ($releases): ?>
+    <ul class="list">
+      <?php foreach ($releases as $rel): ?>
+        <li><a href="?download=<?= e(rawurlencode($rel['name'])) ?>&amp;csrf=<?= e(csrfToken()) ?>"><?= e($rel['name']) ?></a> · <?= e(formatSize($rel['size'])) ?>
+          <form method="post" class="inline" data-confirm="Release-Paket löschen?"><?= csrfField() ?><input type="hidden" name="action" value="release_delete"><input type="hidden" name="name" value="<?= e($rel['name']) ?>"><button class="link danger">löschen</button></form></li>
+      <?php endforeach; ?>
+    </ul>
+  <?php endif; ?>
+</section>
 
 <section class="panel">
   <h2>Datenbank</h2>

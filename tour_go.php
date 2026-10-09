@@ -15,7 +15,7 @@ if ($tour === null || !canSeeTour($tour, (int)$me['id'])) {
     notFound();
 }
 
-$keys = ['start', 'start_sim', 'arrive', 'halfway', 'offroute', 'back', 'speed', 'gps_wait', 'gps_error', 'gps_denied', 'wakelock',
+$keys = ['finished_early', 'start', 'start_sim', 'arrive', 'halfway', 'offroute', 'back', 'speed', 'gps_wait', 'gps_error', 'gps_denied', 'wakelock',
          'in_m', 'in_km', 'now', 'remaining', 'eta_min', 'eta_h', 'speed_unit', 'sim_clock', 'follow', 'voice_on', 'voice_off', 'voice_pick', 'voice_changed', 'voice_sample', 'share_text', 'link_copied', 'rerouting', 'rerouted', 'posted', 'post_error', 'post_slow',
          'view_heading', 'view_3d', 'view_north', 'far_stop', 'now_stop_charge', 'now_stop_food', 'now_stop_break', 'now_stop_sight', 'label_stop', 'done_title', 'done_arrived', 'done_text', 'done_recorded', 'done_not_recorded', 'saving', 'no_hints'];
 foreach (['left', 'slight_left', 'sharp_left', 'right', 'slight_right', 'sharp_right', 'keep_left', 'keep_right', 'uturn',
@@ -125,6 +125,6 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
 </div>
 <script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
 <script src="/assets/voice.js?v=2"></script>
-<script src="/assets/confetti.js?v=1"></script>
-<script src="/assets/navigate.js?v=22"></script>
+<script src="/assets/confetti.js?v=2"></script>
+<script src="/assets/navigate.js?v=23"></script>
 <?php pageFooter();

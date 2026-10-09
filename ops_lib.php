@@ -418,3 +418,81 @@ function formatSize(int $bytes): string
 {
     return $bytes >= 1048576 ? number_format($bytes / 1048576, 1, ',', '.') . ' MB' : number_format($bytes / 1024, 0, ',', '.') . ' KB';
 }
+
+
+// ---------------------------------------------------------------- release package for production
+
+/** Parts of the app tree that do not belong in a production package (tools are blocked by .htaccess anyway) */
+function isReleaseExcluded(string $rel): bool
+{
+    if (isProtectedPath($rel) || preg_match('/\.tmp-[0-9a-f]{8}$/', $rel) || str_ends_with($rel, '.DS_Store') || str_starts_with(basename($rel), '.git')) {
+        return true;
+    }
+    foreach (['tools/', '.github/', '.git/', 'docs/'] as $prefix) {
+        if (str_starts_with($rel, $prefix)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function releaseDir(): string
+{
+    return dataDir('releases');
+}
+
+/**
+ * Packs the app as it runs here into one ZIP with the top folder "eltouro-app/" – ready for Admin → Betrieb → Deployment
+ * on production. config.php and data/ are never in it, so neither the production config nor the database is touched
+ * (the migration only adds missing tables and columns).
+ */
+function buildRelease(): array
+{
+    @set_time_limit(300);
+    $files = [];
+    $iter = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(APP_ROOT, FilesystemIterator::SKIP_DOTS));
+    foreach ($iter as $file) {
+        $rel = ltrim(str_replace('\\', '/', substr($file->getPathname(), strlen(APP_ROOT))), '/');
+        if ($file->isFile() && !isReleaseExcluded($rel) && $rel !== 'RELEASE.txt') {
+            $files[$rel] = $file->getPathname();
+        }
+    }
+    ksort($files, SORT_NATURAL | SORT_FLAG_CASE);
+    $hash = hash_init('sha256');
+    foreach ($files as $rel => $path) {
+        hash_update($hash, $rel . "\0" . hash_file('sha256', $path));
+    }
+    $id = substr(hash_final($hash), 0, 10);
+    $name = 'eltouro-release-' . gmdate('Ymd-His') . '-' . $id . '.zip';
+    $path = releaseDir() . '/' . $name;
+    $zip = new ZipArchive();
+    if ($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        throw new RuntimeException('ZIP kann nicht angelegt werden');
+    }
+    foreach ($files as $rel => $abs) {
+        $zip->addFile($abs, 'eltouro-app/' . $rel);
+    }
+    $zip->addFromString('eltouro-app/RELEASE.txt', "ElTouro release $id\nBuilt " . gmdate('Y-m-d H:i:s') . " UTC on " . ($_SERVER['HTTP_HOST'] ?? 'cli')
+        . "\nFiles: " . count($files) . "\nNot included: config.php, data/ (the production config and database stay untouched)\n");
+    $zip->close();
+    return ['name' => $name, 'files' => count($files), 'size' => (int)filesize($path), 'id' => $id];
+}
+
+function listReleases(): array
+{
+    $out = [];
+    foreach (glob(releaseDir() . '/eltouro-release-*.zip') ?: [] as $f) {
+        $out[] = ['name' => basename($f), 'size' => (int)filesize($f), 'time' => (int)filemtime($f)];
+    }
+    usort($out, fn($a, $b) => $b['time'] <=> $a['time']);
+    return $out;
+}
+
+function releasePath(string $name): ?string
+{
+    if (!preg_match('/^eltouro-release-\d{8}-\d{6}-[0-9a-f]{10}\.zip$/', $name)) {
+        return null;
+    }
+    $p = releaseDir() . '/' . $name;
+    return is_file($p) ? $p : null;
+}

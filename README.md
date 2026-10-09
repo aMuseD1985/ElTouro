@@ -1,6 +1,6 @@
 # ElTouro App (beta/test)
 
-Community für E-Scooter-Fahrer: Konten mit E-Mail-Bestätigung und Passwort-Reset oder **Anmeldung mit Google**, Profil, Herden (auffindbar oder geheim, offen, geschlossen oder nur per Einladung) mit Leitstier-Verwaltung, Routenplaner mit BRouter-Anbindung, **Teilen von Touren** (auch für Social Media), **Ausfahrten** mit Termin, Treffpunkt, Teilnehmergrenze und Warteliste, Forum, Tränke (Austausch in der Herde), Meldungen nach DSA und ein Admin-Backend mit Deployment, Backup und Restore. Plain PHP 8.1+, MariaDB, kein Framework, keine externen Ressourcen.
+Community für E-Scooter-Fahrer: Konten mit E-Mail-Bestätigung und Passwort-Reset oder **Anmeldung mit Google**, Profil, Herden (auffindbar oder geheim, offen, geschlossen oder nur per Einladung) mit Leitstier-Verwaltung, Routenplaner mit BRouter-Anbindung, **Teilen von Touren** (auch für Social Media), **Ausfahrten** mit Termin, Treffpunkt, Teilnehmergrenze und Warteliste, Forum, Stammtisch (Austausch in der Herde), Meldungen nach DSA und ein Admin-Backend mit Deployment, Backup und Restore. Plain PHP 8.1+, MariaDB, kein Framework, keine externen Ressourcen.
 
 Code, Dateinamen und Adressen sind englisch, die Oberfläche ist deutsch und englisch (`lang.php`), das Admin-Backend bewusst nur deutsch.
 
@@ -61,12 +61,12 @@ Jeder Fahrer hat im Profil einen persönlichen Einladungslink (`/join/<code>`) m
 
 ## Ausfahrten
 
-Eine Ausfahrt ist eine Tour mit Termin: Datum und Uhrzeit, Treffpunkt (Text plus optionaler Pin auf der Karte), Teilnehmergrenze (Pflicht), Warteliste, Fahrstil. Zielgruppe ist eine Herde oder alle angemeldeten Fahrer; die Tour muss für diese Zielgruppe sichtbar sein. Herden-Ausfahrten stehen auf der Herdenseite und bekommen ein eigenes Thema in der Tränke.
+Eine Ausfahrt ist eine Tour mit Termin: Datum und Uhrzeit, Treffpunkt (Text plus optionaler Pin auf der Karte), Teilnehmergrenze (Pflicht), Warteliste, Fahrstil. Zielgruppe ist eine Herde oder alle angemeldeten Fahrer; die Tour muss für diese Zielgruppe sichtbar sein. Herden-Ausfahrten stehen auf der Herdenseite und bekommen ein eigenes Thema am Stammtisch.
 
 - Anmeldung nur mit Bestätigung „zugelassener und versicherter E-Scooter“. Die Foto-/Video-Einwilligung ist freiwillig und jederzeit änderbar; Teilnehmer ohne Einwilligung sind mit „keine Fotos“ markiert.
 - Volle Ausfahrt → Warteliste. Meldet sich jemand ab oder erhöht der Organisator die Plätze, rücken Wartende automatisch nach und bekommen eine Mail. Überbuchung ist durch eine Zeilensperre ausgeschlossen.
 - Ab 15 Plätzen bestätigt der Organisator, die Erlaubnispflicht nach § 29 StVO geprüft zu haben.
-- Änderungen an Termin oder Treffpunkt und Absagen gehen per Mail an alle Angemeldeten (in ihrer Sprache) und als Beitrag in die Tränke.
+- Änderungen an Termin oder Treffpunkt und Absagen gehen per Mail an alle Angemeldeten (in ihrer Sprache) und als Beitrag an den Stammtisch.
 - Teilnehmernamen sehen nur Teilnehmer, Organisator und bei Herden-Ausfahrten die Herde. Anmeldungen werden 180 Tage nach dem Termin gelöscht.
 - ElTouro veranstaltet nichts: Jede Ausfahrt nennt den Organisator und weist auf Eigenverantwortung und Verkehrsregeln hin.
 
@@ -96,7 +96,7 @@ Mit `'debug' => true` zeigt jede Seite statt eines leeren 500ers die Fehlermeldu
 | `crews_lib.php` | **Zugriffsschicht** für Herden |
 | `tours_lib.php` | **Zugriffsschicht** und Geometrie-Prüfung für Touren |
 | `rides_lib.php` | **Zugriffsschicht** für Ausfahrten, Anmeldung, Warteliste, Benachrichtigungen |
-| `talk_lib.php` | **Zugriffsschicht** und Darstellung der Tränke |
+| `talk_lib.php` | **Zugriffsschicht** und Darstellung des Stammtischs |
 | `register.php`, `verify.php`, `login.php`, `logout.php`, `password_forgot.php`, `password_reset.php`, `access.php` | Konto und Zugang |
 | `google_lib.php`, `auth_google.php`, `register_google.php` | Anmeldung mit Google |
 | `share_lib.php`, `share.php`, `assets/share.js` | Touren teilen (öffentliche Seite, Vorschaubild, Teilen-Knöpfe) |
@@ -106,7 +106,7 @@ Mit `'debug' => true` zeigt jede Seite statt eines leeren 500ers die Fehlermeldu
 | `tours.php`, `tour_plan.php`, `tour.php`, `tour_gpx.php`, `route.php` | Routenplaner (`route.php` ist der BRouter-Proxy) |
 | `rides.php`, `ride.php`, `ride_edit.php` | Ausfahrten |
 | `forum.php`, `forum_category.php`, `forum_topic.php`, `forum_new.php`, `forum_lib.php` | Forum |
-| `talk.php`, `talk_topic.php`, `talk_api.php` | Tränke |
+| `talk.php`, `talk_topic.php`, `talk_api.php` | Stammtisch |
 | `report.php`, `admin/reports.php` | Meldungen (DSA) |
 | `page.php`, `legal_texts.php` | Inhaltsseiten (`/imprint`, `/privacy`, `/terms`, `/page/kurzname`) und Erstfassung der Rechtstexte |
 | `admin/` | Übersicht, Seiten, Einstellungen, Nutzer, Forum, Meldungen, Betrieb |

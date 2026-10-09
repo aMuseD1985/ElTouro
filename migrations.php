@@ -488,7 +488,7 @@ function runMigrations(): array
 
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
-        'privacy' => ['de' => ['7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
+        'privacy' => ['de' => ['0b48a1a125758f83b569b8b147f16ab6a28f5a5bf999449649641f5d27dfbba1', '7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
                              '7adde85362cc9775f7d29d005875c3605475e1d6f9f6dee10f37ead2d8d4065c',
                              '5020a23f093159124a269bbe8b151bcb3c6009d314befbf9ae5cb29cde3f3a1c',
                              '9bb92bbe55987f3de8a55cd7711ca553faa325e04600c69a49baa642defb77ad',

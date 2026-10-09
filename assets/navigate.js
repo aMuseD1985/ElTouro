@@ -107,17 +107,26 @@
     bounds: bounds, fitBoundsOptions: { padding: 50 }, maxPitch: 65, attributionControl: { compact: true }
   });
   styles.attach(map);
+  // Colours follow the map: dark map = ahead sand yellow / ridden blue; light map = the other way round
+  var SAND = '#E6BE62', BLUE = '#3779B8', DEEP = '#2F5E8C';
+  var AHEAD_NIGHT = styles.isNight() ? SAND : DEEP, DONE_NIGHT = styles.isNight() ? BLUE : SAND;
+  function recolor(night) {
+    if (!map.getLayer('route')) return;
+    map.setPaintProperty('route', 'line-color', night ? SAND : DEEP);
+    map.setPaintProperty('done', 'line-color', night ? BLUE : SAND);
+  }
+  styles.onStyleChange(recolor);
   var ready = false;
   map.on('load', function () {
     var round = { 'line-cap': 'round', 'line-join': 'round' };
     map.addSource('route', { type: 'geojson', data: gj });
     map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: round, paint: { 'line-color': '#14263F', 'line-width': 8, 'line-opacity': 0.45 } });
     map.addLayer({ id: 'route', type: 'line', source: 'route', layout: round, filter: ['!=', ['get', 'freehand'], true],
-                   paint: { 'line-color': '#E6BE62', 'line-width': 5 } });   // ahead: sand yellow
+                   paint: { 'line-color': AHEAD_NIGHT, 'line-width': 5 } });   // ahead: sand yellow on dark maps, blue on light ones
     map.addLayer({ id: 'route-free', type: 'line', source: 'route', filter: ['==', ['get', 'freehand'], true],
                    paint: { 'line-color': '#A3261B', 'line-width': 5, 'line-dasharray': [1.5, 1.5] } });
     map.addSource('done', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } } });
-    map.addLayer({ id: 'done', type: 'line', source: 'done', layout: round, paint: { 'line-color': '#3779B8', 'line-width': 5 } });   // ridden: blue
+    map.addLayer({ id: 'done', type: 'line', source: 'done', layout: round, paint: { 'line-color': DONE_NIGHT, 'line-width': 5 } });   // ridden: the other colour
     ready = true;
   });
 
@@ -161,6 +170,9 @@
       .setLngLat([pos[1], pos[0]]).addTo(map);
     rider.setLngLat([pos[1], pos[0]]);
   }
+
+  // Touro waits at the start already (before the first GPS fix / before the simulation runs)
+  try { placeRider(line[0], bearing(line[0], line[Math.min(2, line.length - 1)]), 0); } catch (e) { /* the first fix places him */ }
 
   // Views: north up, in riding direction, 3D (tilted, riding direction). The rider sits in the lower third when it turns.
   var VIEWS = ['heading', '3d', 'north'];
@@ -689,6 +701,10 @@
     text.textContent = T.done_text.replace('{km}', fmt(state.along / 1000, 1));
     ui.done.hidden = false;
     showAfter(Math.round((Date.now() - rideStartedAt) / 60000));
+    if (!SIM && window.ElTouroConfetti) {
+      if (arrived) window.ElTouroConfetti.burst();
+      else { window.ElTouroConfetti.horn(); window.ElTouroConfetti.burst(22); say(T.finished_early, true); }   // ended early: "Oh" and a horn, hardly any confetti
+    }
     if (record) {
       text.textContent += ' ' + T.saving;
       record.finish().then(function (j) {
@@ -698,7 +714,6 @@
           var a = document.getElementById('ride-view-drive');
           if (a) { a.href = '/drive/' + j.session_id + '?done=1'; a.hidden = false; }
         }
-        if (window.ElTouroConfetti) window.ElTouroConfetti.burst();
       }).catch(function () { text.textContent = T.done_not_recorded; });
       record = null;
     }

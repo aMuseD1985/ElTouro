@@ -1,6 +1,6 @@
 <?php
 /**
- * Crew talk ("Tränke") – the conversation inside a crew (Discourse-light).
+ * Crew talk ("Stammtisch") – the conversation inside a crew (Discourse-light).
  * Access: active crew members only. Moderation: the crew's leads and platform admins.
  * Posts are rendered as HTML on the server (escaped) – also when loaded later via fetch.
  */
