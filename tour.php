@@ -6,6 +6,7 @@ require __DIR__ . '/share_lib.php';
 require __DIR__ . '/rewards_lib.php';
 require __DIR__ . '/track_lib.php';
 require __DIR__ . '/poi_lib.php';
+require __DIR__ . '/drive_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 
@@ -50,7 +51,7 @@ if (isPost() && ($_POST['action'] ?? '') === 'delete' && $canEdit) {
 }
 
 $tourRides = visibleRides($uid, true, 'r.tour_id = ?', [(int)$tour['id']], 10);
-$myTracks = ownTracksOfTour($uid, (int)$tour['id']);
+$myTracks = ownDrives($uid, 12, (int)$tour['id']);
 $stops = tourStops($tour);
 $stopIcons = ['charge' => '⚡', 'food' => '🍽', 'break' => '☕', 'sight' => '👁'];
 pageHeader($tour['title']);
@@ -157,15 +158,7 @@ pageHeader($tour['title']);
 <?php if ($myTracks): ?>
 <section class="panel" id="my-rides">
   <h2><?= te('tour.my_rides') ?></h2>
-  <ul class="list">
-    <?php foreach ($myTracks as $tr): ?>
-      <li><?= te('tour.my_ride_line', ['date' => formatRideTime($tr['started_at']), 'km' => formatKm((int)$tr['distance_m']),
-                                        'min' => (int)round((int)$tr['moving_s'] / 60), 'max' => number_format((float)$tr['max_speed_kmh'], 1, t('common.decimal_point'), '')]) ?>
-        <form method="post" class="inline"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>">
-          <input type="hidden" name="action" value="delete_track"><input type="hidden" name="track_id" value="<?= (int)$tr['id'] ?>">
-          <button class="link danger"><?= te('tour.ride_delete') ?></button></form></li>
-    <?php endforeach; ?>
-  </ul>
+  <?= driveCards($myTracks) ?>
   <p class="hint"><?= te('tour.my_rides_hint') ?></p>
 </section>
 <?php endif; ?>

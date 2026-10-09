@@ -468,6 +468,12 @@ function runMigrations(): array
         $log[] = '+ Platzhalter-Nutzer für gelöschte Konten angelegt';
     }
 
+    /* ---------- Rides as keepsakes: planned route at ride time, tour made from a recording (2026-10, drive_lib.php) ---------- */
+    if (!columnExists('track_sessions', 'planned_geojson')) {
+        db()->exec('ALTER TABLE track_sessions ADD planned_geojson MEDIUMTEXT NULL, ADD saved_tour_id BIGINT UNSIGNED NULL');
+        $log[] = '~ track_sessions.planned_geojson, saved_tour_id angelegt';
+    }
+
     /* ---------- Notifications and mail digest (2026-10, notify_lib.php) ---------- */
     $create('notifications', "CREATE TABLE notifications (
       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, type VARCHAR(40) NOT NULL,

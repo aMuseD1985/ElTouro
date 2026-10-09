@@ -267,17 +267,19 @@ function elevationProfile(string $geojson): ?array
  * Small preview picture of a tour for lists (480×270): the route on a light map-like ground, start and finish marked.
  * Cached in data/thumbs per tour state. Only for riders who may see the tour (tour_thumb.php checks that).
  */
-function tourThumbPath(array $tour): ?string
+function tourThumbPath(array $tour, ?string $forceFile = null): ?string
 {
     if (!function_exists('imagecreatetruecolor')) {
         return null;
     }
-    $file = dataDir('thumbs') . '/' . (int)$tour['id'] . '-' . strtotime($tour['updated_at'] . ' UTC') . '.png';
+    $file = $forceFile ?? dataDir('thumbs') . '/' . (int)$tour['id'] . '-' . strtotime($tour['updated_at'] . ' UTC') . '.png';
     if (is_file($file)) {
         return $file;
     }
-    foreach (glob(dataDir('thumbs') . '/' . (int)$tour['id'] . '-*.png') ?: [] as $old) {
-        @unlink($old);   // older states of this tour
+    if ($forceFile === null) {
+        foreach (glob(dataDir('thumbs') . '/' . (int)$tour['id'] . '-*.png') ?: [] as $old) {
+            @unlink($old);   // older states of this tour
+        }
     }
     $fc = json_decode((string)$tour['geojson'], true);
     $w = 480; $h = 270; $pad = 36;

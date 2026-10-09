@@ -16,7 +16,7 @@ if ($tour === null || !canSeeTour($tour, (int)$me['id'])) {
 }
 
 $keys = ['start', 'start_sim', 'arrive', 'halfway', 'offroute', 'back', 'speed', 'gps_wait', 'gps_error', 'gps_denied', 'wakelock',
-         'in_m', 'in_km', 'now', 'remaining', 'eta_min', 'eta_h', 'speed_unit', 'sim_clock', 'follow', 'voice_on', 'voice_off', 'voice_pick', 'voice_changed', 'voice_sample', 'share_text', 'link_copied', 'posted', 'post_error', 'post_slow',
+         'in_m', 'in_km', 'now', 'remaining', 'eta_min', 'eta_h', 'speed_unit', 'sim_clock', 'follow', 'voice_on', 'voice_off', 'voice_pick', 'voice_changed', 'voice_sample', 'share_text', 'link_copied', 'rerouting', 'rerouted', 'posted', 'post_error', 'post_slow',
          'view_heading', 'view_3d', 'view_north', 'far_stop', 'now_stop_charge', 'now_stop_food', 'now_stop_break', 'now_stop_sight', 'label_stop', 'done_title', 'done_arrived', 'done_text', 'done_recorded', 'done_not_recorded', 'saving', 'no_hints'];
 foreach (['left', 'slight_left', 'sharp_left', 'right', 'slight_right', 'sharp_right', 'keep_left', 'keep_right', 'uturn',
           'roundabout', 'exit_left', 'exit_right', 'straight'] as $m) {
@@ -39,6 +39,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
      data-invite="<?= e(inviteUrl(userInviteCode((int)$me['id']))) ?>"
      data-lang="<?= e($LANG) ?>"
      data-tour="<?= (int)$tour['id'] ?>"
+     data-rules="<?= e((string)$tour['rule_set']) ?>" data-vehicle="<?= (int)($tour['vehicle_class'] ?? 2) ?>"
      data-sim="<?= $sim ? '1' : '0' ?>"
      data-texts="<?= e(json_encode($texts, JSON_UNESCAPED_UNICODE)) ?>">
   <div id="ride-map" class="ride-map"></div>
@@ -64,13 +65,17 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
           <select id="ride-factor"><option value="10">×10</option><option value="30" selected>×30</option><option value="60">×60</option><option value="120">×120</option></select></label>
         <button type="button" id="ride-start" class="btn"><?= te('nav.start_sim_button') ?></button>
       <?php else: ?>
-        <label class="ride-record"><input type="checkbox" id="ride-record"> <?= te('nav.record') ?></label>
-        <label class="ride-record"><input type="checkbox" id="ride-live"> <?= te('nav.live') ?>
-          <select id="ride-live-scope" aria-label="<?= te('nav.live_scope') ?>">
-            <option value="crews"><?= te('nav.live_crews') ?></option><option value="all"><?= te('nav.live_all') ?></option></select></label>
+        <div class="ride-opts">
+          <label class="mini"><input type="checkbox" id="ride-record"> <?= te('nav.record') ?></label>
+          <label class="mini"><input type="checkbox" id="ride-live"> <?= te('nav.live_short') ?>
+            <select id="ride-live-scope" aria-label="<?= te('nav.live_scope') ?>">
+              <option value="crews"><?= te('nav.live_crews') ?></option><option value="all"><?= te('nav.live_all') ?></option></select></label>
+          <button type="button" id="ride-info-btn" class="info-btn" aria-expanded="false" aria-controls="ride-info" aria-label="<?= te('nav.info') ?>">ⓘ</button>
+        </div>
+        <p class="ride-hint" id="ride-info" hidden><?= te('nav.record_hint') ?> <?= te('nav.live_hint') ?></p>
         <button type="button" id="ride-start" class="btn"><?= te('nav.start_button') ?></button>
       <?php endif; ?>
-      <button type="button" id="ride-stop" class="btn secondary" hidden><?= te('nav.stop_button') ?></button>
+      <button type="button" id="ride-stop" class="btn hold-btn" hidden aria-describedby="ride-stop-hint"><span class="hold-fill" aria-hidden="true"></span><span class="hold-label"><?= te('nav.stop_button') ?> <small id="ride-stop-hint"><?= te('nav.stop_hold') ?></small></span></button>
       <div class="ride-tools">
         <button type="button" id="ride-voice" class="rt" aria-pressed="true"><span class="ico">🔊</span><span class="lbl"><?= te('nav.lbl_voice') ?></span></button>
         <button type="button" id="ride-voice-pick" class="rt" title="<?= te('nav.voice_pick') ?>" aria-label="<?= te('nav.voice_pick') ?>" hidden><span class="ico">🎙</span><span class="lbl"><?= te('nav.lbl_pick') ?></span></button>
@@ -80,7 +85,6 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
         <a class="rt ride-close" id="ride-close" href="/tour/<?= (int)$tour['id'] ?>" aria-label="<?= te('nav.close') ?>"><span class="ico">✕</span><span class="lbl"><?= te('nav.lbl_close') ?></span></a>
       </div>
     </div>
-    <?php if (!$sim): ?><p class="ride-hint"><?= te('nav.record_hint') ?> <?= te('nav.live_hint') ?></p><?php endif; ?>
   </div>
 
   <div class="ride-done" id="ride-confirm" hidden role="dialog" aria-modal="true" aria-labelledby="ride-confirm-title">
@@ -115,11 +119,12 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
         </div>
         <p class="hint" id="after-msg" role="status"></p>
       </div>
-      <p><a class="btn" href="/tour/<?= (int)$tour['id'] ?>"><?= te('nav.back_to_tour') ?></a></p>
+      <p><a class="btn" id="ride-view-drive" href="/drives" hidden><?= te('drive.view') ?></a> <a class="btn secondary" href="/tour/<?= (int)$tour['id'] ?>"><?= te('nav.back_to_tour') ?></a></p>
     </div>
   </div>
 </div>
 <script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
 <script src="/assets/voice.js?v=2"></script>
-<script src="/assets/navigate.js?v=19"></script>
+<script src="/assets/confetti.js?v=1"></script>
+<script src="/assets/navigate.js?v=22"></script>
 <?php pageFooter();

@@ -10,7 +10,7 @@
   var rideStartedAt = Date.now();
   var LOCALE = d.lang === 'de' ? 'de-DE' : 'en-GB';
   var CRUISE_KMH = 18;          // planning speed of an e-scooter ride incl. lights and corners
-  var LEGAL_KMH = 20;
+  var FAST_KMH = 22;            // the speed display blinks red from here – a hint, no announcement, no consequence
 
   // ---------------------------------------------------------------- track geometry
   var gj = JSON.parse(d.geojson);
@@ -245,6 +245,48 @@
     return best;
   }
 
+  // Off the track: ask the router for the way back to the track a little further on and ride on along that way
+  var rerouting = false, lastReroute = 0;
+  function reroute(p) {
+    if (rerouting || SIM || Date.now() - lastReroute < 25000 || navigator.onLine === false) return;
+    rerouting = true; lastReroute = Date.now();
+    var w = project(p, true);
+    var targetAlong = total - w.along < 350 ? total : w.along + 220;
+    var target = pointAt(targetAlong);
+    fetch('/api/route', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-CSRF': d.csrf },
+      body: JSON.stringify({ points: [[p[0], p[1]], [target[0], target[1]]], rule_set: d.rules || 'ekfv', vehicle: parseInt(d.vehicle, 10) || 2, avoid_uturns: false, stops: [] }) })
+      .then(function (r) { if (!r.ok) throw new Error('route'); return r.json(); })
+      .then(function (j) {
+        var detour = [], allFree = true;
+        (j.geojson.features || []).forEach(function (f) {
+          if (!(f.properties && f.properties.freehand)) allFree = false;
+          f.geometry.coordinates.forEach(function (c) { detour.push([c[1], c[0]]); });
+        });
+        if (detour.length < 2 || allFree) throw new Error('no way');
+        var keep = hints.filter(function (h) { return h.at > targetAlong + 5; });
+        var restFrom = Math.min(n - 1, segAt(targetAlong) + 1);
+        var oldAlong = targetAlong;
+        line = detour.concat(targetAlong >= total ? [] : line.slice(restFrom));
+        n = line.length;
+        cum = [0];
+        for (var q = 1; q < n; q++) cum[q] = cum[q - 1] + dist(line[q - 1], line[q]);
+        total = cum[n - 1] || 1;
+        var detourLen = cum[detour.length - 1];
+        keep.forEach(function (h) { h.at = detourLen + (h.at - oldAlong); });
+        var fresh = [];
+        (j.guidance || []).forEach(function (g) { if (CMD[g[1]] && g[0] < detour.length) fresh.push({ at: cum[g[0]], kind: CMD[g[1]], exit: g[2] }); });
+        hints = fresh.concat(keep).sort(function (x, y) { return x.at - y.at; });
+        state.along = 0; state.seg = 0; state.off = 0; state.offRoute = false;
+        var src = map.getSource('route');
+        if (src) src.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: line.map(function (c) { return [c[1], c[0]]; }) } });
+        var done = map.getSource('done');
+        if (done) done.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } });
+        say(T.rerouted, true);
+      })
+      .catch(function () { /* stays as it was: the rider is asked to head back to the line */ })
+      .then(function () { rerouting = false; });
+  }
+
   function onFix(fix) {
     if (!state.running) return;
     var p = [fix.lat, fix.lng];
@@ -253,6 +295,7 @@
     var limit = Math.max(35, Math.min(80, (fix.acc || 10) * 1.5));
     if (m.d > limit) {
       if (++state.off >= 3 && !state.offRoute) { state.offRoute = true; say(T.offroute, false, 'offroute'); }
+      if (state.offRoute) reroute(p);
     } else {
       if (state.offRoute) say(T.back, false, 'back');
       state.off = 0; state.offRoute = false;
@@ -332,10 +375,6 @@
         say(hintText(h, 'now'), true, 'stop');
       }
     }
-    if (!SIM && fix.speedMs != null && fix.speedMs * 3.6 > LEGAL_KMH + 4 && Date.now() - state.lastSpeedWarn > 120000) {
-      state.lastSpeedWarn = Date.now();
-      say(T.speed, false, 'speed');
-    }
   }
 
   // Manoeuvres a few metres apart (two lefts across a junction) are one prompt for the rider, not two
@@ -352,7 +391,10 @@
     ui.remaining.textContent = fmt(left / 1000, 1) + ' km';
     var minutes = Math.round(left / 1000 / CRUISE_KMH * 60);
     ui.eta.textContent = minutes >= 60 ? T.eta_h.replace('{h}', Math.floor(minutes / 60)).replace('{m}', ('0' + minutes % 60).slice(-2)) : T.eta_min.replace('{m}', minutes);
-    if (!SIM) ui.speed.textContent = fix.speedMs != null ? Math.round(fix.speedMs * 3.6) + ' ' + T.speed_unit : '–';
+    if (!SIM) {
+      ui.speed.textContent = fix.speedMs != null ? Math.round(fix.speedMs * 3.6) + ' ' + T.speed_unit : '–';
+      ui.speed.classList.toggle('speed-hot', fix.speedMs != null && fix.speedMs * 3.6 >= FAST_KMH);
+    }
   }
 
   // ---------------------------------------------------------------- sources: GPS or simulation
@@ -496,7 +538,30 @@
       startGps();
     }
   });
-  ui.stop.addEventListener('click', function () { finish(false); });
+  // Ending a ride takes a deliberate 2-second press
+  (function () {
+    var timer = null, HOLD = 2000;
+    function start(ev) {
+      if (ev.type === 'keydown' && ev.key !== 'Enter' && ev.key !== ' ') return;
+      if (ev.type === 'keydown' && ev.repeat) return;
+      ev.preventDefault();
+      ui.stop.classList.add('holding');
+      clearTimeout(timer);
+      timer = setTimeout(function () { ui.stop.classList.remove('holding'); finish(false); }, HOLD);
+    }
+    function cancel() { clearTimeout(timer); ui.stop.classList.remove('holding'); }
+    ui.stop.addEventListener('pointerdown', start);
+    ['pointerup', 'pointerleave', 'pointercancel', 'blur'].forEach(function (e) { ui.stop.addEventListener(e, cancel); });
+    ui.stop.addEventListener('keydown', start);
+    ui.stop.addEventListener('keyup', cancel);
+    ui.stop.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  })();
+  // (i): the explanations about recording and live sharing only when asked for
+  var infoBtn = document.getElementById('ride-info-btn'), infoBox = document.getElementById('ride-info');
+  if (infoBtn && infoBox) infoBtn.addEventListener('click', function () {
+    infoBox.hidden = !infoBox.hidden;
+    infoBtn.setAttribute('aria-expanded', infoBox.hidden ? 'false' : 'true');
+  });
   ui.voice.addEventListener('click', function () {
     var voiceOn = ui.voice.getAttribute('aria-pressed') !== 'true';
     voice.setOn(voiceOn);
@@ -629,6 +694,11 @@
       record.finish().then(function (j) {
         text.textContent = T.done_recorded.replace('{km}', fmt(j.distance_m / 1000, 1)).replace('{min}', Math.round(j.moving_s / 60))
                                           .replace('{max}', fmt(j.max_speed_kmh, 1));
+        if (j.session_id && j.distance_m >= 100) {
+          var a = document.getElementById('ride-view-drive');
+          if (a) { a.href = '/drive/' + j.session_id + '?done=1'; a.hidden = false; }
+        }
+        if (window.ElTouroConfetti) window.ElTouroConfetti.burst();
       }).catch(function () { text.textContent = T.done_not_recorded; });
       record = null;
     }

@@ -21,7 +21,9 @@ function startTrack(int $userId, ?int $tourId): int
     foreach (dbAll("SELECT id FROM track_sessions WHERE user_id = ? AND status = 'recording'", [$userId]) as $open) {
         finishTrack((int)$open['id'], $userId);
     }
-    dbExec("INSERT INTO track_sessions (user_id, tour_id, started_at) VALUES (?, ?, UTC_TIMESTAMP())", [$userId, $tourId]);
+    // The route as it was planned on this day – a later change of the tour must not rewrite the history of the ride
+    $planned = $tourId !== null ? (dbOne('SELECT geojson FROM tours WHERE id = ?', [$tourId])['geojson'] ?? null) : null;
+    dbExec("INSERT INTO track_sessions (user_id, tour_id, started_at, planned_geojson) VALUES (?, ?, UTC_TIMESTAMP(), ?)", [$userId, $tourId, $planned]);
     return (int)db()->lastInsertId();
 }
 

@@ -30,6 +30,9 @@ $input = json_decode((string)file_get_contents('php://input'), true);
 $action = (string)($input['action'] ?? '');
 
 if ($action === 'start') {
+    if ((int)($input['tour_id'] ?? 0) === 0) {   // a free ride without a planned tour
+        respond(200, ['session_id' => startTrack($uid, null)]);
+    }
     $tour = loadTour((int)($input['tour_id'] ?? 0));
     if ($tour === null || !canSeeTour($tour, $uid)) {
         respond(404, ['error' => 'tour']);
@@ -46,6 +49,6 @@ if ($action === 'points') {
 }
 if ($action === 'finish') {
     $s = finishTrack((int)$session['id'], $uid);
-    respond(200, ['distance_m' => (int)$s['distance_m'], 'moving_s' => (int)$s['moving_s'], 'max_speed_kmh' => (float)$s['max_speed_kmh']]);
+    respond(200, ['session_id' => (int)$s['id'], 'distance_m' => (int)$s['distance_m'], 'moving_s' => (int)$s['moving_s'], 'max_speed_kmh' => (float)$s['max_speed_kmh']]);
 }
 respond(422, ['error' => 'action']);
