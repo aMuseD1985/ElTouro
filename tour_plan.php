@@ -165,6 +165,21 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
   <label class="tool tool-toggle" title="<?= te('planner.avoid_uturns') ?>"><input type="checkbox" id="pl-uturns" checked><span class="ti" aria-hidden="true">↩</span><span class="tl"><?= te('planner.avoid_uturns') ?></span></label>
   <label class="tool tool-toggle" title="<?= te('planner.auto_calc') ?>"><input type="checkbox" id="pl-auto" checked><span class="ti" aria-hidden="true">⏱</span><span class="tl"><?= te('planner.auto_calc') ?></span></label>
 </div>
+<details class="route-opts" id="route-opts">
+  <summary>🛴 <?= te('planner.opts_title') ?>: <span id="route-opts-label"></span></summary>
+  <div class="route-opts-grid">
+    <div class="field"><label for="vehicle_class"><?= te('tour.vehicle_class') ?></label>
+      <select id="vehicle_class" name="vehicle_class" form="tour-form"><?php foreach (VEHICLE_CLASSES as $n => $key): ?>
+        <option value="<?= $n ?>" <?= $w['vehicle'] === $n ? 'selected' : '' ?>><?= te('tour.vc_' . $key) ?></option><?php endforeach; ?></select>
+      <p class="hint" id="vehicle-hint"><?= te('tour.vehicle_hint') ?></p>
+      <p class="alert alert-info" id="bullrun-hint" <?= $w['vehicle'] === 4 ? '' : 'hidden' ?>><?= te('tour.bullrun_hint') ?></p></div>
+    <div class="field"><label for="rule_set"><?= te('tour.rule_set') ?></label>
+      <select id="rule_set" name="rule_set" form="tour-form">
+        <option value="ekfv" <?= $w['rule_set'] === 'ekfv' ? 'selected' : '' ?>><?= te('tour.r_ekfv') ?></option>
+        <option value="ekfv2027" <?= $w['rule_set'] === 'ekfv2027' ? 'selected' : '' ?>><?= te('tour.r_ekfv2027') ?></option></select>
+      <p class="hint"><?= te('planner.rules_hint') ?></p></div>
+  </div>
+</details>
 <p class="alert alert-info" id="optimize-note" role="status" hidden><span id="optimize-text"></span> <button type="button" class="link" id="pl-opt-undo"><?= te('planner.optimize_undo') ?></button></p>
 <div class="calc-wrap" id="calc-wrap" hidden>
   <div class="calc-ring" id="calc-ring"><button type="button" id="calc-btn" class="calc-btn"><?= te('planner.calc_button') ?></button></div>
@@ -195,7 +210,7 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
   <div class="field"><label for="description"><?= te('tour.description') ?></label>
     <textarea id="description" name="description" rows="4" maxlength="4000"><?= e($w['description']) ?></textarea></div>
 
-  <div class="row3">
+  <div class="row">
     <div class="field"><label for="difficulty"><?= te('tour.difficulty') ?></label>
       <select id="difficulty" name="difficulty"><?php foreach (['easy', 'moderate', 'demanding'] as $o): ?>
         <option value="<?= $o ?>" <?= $w['difficulty'] === $o ? 'selected' : '' ?>><?= te('tour.d_' . $o) ?></option><?php endforeach; ?></select>
@@ -203,22 +218,13 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
     <div class="field"><label for="style"><?= te('tour.style') ?></label>
       <select id="style" name="style"><?php foreach (['relaxed', 'social', 'sporty'] as $o): ?>
         <option value="<?= $o ?>" <?= $w['style'] === $o ? 'selected' : '' ?>><?= te('tour.s_' . $o) ?></option><?php endforeach; ?></select></div>
-    <div class="field"><label for="rule_set"><?= te('tour.rule_set') ?></label>
-      <select id="rule_set" name="rule_set">
-        <option value="ekfv" <?= $w['rule_set'] === 'ekfv' ? 'selected' : '' ?>><?= te('tour.r_ekfv') ?></option>
-        <option value="ekfv2027" <?= $w['rule_set'] === 'ekfv2027' ? 'selected' : '' ?>><?= te('tour.r_ekfv2027') ?></option></select></div>
   </div>
-  <div class="field"><label for="vehicle_class"><?= te('tour.vehicle_class') ?></label>
-    <select id="vehicle_class" name="vehicle_class"><?php foreach (VEHICLE_CLASSES as $n => $key): ?>
-      <option value="<?= $n ?>" <?= $w['vehicle'] === $n ? 'selected' : '' ?>><?= te('tour.vc_' . $key) ?></option><?php endforeach; ?></select>
-    <p class="hint" id="vehicle-hint"><?= te('tour.vehicle_hint') ?></p>
-    <p class="alert alert-info" id="bullrun-hint" <?= $w['vehicle'] === 4 ? '' : 'hidden' ?>><?= te('tour.bullrun_hint') ?></p></div>
 
   <div class="row">
     <div class="field"><label for="visibility"><?= te('tour.visibility') ?></label>
       <select id="visibility" name="visibility"><?php foreach (['private', 'group', 'public'] as $o): ?>
         <option value="<?= $o ?>" <?= $w['visibility'] === $o ? 'selected' : '' ?>><?= te('tour.v_' . $o) ?></option><?php endforeach; ?></select></div>
-    <div class="field"><label for="group_id"><?= te('tour.crew') ?></label>
+    <div class="field" id="crew-field"><label for="group_id"><?= te('tour.crew') ?></label>
       <select id="group_id" name="group_id"><option value="0">–</option>
         <?php foreach ($crews as $c): ?><option value="<?= (int)$c['id'] ?>" <?= $w['group_id'] === (int)$c['id'] ? 'selected' : '' ?>><?= e($c['name']) ?></option><?php endforeach; ?></select></div>
   </div>
@@ -226,5 +232,5 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=32"></script>
+<script src="/assets/planner.js?v=33"></script>
 <?php pageFooter();

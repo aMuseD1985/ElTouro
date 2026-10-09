@@ -22,6 +22,27 @@
   }
   window.elToast = toast;
 
+  // ---- Show/hide password on every password field
+  Array.prototype.forEach.call(document.querySelectorAll('input[type=password]'), function (input) {
+    var wrap = document.createElement('div');
+    wrap.className = 'pw-wrap';
+    input.parentNode.insertBefore(wrap, input);
+    wrap.appendChild(input);
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pw-toggle';
+    b.textContent = '👁';
+    b.setAttribute('aria-label', T.pw_show || 'Show password');
+    b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', function () {
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      b.setAttribute('aria-pressed', show ? 'true' : 'false');
+      b.setAttribute('aria-label', show ? (T.pw_hide || 'Hide password') : (T.pw_show || 'Show password'));
+    });
+    wrap.appendChild(b);
+  });
+
   // ---- Forms asking "really?" (data-confirm) and menus that close on an outside click
   document.addEventListener('submit', function (e) {
     var msg = e.target && e.target.getAttribute && e.target.getAttribute('data-confirm');

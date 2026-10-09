@@ -925,6 +925,20 @@
     try { localStorage.setItem('eltouro.avoidUturns', uturnBox.checked ? '1' : '0'); } catch (e) { /* ignore */ }
     if (points.length >= 2) calculate();
   });
+  // Summary of the route options ("Allrounder · aktuelle eKFV") and the crew field only when "my crew" is chosen
+  function optsLabel() {
+    var out = document.getElementById('route-opts-label');
+    if (!out) return;
+    var v = fieldVehicle ? fieldVehicle.options[fieldVehicle.selectedIndex].text.replace(/\s*\(.*$/, '') : '';
+    var r = fieldRules ? fieldRules.options[fieldRules.selectedIndex].text : '';
+    out.textContent = v + ' · ' + r;
+  }
+  optsLabel();
+  if (fieldVehicle) fieldVehicle.addEventListener('change', optsLabel);
+  if (fieldRules) fieldRules.addEventListener('change', optsLabel);
+  var visField = document.getElementById('visibility'), crewField = document.getElementById('crew-field');
+  function crewVisible() { if (crewField && visField) crewField.hidden = visField.value !== 'group'; }
+  if (visField) { visField.addEventListener('change', crewVisible); crewVisible(); }
   if (fieldVehicle) fieldVehicle.addEventListener('change', function () {
     if (bullrunHint) bullrunHint.hidden = fieldVehicle.value !== '4';
     if (points.length >= 2) calculate();

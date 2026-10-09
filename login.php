@@ -50,6 +50,6 @@ pageHeader(t('login.title'));
       <input id="password" name="password" type="password" required autocomplete="current-password"></div>
     <button type="submit"><?= te('login.button') ?></button>
   </form>
-  <p><a href="/password/forgot"><?= te('login.forgot') ?></a></p>
+  <p><a href="/password/forgot"><?= te('login.forgot') ?></a> · <a href="/verify/resend"><?= te('login.resend') ?></a></p>
 </section>
 <?php pageFooter();

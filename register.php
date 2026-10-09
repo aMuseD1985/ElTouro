@@ -49,7 +49,7 @@ if ($open && isPost()) {
 }
 
 $termsLink = '<a href="/terms" target="_blank">' . te('footer.terms') . '</a>';
-$privacyLink = '<a href="/privacy" target="_blank">' . te('footer.privacy') . '</a>';
+$privacyLink = '<a href="/privacy" target="_blank">' . te('register.privacy_link') . '</a>';
 
 pageHeader(t('register.title'));
 ?>
@@ -75,6 +75,7 @@ pageHeader(t('register.title'));
         <p class="hint" id="pw-h"><?= te('register.password_hint') ?></p></div>
       <div class="field check"><input id="terms" name="terms" type="checkbox" value="1" required>
         <label for="terms"><?= str_replace(['{terms}', '{privacy}'], [$termsLink, $privacyLink], te('register.terms')) ?></label></div>
+      <p class="hint"><?= str_replace('{privacy}', $privacyLink, te('register.consent_hint')) ?></p>
       <button type="submit"><?= te('register.button') ?></button>
     </form>
   <?php endif; ?>
