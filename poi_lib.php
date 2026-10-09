@@ -54,6 +54,19 @@ function tourStops(array $tour): array
     return $out;
 }
 
+/** JSON for data-stops of a tour map (assets/tour_map.js): [{lat, lng, type, name, label}]. */
+function stopsForMap(array $stops): string
+{
+    $out = [];
+    foreach ($stops as $s) {
+        if (!in_array($s['type'] ?? '', STOP_TYPES, true)) {
+            continue;
+        }
+        $out[] = ['lat' => $s['lat'], 'lng' => $s['lng'], 'type' => $s['type'], 'name' => (string)($s['name'] ?? ''), 'label' => t('stop.type_' . $s['type'])];
+    }
+    return json_encode($out, JSON_UNESCAPED_UNICODE);
+}
+
 /** ['pts' => [[lat, lng], …], 'cum' => [metres along, …]] of all features in order. */
 function routeLine(string $geojson): array
 {

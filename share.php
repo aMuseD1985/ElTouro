@@ -73,6 +73,7 @@ pageHeader($tour['title'], $meta);
 <?php if ($trimmed['features']): ?>
 <div id="tour-map" class="map-large" data-geojson="<?= e(json_encode($trimmed, JSON_UNESCAPED_SLASHES)) ?>"
      <?= mapData() ?>
+     data-stops="<?= e(json_encode(sharedStops($tour), JSON_UNESCAPED_UNICODE)) ?>"
      data-start="" data-finish=""></div>
 <?php endif; ?>
 <p class="hint"><?= te('share.privacy_note', ['m' => SHARE_PRIVACY_METERS]) ?></p>
@@ -94,5 +95,5 @@ pageHeader($tour['title'], $meta);
 <p class="spaced muted"><a href="mailto:<?= e($reportMail) ?>?subject=<?= e(rawurlencode(t('share.report_subject') . ' ' . $url)) ?>"><?= te('share.report') ?></a></p>
 <?php endif; ?>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/tour_map.js?v=6"></script>
+<script src="/assets/tour_map.js?v=7"></script>
 <?php pageFooter();

@@ -33,6 +33,21 @@
   var finishMarker = L.circleMarker([last[1], last[0]], { radius: 8, color: '#14263F', fillColor: '#14263F', fillOpacity: 1, weight: 3 }).addTo(map);
   if (el.dataset.start) startMarker.bindTooltip(el.dataset.start);    // shared tours: no labels, the ends are cut off
   if (el.dataset.finish) finishMarker.bindTooltip(el.dataset.finish);
+  // Stops (charging, food, break, sight) as pins with name and kind
+  var ICON = { charge: '⚡', food: '🍽', break: '☕', sight: '👁' };
+  try {
+    JSON.parse(el.dataset.stops || '[]').forEach(function (s) {
+      if (!ICON[s.type]) return;
+      var m = L.marker([s.lat, s.lng], {
+        icon: L.divIcon({ className: '', html: '<div class="poi-pin poi-' + s.type + '">' + ICON[s.type] + '</div>', iconSize: [26, 26], iconAnchor: [13, 13] }),
+        keyboard: true, title: s.name || s.label
+      }).addTo(map);
+      var box = document.createElement('div');
+      var t = document.createElement('strong'); t.textContent = s.name || s.label; box.appendChild(t);
+      if (s.name && s.label) { var l = document.createElement('div'); l.textContent = s.label; box.appendChild(l); }
+      m.bindPopup(box, { closeButton: false, offset: [0, -8] });
+    });
+  } catch (e) { /* no stops */ }
   if (meeting) {
     L.marker(meeting, { title: el.dataset.meetingLabel || '' }).addTo(map)
       .bindTooltip(el.dataset.meetingLabel || '', { permanent: true, direction: 'top', offset: [0, -30] });

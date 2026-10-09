@@ -41,8 +41,8 @@ function disableTourShare(int $tourId): void
 {
     $old = dbOne('SELECT share_token FROM tours WHERE id = ?', [$tourId])['share_token'] ?? null;
     dbExec('UPDATE tours SET share_token = NULL, share_created_at = NULL, share_created_by = NULL WHERE id = ?', [$tourId]);
-    if ($old && is_file(DATA_DIR . '/share/' . $old . '.png')) {
-        @unlink(DATA_DIR . '/share/' . $old . '.png');
+    foreach ($old ? (glob(DATA_DIR . '/share/' . $old . '*.png') ?: []) : [] as $f) {
+        @unlink($f);   // the preview image (all versions)
     }
 }
 
@@ -51,7 +51,8 @@ function loadSharedTour(string $token): ?array
     if (!preg_match('/^[A-Za-z0-9_-]{24}$/', $token)) {
         return null;
     }
-    return dbOne('SELECT id, title, distance_m, ascent_m, difficulty, style, rule_set, vehicle_class, freehand_share_pct, geojson, updated_at, share_token, share_created_by
+    return dbOne('SELECT id, title, distance_m, ascent_m, difficulty, style, rule_set, vehicle_class, freehand_share_pct, geojson, updated_at, share_token, share_created_by,
+                    content_lang, waypoints_json, stops_json
                     FROM tours WHERE share_token = ? AND deleted_at IS NULL', [$token]);
 }
 
@@ -132,63 +133,137 @@ function shareSummary(array $tour): string
 }
 
 /**
- * Preview image (PNG, 1200×630) for social media: the trimmed track on the ElTouro night blue.
- * Cached in data/share/<token>.png and rebuilt when the tour changes. Null if GD is missing.
+ * The stops (charging, food, break, sight) of a shared tour: only places on the visible part of the track –
+ * those in the privacy zones at both ends are left out. The other waypoints are never exposed.
+ * @return array<int, array{lat: float, lng: float, type: string, name: string, label: string}>
+ */
+function sharedStops(array $tour): array
+{
+    require_once __DIR__ . '/poi_lib.php';
+    $total = (float)$tour['distance_m'];
+    $out = [];
+    foreach (tourStops($tour) as $s) {
+        $m = $s['km'] * 1000;
+        if ($m < SHARE_PRIVACY_METERS || $m > $total - SHARE_PRIVACY_METERS || !in_array($s['type'], STOP_TYPES, true)) {
+            continue;
+        }
+        $out[] = ['lat' => $s['lat'], 'lng' => $s['lng'], 'type' => $s['type'], 'name' => mb_substr((string)($s['name'] ?? ''), 0, 80),
+                  'label' => t('stop.type_' . $s['type'])];
+    }
+    return $out;
+}
+
+/**
+ * The preview picture for WhatsApp, Telegram & co. (1200×630): light map-like ground, the route with its stops, and a
+ * night-blue band with the ELTOURO.de logo, the claim in the language of the tour and the mascot. Texts are pre-rendered
+ * (assets/img/share/) because GD cannot draw our WOFF2 fonts. Cached per tour state; the file name carries the design version.
  */
 function shareImagePath(array $tour, array $trimmed): ?string
 {
     if (!function_exists('imagecreatetruecolor')) {
         return null;
     }
-    $file = dataDir('share') . '/' . $tour['share_token'] . '.png';
+    $file = dataDir('share') . '/' . $tour['share_token'] . '-v2.png';
     if (is_file($file) && filemtime($file) >= strtotime($tour['updated_at'] . ' UTC')) {
         return $file;
     }
-    $w = SHARE_IMAGE_W; $h = SHARE_IMAGE_H; $pad = 90;
+    $w = SHARE_IMAGE_W; $h = SHARE_IMAGE_H;
+    $bandTop = 500;                                   // the night-blue band starts here
     $img = imagecreatetruecolor($w, $h);
-    $night = imagecolorallocate($img, 0x14, 0x26, 0x3F);
-    $denim = imagecolorallocate($img, 0x2F, 0x5E, 0x8C);
-    $gold = imagecolorallocate($img, 0xD7, 0xA8, 0x45);
-    $chalk = imagecolorallocate($img, 0xE8, 0xEC, 0xF1);
-    $red = imagecolorallocate($img, 0xC2, 0x55, 0x3F);
-    imagefilledrectangle($img, 0, 0, $w, $h, $night);
-    imagefilledrectangle($img, 0, $h - 14, $w, $h, $gold);
-    // faint grid as a hint of a map
-    imagesetthickness($img, 1);
-    for ($x = 0; $x < $w; $x += 60) { imageline($img, $x, 0, $x, $h - 15, $denim); }
-    for ($y = 0; $y < $h - 14; $y += 60) { imageline($img, 0, $y, $w, $y, $denim); }
+    imagealphablending($img, true);
+    $col = fn(int $hex) => imagecolorallocate($img, ($hex >> 16) & 255, ($hex >> 8) & 255, $hex & 255);
+    $night = $col(0x14263F); $denim = $col(0x2F5E8C); $gold = $col(0xD7A845); $chalk = $col(0xE8ECF1);
+    $white = $col(0xFFFFFF); $grid = $col(0xD3DBE5); $red = $col(0xC2553F); $block = $col(0xDDE3EB);
+
+    // Ground: chalk with a faint street grid and a few lighter blocks
+    imagefilledrectangle($img, 0, 0, $w, $bandTop, $chalk);
+    mt_srand(crc32((string)$tour['share_token']));    // the same tour always gets the same ground
+    for ($i = 0; $i < 22; $i++) {
+        $bx = mt_rand(0, 19) * 60; $by = mt_rand(0, 7) * 60;
+        imagefilledrectangle($img, $bx + 6, $by + 6, $bx + 54 + 60 * mt_rand(0, 1), $by + 54, $block);
+    }
+    imagesetthickness($img, 2);
+    for ($x = 0; $x < $w; $x += 60) { imageline($img, $x, 0, $x, $bandTop, $grid); }
+    for ($y = 0; $y < $bandTop; $y += 60) { imageline($img, 0, $y, $w, $y, $grid); }
 
     $all = [];
     foreach ($trimmed['features'] as $f) {
         foreach ($f['geometry']['coordinates'] as $c) { $all[] = $c; }
     }
     if (count($all) >= 2) {
-        // Equirectangular projection, scaled by cos(latitude) and fitted into the image
+        // Equirectangular projection, scaled by cos(latitude), fitted into the map area left of the mascot
+        $areaX = 70; $areaW = 860; $areaY = 60; $areaH = $bandTop - 2 * 60;
         $lats = array_column($all, 1); $lngs = array_column($all, 0);
         $k = cos(deg2rad((min($lats) + max($lats)) / 2));
         $minX = min($lngs) * $k; $maxX = max($lngs) * $k; $minY = min($lats); $maxY = max($lats);
-        $scale = min(($w - 2 * $pad) / max($maxX - $minX, 1e-9), ($h - 2 * $pad - 14) / max($maxY - $minY, 1e-9));
-        $offX = ($w - ($maxX - $minX) * $scale) / 2; $offY = ($h - 14 - ($maxY - $minY) * $scale) / 2;
-        $px = fn(array $c) => [(int)round($offX + ($c[0] * $k - $minX) * $scale), (int)round($h - 14 - $offY - ($c[1] - $minY) * $scale)];
+        $scale = min($areaW / max($maxX - $minX, 1e-9), $areaH / max($maxY - $minY, 1e-9));
+        $offX = $areaX + ($areaW - ($maxX - $minX) * $scale) / 2; $offY = $areaY + ($areaH - ($maxY - $minY) * $scale) / 2;
+        $px = fn(float $lng, float $lat) => [(int)round($offX + ($lng * $k - $minX) * $scale), (int)round($offY + ($maxY - $lat) * $scale)];
 
-        foreach ([[16, $denim], [8, null]] as [$thick, $color]) {
+        foreach ([[22, $white], [11, null]] as [$thick, $color]) {
             imagesetthickness($img, $thick);
             foreach ($trimmed['features'] as $f) {
-                $c = $color ?? (!empty($f['properties']['freehand']) ? $red : $gold);
+                $c = $color ?? (!empty($f['properties']['freehand']) ? $red : $denim);
                 $prev = null;
                 foreach ($f['geometry']['coordinates'] as $pt) {
-                    $p = $px($pt);
+                    $p = $px($pt[0], $pt[1]);
                     if ($prev) { imageline($img, $prev[0], $prev[1], $p[0], $p[1], $c); }
                     $prev = $p;
                 }
             }
         }
-        $s = $px($all[0]); $e = $px(end($all));
-        imagefilledellipse($img, $s[0], $s[1], 30, 30, $chalk);
-        imagefilledellipse($img, $s[0], $s[1], 18, 18, $gold);
-        imagefilledellipse($img, $e[0], $e[1], 30, 30, $chalk);
-        imagefilledellipse($img, $e[0], $e[1], 18, 18, $night);
+        $disc = function (array $p, int $d, int $ring, int $fill) use ($img, $white) {
+            imagefilledellipse($img, $p[0], $p[1], $d + 8, $d + 8, $ring);
+            imagefilledellipse($img, $p[0], $p[1], $d, $d, $fill);
+        };
+        $s = $px($all[0][0], $all[0][1]); $e = $px(end($all)[0], end($all)[1]);
+        $disc($s, 22, $night, $gold);
+        $disc($e, 22, $white, $night);
+
+        // Stops: coloured discs with a simple glyph (GD has no emoji)
+        $stopColor = ['charge' => $col(0xC28F1F), 'food' => $col(0xC2703A), 'break' => $col(0x4F8A6B), 'sight' => $col(0x7A5C9E)];
+        foreach (sharedStops($tour) as $st) {
+            [$cx, $cy] = $px($st['lng'], $st['lat']);
+            imagefilledellipse($img, $cx, $cy + 3, 50, 50, $grid);                 // soft shadow
+            $disc([$cx, $cy], 42, $white, $stopColor[$st['type']]);
+            imagesetthickness($img, 1);
+            switch ($st['type']) {
+                case 'charge':
+                    imagefilledpolygon($img, [$cx + 4, $cy - 15, $cx - 8, $cy + 2, $cx - 1, $cy + 2, $cx - 4, $cy + 15, $cx + 8, $cy - 3, $cx + 1, $cy - 3], $white);
+                    break;
+                case 'food':
+                    imagefilledellipse($img, $cx, $cy, 26, 26, $white);
+                    imagefilledellipse($img, $cx, $cy, 17, 17, $stopColor['food']);
+                    imagefilledellipse($img, $cx, $cy, 7, 7, $white);
+                    break;
+                case 'break':
+                    imagefilledrectangle($img, $cx - 11, $cy - 7, $cx + 5, $cy + 9, $white);
+                    imagesetthickness($img, 3);
+                    imagearc($img, $cx + 8, $cy + 1, 14, 14, 270, 90, $white);
+                    imagesetthickness($img, 1);
+                    break;
+                case 'sight':
+                    imagefilledellipse($img, $cx, $cy, 30, 18, $white);
+                    imagefilledellipse($img, $cx, $cy, 11, 11, $stopColor['sight']);
+                    imagefilledellipse($img, $cx, $cy, 4, 4, $white);
+                    break;
+            }
+        }
     }
+
+    // Band with logo and claim, mascot standing on it
+    imagefilledrectangle($img, 0, $bandTop, $w, $h, $night);
+    imagefilledrectangle($img, 0, $bandTop - 6, $w, $bandTop, $gold);
+    $put = function (string $path, int $x, int $y, int $targetH) use ($img): void {
+        $src = is_file($path) ? @imagecreatefrompng($path) : false;
+        if (!$src) { return; }
+        $tw = (int)round(imagesx($src) * $targetH / imagesy($src));
+        imagecopyresampled($img, $src, $x, $y, 0, 0, $tw, $targetH, imagesx($src), imagesy($src));
+    };
+    $lang = ($tour['content_lang'] ?? 'de') === 'en' ? 'en' : 'de';
+    $put(__DIR__ . '/assets/img/share/logo-' . $lang . '.png', 60, $bandTop + 14, 104);
+    $put(__DIR__ . '/assets/img/share/mascot.png', $w - 60 - 232, $h - 300, 300);
+
     imagepng($img, $file . '.tmp', 6);
     rename($file . '.tmp', $file);
     return $file;

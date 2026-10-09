@@ -2,6 +2,7 @@
 /** One ride: details, map with meeting point, sign-up / waiting list, participants, managing. */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/poi_lib.php';
 require __DIR__ . '/rides_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
@@ -99,6 +100,7 @@ pageHeader($ride['title']);
 <div id="tour-map" class="map-large"
      data-geojson="<?= e($tour['geojson']) ?>"
      <?= mapData() ?>
+     data-stops="<?= e(stopsForMap(tourStops($tour))) ?>"
      data-start="<?= te('tour.start') ?>" data-finish="<?= te('tour.finish') ?>"
      <?php if ($ride['meeting_lat'] !== null): ?>data-meeting="<?= e($ride['meeting_lat'] . ',' . $ride['meeting_lng']) ?>" data-meeting-label="<?= te('ride.meeting_point') ?>"<?php endif; ?>></div>
 <p class="action-bar">
@@ -185,5 +187,5 @@ pageHeader($ride['title']);
 
 <p class="spaced"><a href="/report?type=ride&amp;id=<?= $rid ?>"><?= te('report.link') ?></a></p>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/tour_map.js?v=6"></script>
+<script src="/assets/tour_map.js?v=7"></script>
 <?php pageFooter();
