@@ -518,9 +518,43 @@ function runMigrations(): array
       CONSTRAINT fk_rating_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) $opt");
 
+    /* ---------- Web push, notification preferences, rides nearby (2026-10, push_lib.php) ---------- */
+    $create('push_subscriptions', "CREATE TABLE push_subscriptions (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, endpoint_hash CHAR(64) NOT NULL, endpoint VARCHAR(700) NOT NULL,
+      p256dh VARCHAR(120) NOT NULL, auth VARCHAR(40) NOT NULL, ua VARCHAR(120) NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      last_ok_at DATETIME NULL, fails TINYINT UNSIGNED NOT NULL DEFAULT 0,
+      UNIQUE KEY uq_push_endpoint (endpoint_hash), KEY ix_push_user (user_id),
+      CONSTRAINT fk_push_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    $create('notify_prefs', "CREATE TABLE notify_prefs (
+      user_id BIGINT UNSIGNED NOT NULL PRIMARY KEY, push_social TINYINT(1) NOT NULL DEFAULT 1, push_rides_near TINYINT(1) NOT NULL DEFAULT 0,
+      push_rides_soon TINYINT(1) NOT NULL DEFAULT 0, mail_rides_near TINYINT(1) NOT NULL DEFAULT 0, radius_km SMALLINT UNSIGNED NOT NULL DEFAULT 25,
+      home_lat DECIMAL(6,2) NULL, home_lng DECIMAL(6,2) NULL,
+      CONSTRAINT fk_prefs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    $create('push_queue', "CREATE TABLE push_queue (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, title VARCHAR(80) NOT NULL, body VARCHAR(200) NOT NULL,
+      url VARCHAR(200) NOT NULL, tag VARCHAR(40) NOT NULL DEFAULT '', created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_pq_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    $create('ride_alerts', "CREATE TABLE ride_alerts (
+      ride_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL, sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (ride_id, user_id),
+      CONSTRAINT fk_ra_ride FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE,
+      CONSTRAINT fk_ra_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    $create('digest_rides', "CREATE TABLE digest_rides (
+      user_id BIGINT UNSIGNED NOT NULL, ride_id BIGINT UNSIGNED NOT NULL, sent_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY (user_id, ride_id),
+      CONSTRAINT fk_dr_ride FOREIGN KEY (ride_id) REFERENCES rides(id) ON DELETE CASCADE,
+      CONSTRAINT fk_dr_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    require_once __DIR__ . '/push_lib.php';
+    if (vapidKeys(false) === null) {
+        $log[] = vapidKeys() !== null ? '+ VAPID-Schlüsselpaar für Web-Push erzeugt (in den Einstellungen gespeichert; nicht ersetzen)' : '! VAPID-Schlüssel konnten nicht erzeugt werden (OpenSSL?)';
+    }
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
-        'privacy' => ['de' => ['f8b5527c07daaa6fff2cca20f8df52aee270b872ede74f6c558b7e3a10c027de', '0b48a1a125758f83b569b8b147f16ab6a28f5a5bf999449649641f5d27dfbba1', '7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
+        'privacy' => ['de' => ['d1fd3d0814e71f30d20659d660c744d8c41e25ba28297f881a3d1f556fa76e15', 'f8b5527c07daaa6fff2cca20f8df52aee270b872ede74f6c558b7e3a10c027de', '0b48a1a125758f83b569b8b147f16ab6a28f5a5bf999449649641f5d27dfbba1', '7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
                              '7adde85362cc9775f7d29d005875c3605475e1d6f9f6dee10f37ead2d8d4065c',
                              '5020a23f093159124a269bbe8b151bcb3c6009d314befbf9ae5cb29cde3f3a1c',
                              '9bb92bbe55987f3de8a55cd7711ca553faa325e04600c69a49baa642defb77ad',
@@ -534,7 +568,7 @@ function runMigrations(): array
                              '39f261e45c9bf5334febf30f5466086cbba8a9366ba19634dfa1f5fbb4cc3b39',
                              'e7ef24531894553916fce2187cb809a283a6da926fc19558a73843ec752979c6',
                              'daced4f00cbd462a1348e804914816beeb3e6843f0b1716174bf272c15a972f4'],
-                      'en' => ['330bc1367825cc700b072e77975ff5a60b9d34f9d8c97f7620b06e563880f6f9', 'd626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024',
+                      'en' => ['18117e3c8e7fdb829f3df10142e6e4000fb8778d0ef170d767f24b9febc4f419', '330bc1367825cc700b072e77975ff5a60b9d34f9d8c97f7620b06e563880f6f9', 'd626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024',
                              '97ec6abe9fd9c9dafcd7f9bf64af86374052b671234a1c8b3b4cbcfd8524b93d',
                              'aad225fefb56e29cc0c861f4a05f7f448e8b226d93e0ee18366cd6eb8fb240c4',
                              '1bdb2d4a39f593ef2343d1e87df96f3a77f24ab7e357242e7e2fe27779010bb8',
@@ -576,8 +610,8 @@ function legalPagesNeedingUpdate(): array
 {
     $markers = [
         'privacy' => [
-            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:', 'Kartenstil' => 'Kartenstil und Zwischenspeicher:', 'Einwilligung' => 'Einwilligung zu Beginn der Nutzung:', 'Benachrichtigungen' => 'Benachrichtigungen:', 'Google Maps' => 'Link zu Google Maps:', 'Bewertungen und Orte' => 'Bewertungen und Orte:'],
-            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:', 'Kartenstil' => 'Map style and cache:', 'Einwilligung' => 'Consent at the start of use:', 'Benachrichtigungen' => 'Notifications:', 'Google Maps' => 'Link to Google Maps:', 'Bewertungen und Orte' => 'Ratings and places:'],
+            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:', 'Kartenstil' => 'Kartenstil und Zwischenspeicher:', 'Einwilligung' => 'Einwilligung zu Beginn der Nutzung:', 'Benachrichtigungen' => 'Benachrichtigungen:', 'Google Maps' => 'Link zu Google Maps:', 'Bewertungen und Orte' => 'Bewertungen und Orte:', 'Push' => 'Push-Nachrichten und Gebiet:'],
+            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:', 'Kartenstil' => 'Map style and cache:', 'Einwilligung' => 'Consent at the start of use:', 'Benachrichtigungen' => 'Notifications:', 'Google Maps' => 'Link to Google Maps:', 'Bewertungen und Orte' => 'Ratings and places:', 'Push' => 'Push messages and area:'],
         ],
         'terms' => [
             'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run', 'Profilfoto' => 'Als Profilfoto nimm nur', 'Selbst löschen' => 'Profil → „Meine Daten“'],

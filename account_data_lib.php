@@ -100,6 +100,8 @@ function exportAccountData(int $userId): array
                                   FROM ride_signups s JOIN rides r ON r.id = s.ride_id WHERE s.user_id = ? ORDER BY s.created_at', [$userId]),
         'forum_threads' => $all('SELECT id, category_id, title, is_pinned, is_locked, post_count, created_at, deleted_at FROM forum_threads WHERE user_id = ? ORDER BY id', [$userId]),
         'forum_posts' => $all('SELECT id, thread_id, body, created_at, edited_at, deleted_at FROM forum_posts WHERE user_id = ? ORDER BY id', [$userId]),
+        'notification_settings' => $all('SELECT push_social, push_rides_near, push_rides_soon, mail_rides_near, radius_km, home_lat, home_lng FROM notify_prefs WHERE user_id = ?', [$userId]),
+        'push_devices' => $all('SELECT endpoint, created_at, last_ok_at FROM push_subscriptions WHERE user_id = ?', [$userId]),
         'ratings' => $all('SELECT target_type, target_id, stars, comment, created_at, updated_at FROM ratings WHERE user_id = ? AND deleted_at IS NULL', [$userId]),
         'spots_added' => $all("SELECT id, type, kind, name, lat, lng, website, opening_hours, note, status, created_at FROM spots WHERE created_by = ?", [$userId]),
         'spot_notes' => $all('SELECT spot_id, field, value, status, created_at FROM spot_reports WHERE user_id = ?', [$userId]),

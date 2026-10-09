@@ -1,7 +1,7 @@
 <?php
 /**
  * /digest?key=<cron_key> – for the hosting provider's cron job (e.g. hourly): sends the mail digests that are due.
- * Key: config 'cron_key', otherwise 'migrate_key'.
+ * Also: queues "ride starts soon" pushes and delivers waiting pushes. Key: config 'cron_key', otherwise 'migrate_key'.
  */
 declare(strict_types=1);
 const SKIP_ACCESS_GATE = true;
@@ -13,4 +13,7 @@ if ($key === '' || !hash_equals($key, (string)($_GET['key'] ?? ''))) {
     http_response_code(403);
     exit("Forbidden\n");
 }
+require_once __DIR__ . '/push_lib.php';
+echo 'Ride alerts queued: ' . sendRideSoonAlerts() . "\n";
+echo 'Pushes sent: ' . processPushQueue() . "\n";
 echo 'Digests sent: ' . sendDigests() . "\n";

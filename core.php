@@ -5,7 +5,7 @@
 declare(strict_types=1);
 
 // Bump when what we store or why changes: everybody is then asked for consent again (consent.php)
-const CONSENT_VERSION = 3;
+const CONSENT_VERSION = 4;
 // Stand-in author for content that stays after an account is deleted (see account_data_lib.php)
 const DELETED_USER_EMAIL = 'deleted-user@eltouro.invalid';
 

@@ -177,6 +177,10 @@ if (isPost()) {
             $members = array_column(dbAll("SELECT user_id FROM group_members WHERE group_id = ? AND status = 'active'", [$groupId]), 'user_id');
             notifyMany($members, $uid, 'ride_new', '/ride/' . $rid, ['title' => $w['title'], 'crew' => (string)(loadCrewById($groupId)['name'] ?? '')]);
         }
+        if ($visibility === 'public') {
+            require_once __DIR__ . '/push_lib.php';
+            announceRideNearby(loadRide($rid));   // riders nearby who asked for it (crew rides already reach the crew above)
+        }
         flash(t('ride.created'));
         redirect('/ride/' . $rid);
     }

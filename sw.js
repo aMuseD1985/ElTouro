@@ -4,7 +4,7 @@
    Map tiles of the known providers are kept on the device (up to TILE_MAX, refreshed after TILE_DAYS) – faster maps,
    fewer requests, and a map on the road with a weak signal. Only on the device: MapTiler forbids caching on our server. */
 'use strict';
-var CACHE = 'eltouro-shell-4';
+var CACHE = 'eltouro-shell-5';
 var TILES = 'eltouro-tiles-1';
 var TILE_MAX = 5000;
 var TILE_DAYS = 30;
@@ -87,3 +87,22 @@ function trimTiles(c) {
     return Promise.all(keys.slice(0, extra + Math.round(TILE_MAX / 10)).map(function (k) { return c.delete(k); }));
   });
 }
+
+// Web push: show the message; a tap opens (or focuses) the page it is about
+self.addEventListener('push', function (e) {
+  var data = {};
+  try { data = e.data ? e.data.json() : {}; } catch (err) { data = { title: 'ElTouro', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(data.title || 'ElTouro', {
+    body: data.body || '', icon: '/assets/img/icon-192.png', badge: '/assets/img/icon-192.png', tag: data.tag || undefined, data: { url: data.url || '/' }
+  }));
+});
+self.addEventListener('notificationclick', function (e) {
+  e.notification.close();
+  var url = (e.notification.data && e.notification.data.url) || '/';
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (list) {
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].url.indexOf(self.location.origin) === 0 && 'focus' in list[i]) { list[i].navigate(url); return list[i].focus(); }
+    }
+    return self.clients.openWindow(url);
+  }));
+});
