@@ -17,10 +17,10 @@ pageHeader(t('live.title'));
 <p class="hint"><?= te('live.intro') ?></p>
 <p class="planner-bar"><button type="button" class="link" id="live-locate"><?= te('planner.locate') ?></button></p>
 <div id="live-map" class="map-large"
-     data-tiles="<?= e((string)$CONFIG['map']['tiles']) ?>" data-attribution="<?= e((string)$CONFIG['map']['attribution']) ?>"
+     <?= mapData() ?>
      data-center="<?= e($last ? $last['start_lat'] . ',' . $last['start_lng'] : '51.2,10.4') ?>" data-zoom="<?= $last ? 12 : 6 ?>"
      data-texts="<?= e(json_encode($texts, JSON_UNESCAPED_UNICODE)) ?>"></div>
 <p id="live-status" class="muted" role="status" aria-live="polite"></p>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/live_map.js?v=1"></script>
+<script src="/assets/live_map.js?v=2"></script>
 <?php pageFooter();

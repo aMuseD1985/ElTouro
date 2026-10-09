@@ -7,7 +7,7 @@
   var status = document.getElementById('live-status');
   var c = d.center.split(',').map(parseFloat);
   var map = L.map(el).setView(c, parseInt(d.zoom, 10) || 6);
-  L.tileLayer(d.tiles, { maxZoom: 19, attribution: d.attribution }).addTo(map);
+  ElTouroMaps.leaflet(map, el);
   var layer = L.layerGroup().addTo(map);
 
   function riderIcon(r) {

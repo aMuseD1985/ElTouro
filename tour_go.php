@@ -33,8 +33,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
      data-geojson="<?= e($tour['geojson']) ?>"
      data-guidance="<?= e($tour['guidance_json'] ?? '[]') ?>"
      data-stops="<?= e(json_encode(array_map(fn($s) => ['lat' => $s['lat'], 'lng' => $s['lng'], 'type' => $s['type'], 'name' => $s['name'] !== '' ? $s['name'] : t('stop.type_' . $s['type'])], tourStops($tour)), JSON_UNESCAPED_UNICODE)) ?>"
-     data-tiles="<?= e((string)$CONFIG['map']['tiles']) ?>"
-     data-attribution="<?= e((string)$CONFIG['map']['attribution']) ?>"
+     <?= mapData() ?>
      data-csrf="<?= e(csrfToken()) ?>"
      data-lang="<?= e($LANG) ?>"
      data-tour="<?= (int)$tour['id'] ?>"
@@ -72,6 +71,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
       <button type="button" id="ride-stop" class="btn secondary" hidden><?= te('nav.stop_button') ?></button>
       <button type="button" id="ride-voice" class="secondary-submit" aria-pressed="true">🔊</button>
       <button type="button" id="ride-view" class="secondary-submit">➤</button>
+      <button type="button" id="ride-style" class="secondary-submit" title="<?= te('map.style_choose') ?>" aria-label="<?= te('map.style_choose') ?>">🗺</button>
       <button type="button" id="ride-follow" class="secondary-submit" title="<?= te('nav.follow') ?>" aria-label="<?= te('nav.follow') ?>">⌖</button>
       <a class="secondary-submit ride-close" href="/tour/<?= (int)$tour['id'] ?>" aria-label="<?= te('nav.close') ?>">✕</a>
     </div>
@@ -88,5 +88,5 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
   </div>
 </div>
 <script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
-<script src="/assets/navigate.js?v=12"></script>
+<script src="/assets/navigate.js?v=13"></script>
 <?php pageFooter();

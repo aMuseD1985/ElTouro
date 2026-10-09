@@ -19,7 +19,7 @@
   var fieldLng = document.getElementById('meeting_lng');
 
   var map = L.map(el, { scrollWheelZoom: false });
-  L.tileLayer(el.dataset.tiles, { maxZoom: 19, attribution: el.dataset.attribution }).addTo(map);
+  ElTouroMaps.leaflet(map, el);
   var route = L.geoJSON(gj, {
     style: function (f) {
       return f.properties && f.properties.freehand

@@ -171,19 +171,82 @@ accessGate();
 sendSecurityHeaders();
 
 /**
- * Content-Security-Policy from PHP because the tile server comes from the config.
+ * The map styles riders can switch between. With map.maptiler_key: MapTiler streets, dark, outdoor and satellite;
+ * without: the configured map.tiles, and a dark variant of it (inverted in the browser). CyclOSM (cycle infrastructure,
+ * OpenStreetMap France) is always offered. map.styles in the config adds or replaces styles (id => [tiles, attribution,
+ * maxzoom]) or removes one (id => false). The first style is the default for the light hours.
+ * Tiles are never proxied or cached on our server – MapTiler's terms forbid that; the app caches them on the device.
+ */
+function mapStyles(): array
+{
+    global $CONFIG;   // not cached: the CSP needs it before the language is known, the labels after
+    $m = $CONFIG['map'] ?? [];
+    $osm = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-' . t('map.contributors');
+    $key = trim((string)($m['maptiler_key'] ?? ''));
+    if ($key !== '') {
+        $mt = fn(string $map, string $ext = 'png') => 'https://api.maptiler.com/maps/' . $map . '/256/{z}/{x}/{y}{r}.' . $ext . '?key=' . rawurlencode($key);
+        $attr = '<a href="https://www.maptiler.com/copyright/">© MapTiler</a> ' . $osm;
+        $styles = [
+            'standard'  => ['tiles' => $mt('streets-v2'), 'attribution' => $attr],
+            'dark'      => ['tiles' => $mt('streets-v2-dark'), 'attribution' => $attr, 'night' => true],
+            'outdoor'   => ['tiles' => $mt('outdoor-v2'), 'attribution' => $attr],
+            'satellite' => ['tiles' => $mt('hybrid', 'jpg'), 'attribution' => $attr],
+        ];
+    } else {
+        $base = ['tiles' => (string)$m['tiles'], 'attribution' => (string)$m['attribution']];
+        $styles = ['standard' => $base, 'dark' => $base + ['invert' => true, 'night' => true]];
+    }
+    $styles['cycle'] = ['tiles' => 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+                        'attribution' => '<a href="https://www.cyclosm.org">CyclOSM</a> · OpenStreetMap France · ' . $osm, 'maxzoom' => 20];
+    foreach ((array)($m['styles'] ?? []) as $id => $style) {
+        if ($style === false) {
+            unset($styles[$id]);
+        } elseif (is_array($style) && !empty($style['tiles'])) {
+            $styles[(string)$id] = $style + ['attribution' => ''];
+        }
+    }
+    foreach ($styles as $id => &$style) {
+        $style['id'] = $id;
+        $label = t('map.style_' . $id);
+        $style['label'] = $label !== 'map.style_' . $id ? $label : (string)($style['label'] ?? $id);
+        $style['maxzoom'] = (int)($style['maxzoom'] ?? 19);
+    }
+    unset($style);
+    return $styles;
+}
+
+/** data-map-styles for a map element: read by assets/map_styles.js (Leaflet and the ride mode). */
+function mapData(): string
+{
+    $data = ['styles' => array_values(mapStyles()), 'texts' => ['auto' => t('map.style_auto'), 'choose' => t('map.style_choose'), 'switched' => t('map.style_switched')]];
+    return 'data-map-styles="' . e(json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '"';
+}
+
+/** Host of a tile URL for the CSP; {s} subdomains become a wildcard (a.tile.example.org -> *.tile.example.org). */
+function tileHost(string $tiles): string
+{
+    $host = (string)parse_url(str_replace(['{s}', '{z}', '{x}', '{y}', '{r}'], ['a', '0', '0', '0', ''], $tiles), PHP_URL_HOST);
+    if ($host !== '' && str_contains($tiles, '{s}')) {
+        $host = '*.' . substr($host, strpos($host, '.') + 1);
+    }
+    return $host;
+}
+
+/**
+ * Content-Security-Policy from PHP because the tile servers come from the config.
  * Everything else only from our own server.
  */
 function sendSecurityHeaders(): void
 {
-    global $CONFIG;
-    $tiles = (string)($CONFIG['map']['tiles'] ?? '');
-    $tileHost = parse_url(str_replace(['{s}', '{z}', '{x}', '{y}', '{r}'], ['a', '0', '0', '0', ''], $tiles), PHP_URL_HOST);
-    if ($tileHost && str_contains($tiles, '{s}')) {
-        $tileHost = '*.' . substr($tileHost, strpos($tileHost, '.') + 1);   // a.tile.example.org, b.…, c.… -> *.tile.example.org
+    $hosts = [];
+    foreach (mapStyles() as $style) {
+        $host = tileHost((string)$style['tiles']);
+        if ($host !== '') {
+            $hosts[$host] = ' https://' . $host;
+        }
     }
-    $tileSrc = $tileHost ? ' https://' . $tileHost : '';
-    // Leaflet loads tiles as images, MapLibre (ride mode) fetches them and decodes them via blob:
+    $tileSrc = implode('', $hosts);
+    // Leaflet loads tiles as images, MapLibre (ride mode) and the service worker fetch them; MapLibre decodes via blob:
     header("Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:$tileSrc; style-src 'self' 'unsafe-inline'; font-src 'self'; "
          . "script-src 'self'; worker-src 'self'; connect-src 'self'$tileSrc; form-action 'self'; frame-ancestors 'none'; base-uri 'self'");
 }
@@ -478,7 +541,8 @@ function pageHeader(string $title, array $meta = []): void
 <meta name="apple-mobile-web-app-title" content="ElTouro">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/assets/app-pref.js?v=1"></script>
-<link rel="stylesheet" href="/assets/style.css?v=21">
+<script src="/assets/map_styles.js?v=1"></script>
+<link rel="stylesheet" href="/assets/style.css?v=22">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>

@@ -400,3 +400,7 @@ html:not(.allow-select) body.app-ui :is([contenteditable], pre, code, .post-text
 .advanced .check { display: flex; gap: .5rem; align-items: center; margin-top: .6rem; }
 .offline-page .content { text-align: center; padding-top: 3rem; }
 .offline-mascot { height: 180px; width: auto; }
+
+/* Map style switcher (assets/map_styles.js). Without a dark tile set the normal map is inverted; the hue turn keeps water blue */
+.map-invert .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.92) saturate(.75); }
+.map-style-control select { border: 0; border-radius: 4px; padding: .35rem .4rem; font: inherit; font-size: .85rem; background: #fff; color: var(--night); max-width: 11rem; cursor: pointer; }

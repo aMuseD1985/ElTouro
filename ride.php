@@ -98,8 +98,7 @@ pageHeader($ride['title']);
 <?php if ($tour): ?>
 <div id="tour-map" class="map-large"
      data-geojson="<?= e($tour['geojson']) ?>"
-     data-tiles="<?= e((string)$CONFIG['map']['tiles']) ?>"
-     data-attribution="<?= e((string)$CONFIG['map']['attribution']) ?>"
+     <?= mapData() ?>
      data-start="<?= te('tour.start') ?>" data-finish="<?= te('tour.finish') ?>"
      <?php if ($ride['meeting_lat'] !== null): ?>data-meeting="<?= e($ride['meeting_lat'] . ',' . $ride['meeting_lng']) ?>" data-meeting-label="<?= te('ride.meeting_point') ?>"<?php endif; ?>></div>
 <p class="action-bar">
@@ -186,5 +185,5 @@ pageHeader($ride['title']);
 
 <p class="spaced"><a href="/report?type=ride&amp;id=<?= $rid ?>"><?= te('report.link') ?></a></p>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/tour_map.js?v=5"></script>
+<script src="/assets/tour_map.js?v=6"></script>
 <?php pageFooter();

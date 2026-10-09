@@ -151,7 +151,9 @@ Zur Berechnung einer Route sendet unser Server die Wegpunkte an einen von uns se
 
 ## 9. Kartenkacheln
 
-Die Kartenbilder lädt dein Browser direkt vom Kartendienst {{map_service}}. Dabei erhält der Dienst technisch bedingt deine IP-Adresse und die Information, welcher Kartenausschnitt geladen wird. Rechtsgrundlage ist unser berechtigtes Interesse an einer funktionierenden Karte (Art. 6 Abs. 1 lit. f DSGVO). {{map_service_note}}
+Die Kartenbilder lädt dein Browser direkt vom Kartendienst. Welcher das ist, hängt vom Kartenstil ab, den du an der Karte wählst – {{map_service}}. Dabei erhält der jeweilige Dienst technisch bedingt deine IP-Adresse und die Information, welcher Kartenausschnitt geladen wird. Rechtsgrundlage ist unser berechtigtes Interesse an einer funktionierenden Karte (Art. 6 Abs. 1 lit. f DSGVO). {{map_service_note}}
+
+**Kartenstil und Zwischenspeicher:** Den gewählten Kartenstil merkt sich die App nur auf deinem Gerät. Damit die Karte schneller lädt und unterwegs auch bei schwachem Netz funktioniert, hält die App bereits geladene Kartenbilder auf deinem Gerät vor (einige Tausend, nach 30 Tagen werden sie neu geladen). Sie verlassen dein Gerät nicht und liegen nicht auf unserem Server; du kannst sie jederzeit löschen, indem du in deinem Browser die Websitedaten von ElTouro entfernst.
 
 ## 10. Cookies
 
@@ -251,7 +253,9 @@ To calculate a route, our server sends the waypoints to a routing service we run
 
 ## 9. Map tiles
 
-Your browser loads map images directly from {{map_service}}. The service technically receives your IP address and which map section is loaded (Art. 6(1)(f) GDPR). {{map_service_note}}
+Your browser loads map images directly from the map service. Which one depends on the map style you choose on the map – {{map_service}}. The service technically receives your IP address and which map section is loaded (Art. 6(1)(f) GDPR). {{map_service_note}}
+
+**Map style and cache:** The app remembers the map style you choose on your device only. So the map loads faster and also works on the road with a weak signal, the app keeps map images already loaded on your device (a few thousand; after 30 days they are loaded again). They do not leave your device and are not stored on our server; you can delete them at any time by removing ElTouro's site data in your browser.
 
 ## 10. Cookies
 

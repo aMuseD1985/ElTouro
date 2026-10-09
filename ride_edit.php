@@ -191,8 +191,7 @@ pageHeader($ride ? t('ride.edit') : t('ride.new'));
 <p class="hint"><?= te('ride.map_hint') ?></p>
 <div id="ride-map" class="map-large"
      data-geojson="<?= e($tour['geojson']) ?>"
-     data-tiles="<?= e((string)$CONFIG['map']['tiles']) ?>"
-     data-attribution="<?= e((string)$CONFIG['map']['attribution']) ?>"
+     <?= mapData() ?>
      data-texts="<?= e(json_encode($jsTexts, JSON_UNESCAPED_UNICODE)) ?>"></div>
 <p><button type="button" class="link" id="meeting-start"><?= te('ride.meeting_at_start') ?></button>
    <button type="button" class="link" id="meeting-clear"><?= te('ride.meeting_clear') ?></button></p>
@@ -251,5 +250,5 @@ pageHeader($ride ? t('ride.edit') : t('ride.new'));
   <button type="submit"><?= te($ride ? 'ride.save' : 'ride.publish') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/ride_form.js?v=1"></script>
+<script src="/assets/ride_form.js?v=2"></script>
 <?php pageFooter();

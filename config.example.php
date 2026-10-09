@@ -60,14 +60,17 @@ return [
         'max_backups' => 10,
     ],
 
-    // Map tiles. OSM tiles are fine for beta/test (little traffic, with attribution), but they only exist in normal
-    // resolution and look soft on phone and Retina screens. {r} in the URL becomes "@2x" on such screens (planner,
-    // tour pages and ride mode) – sharp maps with a provider that has those tiles, e.g. MapTiler (256-pixel tiles):
-    // 'https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}{r}.png?key=YOUR_KEY'
-    // with 'attribution' => '© <a href="https://www.maptiler.com/copyright/">MapTiler</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende'
+    // Map tiles. Riders switch between styles on every map (assets/map_styles.js, mapStyles() in core.php).
+    // Without a MapTiler key: 'tiles' as "Standard", the same inverted as "Dunkel", plus CyclOSM (cycle paths).
+    // With 'maptiler_key': MapTiler Standard, Dunkel, Outdoor and Satellit (sharp @2x tiles), plus CyclOSM;
+    // 'tiles'/'attribution' are then only the fallback. In the MapTiler account restrict the key to the allowed
+    // HTTP origins (test.eltouro.de, beta.eltouro.de, eltouro.de) – it is visible in the browser by design.
+    // Tiles are never proxied or cached on our server (MapTiler terms); the app caches them on the device (sw.js).
+    // 'styles' => ['satellite' => false] removes a style, ['id' => ['tiles' => …, 'attribution' => …, 'label' => …]] adds one.
     'map' => [
-        'tiles'       => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-        'attribution' => '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+        'tiles'        => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'attribution'  => '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
+        'maptiler_key' => '',
     ],
 
     // BRouter with e-scooter profiles (on the Pi, reachable via Cloudflare Tunnel).

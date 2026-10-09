@@ -86,7 +86,7 @@
   }
 
   var map = L.map(el, { zoomControl: true }).setView([51.2, 10.4], 6);
-  L.tileLayer(d.tiles, { maxZoom: 19, attribution: d.attribution }).addTo(map);
+  ElTouroMaps.leaflet(map, el);
   var routeLayer = L.layerGroup().addTo(map);
   var markerLayer = L.layerGroup().addTo(map);
 

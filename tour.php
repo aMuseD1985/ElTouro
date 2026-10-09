@@ -68,8 +68,7 @@ pageHeader($tour['title']);
 
 <div id="tour-map" class="map-large"
      data-geojson="<?= e($tour['geojson']) ?>"
-     data-tiles="<?= e((string)$CONFIG['map']['tiles']) ?>"
-     data-attribution="<?= e((string)$CONFIG['map']['attribution']) ?>"
+     <?= mapData() ?>
      data-start="<?= te('tour.start') ?>" data-finish="<?= te('tour.finish') ?>"></div>
 
 <dl class="facts">
@@ -153,6 +152,6 @@ pageHeader($tour['title']);
   <button class="link danger"><?= te('tour.delete') ?></button></form>
 <?php endif; ?>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/tour_map.js?v=5"></script>
+<script src="/assets/tour_map.js?v=6"></script>
 <script src="/assets/share.js?v=1"></script>
 <?php pageFooter();

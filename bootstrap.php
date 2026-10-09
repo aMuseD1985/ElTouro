@@ -63,10 +63,11 @@ function eltouroNormalizeConfig($c)
     }
     // Without a tile server the map stays grey – fall back to OSM (fine for beta/test, see config.example.php)
     if (empty($c['map']['tiles'])) {
-        $c['map'] = array(
+        // Merge, so other map settings (maptiler_key, styles) survive
+        $c['map'] = array_merge(isset($c['map']) && is_array($c['map']) ? $c['map'] : array(), array(
             'tiles'       => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             'attribution' => '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',
-        );
+        ));
     } elseif (empty($c['map']['attribution'])) {
         $c['map']['attribution'] = '© Kartendaten: ' . htmlspecialchars((string)parse_url($c['map']['tiles'], PHP_URL_HOST), ENT_QUOTES, 'UTF-8');
     }

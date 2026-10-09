@@ -16,21 +16,43 @@ if ($page === null) {
     notFound();
 }
 
-/** Derive the map service from the tile URL so the privacy policy matches the configuration */
+/**
+ * The map services of all styles riders can choose (mapStyles() in core.php), so the privacy policy matches the
+ * configuration: "Standard, Dunkel: OpenStreetMap Foundation, …; Radwege: OpenStreetMap France, …".
+ * Returns [list, notes on transfers to third countries].
+ */
 function mapService(): array
 {
-    global $CONFIG, $LANG;
-    $host = (string)parse_url(str_replace(['{s}', '{z}', '{x}', '{y}', '{r}'], ['a', '0', '0', '0', ''], (string)($CONFIG['map']['tiles'] ?? '')), PHP_URL_HOST);
+    global $LANG;
     $de = $LANG === 'de';
-    if (str_contains($host, 'openstreetmap')) {
-        return ['OpenStreetMap Foundation, St John’s Innovation Centre, Cowley Road, Cambridge, CB4 0WS, ' . ($de ? 'Vereinigtes Königreich' : 'United Kingdom'),
-                $de ? 'Für das Vereinigte Königreich besteht ein Angemessenheitsbeschluss der EU-Kommission.' : 'An EU adequacy decision exists for the United Kingdom.'];
+    $providers = [];
+    foreach (mapStyles() as $style) {
+        $host = tileHost((string)$style['tiles']);
+        if (str_contains($host, 'maptiler')) {
+            $name = 'MapTiler AG, Höfnerstrasse 98, 6314 Unterägeri, ' . ($de ? 'Schweiz' : 'Switzerland');
+            $note = $de ? 'Für die Schweiz besteht ein Angemessenheitsbeschluss der EU-Kommission.' : 'An EU adequacy decision exists for Switzerland.';
+        } elseif (str_ends_with($host, 'openstreetmap.fr')) {
+            $name = 'OpenStreetMap France (' . ($de ? 'Verein, Frankreich' : 'association, France') . ')';
+            $note = '';
+        } elseif (str_contains($host, 'openstreetmap')) {
+            $name = 'OpenStreetMap Foundation, St John’s Innovation Centre, Cowley Road, Cambridge, CB4 0WS, ' . ($de ? 'Vereinigtes Königreich' : 'United Kingdom');
+            $note = $de ? 'Für das Vereinigte Königreich besteht ein Angemessenheitsbeschluss der EU-Kommission.' : 'An EU adequacy decision exists for the United Kingdom.';
+        } else {
+            $name = $host !== '' ? $host : '–';
+            $note = '';
+        }
+        $providers[$name]['styles'][] = $style['label'];
+        $providers[$name]['note'] = $note;
     }
-    if (str_contains($host, 'maptiler')) {
-        return ['MapTiler AG, Höfnerstrasse 98, 6314 Unterägeri, ' . ($de ? 'Schweiz' : 'Switzerland'),
-                $de ? 'Für die Schweiz besteht ein Angemessenheitsbeschluss der EU-Kommission.' : 'An EU adequacy decision exists for Switzerland.'];
+    $list = [];
+    $notes = [];
+    foreach ($providers as $name => $p) {
+        $list[] = implode(', ', $p['styles']) . ': ' . $name;
+        if ($p['note'] !== '') {
+            $notes[$p['note']] = true;
+        }
     }
-    return [$host !== '' ? $host : '–', ''];
+    return [implode('; ', $list), implode(' ', array_keys($notes))];
 }
 
 function fillPlaceholders(string $text, string $updated): string

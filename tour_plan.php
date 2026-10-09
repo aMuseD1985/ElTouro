@@ -129,8 +129,7 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
 </div>
 <div class="planner-wrap">
 <div id="planner-map" class="map-large"
-     data-tiles="<?= e((string)$CONFIG['map']['tiles']) ?>"
-     data-attribution="<?= e((string)$CONFIG['map']['attribution']) ?>"
+     <?= mapData() ?>
      data-waypoints="<?= e($w['waypoints']) ?>"
      data-stops="<?= e($w['stops']) ?>"
      data-poi-texts="<?= e(json_encode($poiTexts, JSON_UNESCAPED_UNICODE)) ?>"
@@ -205,5 +204,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=16"></script>
+<script src="/assets/planner.js?v=17"></script>
 <?php pageFooter();

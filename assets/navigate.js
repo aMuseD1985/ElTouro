@@ -94,20 +94,18 @@
 
   // ---------------------------------------------------------------- map (MapLibre: it can turn and tilt, Leaflet can't)
   maplibregl.setWorkerUrl('/assets/vendor/maplibre/maplibre-gl-csp-worker.js');
-  // {r} becomes @2x on high-density screens – sharp maps with a provider that has such tiles (e.g. MapTiler)
-  var retina = window.devicePixelRatio > 1 ? '@2x' : '';
-  var tileUrls = d.tiles.indexOf('{s}') < 0 ? [d.tiles.replace('{r}', retina)]
-    : ['a', 'b', 'c'].map(function (x) { return d.tiles.replace('{s}', x).replace('{r}', retina); });
   var lngLats = line.map(function (p) { return [p[1], p[0]]; });
   var bounds = lngLats.reduce(function (b, c) {
     return [[Math.min(b[0][0], c[0]), Math.min(b[0][1], c[1])], [Math.max(b[1][0], c[0]), Math.max(b[1][1], c[1])]];
   }, [[180, 90], [-180, -90]]);
+  // Map style (standard, dark, …) from map_styles.js; "auto" follows the sun at the start of the route
+  var styles = ElTouroMaps.maplibre(document.getElementById('ride'), [line[0][0], line[0][1]]);
   var map = new maplibregl.Map({
     container: 'ride-map',
-    style: { version: 8, sources: { tiles: { type: 'raster', tiles: tileUrls, tileSize: 256, maxzoom: 19, attribution: d.attribution } },
-             layers: [{ id: 'tiles', type: 'raster', source: 'tiles' }] },
+    style: styles.style(),
     bounds: bounds, fitBoundsOptions: { padding: 50 }, maxPitch: 65, attributionControl: { compact: true }
   });
+  styles.attach(map);
   var ready = false;
   map.on('load', function () {
     var round = { 'line-cap': 'round', 'line-join': 'round' };
@@ -141,10 +139,19 @@
   riderImg.alt = '';
   riderEl.appendChild(riderImg);
   var rider = null, riderSprite = '';
+  // Which side of the mascot we see depends on his direction on the SCREEN: riding direction minus the map's rotation.
+  // So it also fits when the rider turns the map by hand or the camera lags behind a turn.
   function spriteFor(heading, lean) {
-    if (view !== 'north') return lean > 18 ? 'rear-right' : lean < -18 ? 'rear-left' : 'rear';
-    var h = (heading + 360) % 360;
-    return h >= 315 || h < 45 ? 'rear' : h < 135 ? 'side' : h < 225 ? 'front' : 'side-left';
+    var rel = (heading - map.getBearing() + 720) % 360;          // 0 = up the screen (we see his back), 90 = to the right
+    if (rel > 180) rel -= 360;                                    // -180…180, negative = to the left
+    if (view !== 'north' && Math.abs(rel) < 22) {                 // camera follows him: only the upcoming bend leans him
+      return lean > 18 ? 'rear-right' : lean < -18 ? 'rear-left' : 'rear';
+    }
+    var a = Math.abs(rel), left = rel < 0;
+    if (a < 22) return 'rear';
+    if (a < 67) return left ? 'rear-left' : 'rear-right';
+    if (a < 120) return left ? 'side-left' : 'side';
+    return 'front';
   }
   function placeRider(pos, heading, lean) {
     var sprite = spriteFor(heading, lean || 0);
@@ -178,7 +185,9 @@
     }
     map.easeTo(opts);
   }
-  var lastPos = null, lastHeading = 0;
+  var lastPos = null, lastHeading = 0, lastLean = 0;
+  // Turning the map by hand changes how we look at him
+  map.on('rotate', function () { if (lastPos && rider) placeRider(lastPos, lastHeading, lastLean); });
 
   // ---------------------------------------------------------------- UI helpers
   var ui = {
@@ -268,6 +277,7 @@
     var shown = state.offRoute ? p : pointAt(state.along);
     // How the track bends in the next metres – the mascot leans into it
     var lean = state.offRoute ? 0 : (bearing(pointAt(state.along), pointAt(state.along + 30)) - bearing(pointAt(state.along - 15), pointAt(state.along)) + 540) % 360 - 180;
+    lastLean = lean;
     placeRider(shown, heading, lean);
     if (ready) {
       var here = pointAt(state.along);
@@ -522,6 +532,16 @@
     if (lastPos) camera(lastPos, lastHeading, false);
     else map.easeTo({ pitch: view === '3d' ? 60 : 0, bearing: 0 });
   });
+
+  var styleBtn = document.getElementById('ride-style');
+  if (styleBtn && styles.multiple) {
+    styleBtn.addEventListener('click', function () {
+      var text = styles.next();
+      if (window.elToast) window.elToast(text);
+    });
+  } else if (styleBtn) {
+    styleBtn.hidden = true;
+  }
 
   function finish(arrived) {
     if (!state.running) return;
