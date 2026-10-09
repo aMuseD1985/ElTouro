@@ -72,6 +72,12 @@ pageHeader(t('profile.title'));
   </form>
 </section>
 
+<details class="panel narrow advanced">
+  <summary><?= te('profile.advanced') ?></summary>
+  <label class="check"><input type="checkbox" id="allow-select"> <?= te('profile.allow_select') ?></label>
+  <p class="hint"><?= te('profile.allow_select_hint') ?></p>
+</details>
+
 <section class="panel narrow" id="invite">
   <h2><?= te('invite.title') ?></h2>
   <p><?= te('invite.text') ?></p>

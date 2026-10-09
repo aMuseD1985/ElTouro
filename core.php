@@ -471,13 +471,20 @@ function pageHeader(string $title, array $meta = []): void
 <title><?= e($title) ?> – ElTouro<?= isLive() ? '' : ' ' . strtoupper(e($env)) ?></title>
 <?php if (!isLive()): ?><meta name="robots" content="noindex, nofollow"><?php endif; ?>
 <link rel="icon" href="/assets/img/favicon.png">
-<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-<link rel="stylesheet" href="/assets/style.css?v=20">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon-app.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ElTouro">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<script src="/assets/app-pref.js?v=1"></script>
+<link rel="stylesheet" href="/assets/style.css?v=21">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>
 </head>
-<body>
+<?php // The app interface (logged in, not on public pages like legal texts or shared tours) behaves like an app ?>
+<body<?= $u && !defined('PUBLIC_PAGE') ? ' class="app-ui"' : '' ?>>
 <a class="skip" href="#content"><?= te('nav.skip') ?></a>
 <?php if (!isLive()): ?><div class="env-band env-<?= e($env) ?>"><?= e(strtoupper($env)) ?> · <?= te('env.notice') ?></div><?php endif; ?>
 <?php if ($banner !== ''): ?><div class="banner" role="status"><?= inlineFormat($banner) ?></div><?php endif; ?>
@@ -522,6 +529,12 @@ function pageFooter(): void
     <a href="/terms"><?= te('footer.terms') ?></a>
   </nav>
 </footer>
+<?php $appTexts = [];
+foreach (['install_title', 'install_text', 'install_button', 'later', 'ios_text', 'installed', 'back', 'select_on', 'select_off'] as $k) {
+    $appTexts[$k] = t('app.' . $k);
+} ?>
+<div id="app-texts" data-texts="<?= e(json_encode($appTexts, JSON_UNESCAPED_UNICODE)) ?>" hidden></div>
+<script src="/assets/app.js?v=1"></script>
 </body>
 </html>
 <?php

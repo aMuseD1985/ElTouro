@@ -374,3 +374,29 @@ details summary { cursor: pointer; }
 .forum-list li { gap: .8rem; }
 .forum-list .forum-topic { flex: 1; min-width: 0; }
 @media (max-width: 760px) { .forum-list li { flex-direction: row; flex-wrap: wrap; } .forum-list .count { flex-basis: 100%; margin-left: 52px; } }
+
+/* App feel (PWA): no selecting, long-press menu or dragging in the app interface – except where copying matters.
+   Riders can switch it off in their profile (html.allow-select, set by app-pref.js before the first paint). */
+body.app-ui { -webkit-tap-highlight-color: transparent; }
+body.app-ui img, body.app-ui a, body.app-ui button { -webkit-user-drag: none; }
+html:not(.allow-select) body.app-ui { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+html:not(.allow-select) body.app-ui :is(input, textarea, select, [contenteditable], pre, code, kbd, .post-text, .tb-text, .alert, .selectable),
+html:not(.allow-select) body.app-ui :is([contenteditable], pre, code, .post-text, .tb-text, .alert, .selectable) * {
+  -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); z-index: 5000; max-width: min(90vw, 26rem);
+  padding: .6rem 1rem; border-radius: 10px; background: var(--night); color: #fff; font-weight: 600; text-align: center;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .3); transform: translate(-50%, 20px); opacity: 0; transition: opacity .25s, transform .25s; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.install-banner { position: fixed; left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 4000; max-width: 32rem; margin: 0 auto;
+  display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; padding: .8rem 1rem; border-radius: 14px; background: #fff;
+  border: 2px solid var(--gold); box-shadow: 0 10px 30px rgba(20, 38, 63, .3); }
+.install-banner img { width: 52px; height: 52px; border-radius: 12px; flex: none; }
+.install-banner > div:nth-child(2) { flex: 1 1 12rem; }
+.install-banner p { margin: .2rem 0 0; font-size: .92rem; }
+.install-actions { display: flex; gap: .6rem; align-items: center; margin-left: auto; }
+.app-back { flex: none; min-width: 40px; min-height: 40px; margin-right: .3rem; border: 0; border-radius: 8px; background: rgba(255, 255, 255, .12);
+  color: #fff; font-size: 1.6rem; line-height: 1; cursor: pointer; }
+.advanced summary { cursor: pointer; font-weight: 600; }
+.advanced .check { display: flex; gap: .5rem; align-items: center; margin-top: .6rem; }
+.offline-page .content { text-align: center; padding-top: 3rem; }
+.offline-mascot { height: 180px; width: auto; }

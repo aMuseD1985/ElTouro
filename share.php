@@ -5,6 +5,7 @@
  * Shows only what share_lib.php allows: no creator, crew, description or exact start/finish.
  */
 declare(strict_types=1);
+const PUBLIC_PAGE = true;   // legal texts / shared tours: a normal web page, no app lock
 const SKIP_ACCESS_GATE = true;
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/share_lib.php';

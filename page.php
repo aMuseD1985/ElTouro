@@ -5,6 +5,7 @@
  * Placeholders {{…}} are filled from Admin → Einstellungen and the config.
  */
 declare(strict_types=1);
+const PUBLIC_PAGE = true;   // legal texts / shared tours: a normal web page, no app lock
 require __DIR__ . '/bootstrap.php';
 
 $slug = preg_replace('/[^a-z0-9-]/', '', (string)($_GET['s'] ?? ''));

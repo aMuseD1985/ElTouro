@@ -1,0 +1,25 @@
+{
+  "name": "ElTouro – Finde deine Tour. Finde deine Herde.",
+  "short_name": "ElTouro",
+  "description": "Touren, Ausfahrten und Herden für E-Scooter-Fahrer.",
+  "id": "/",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#14263F",
+  "theme_color": "#14263F",
+  "lang": "de",
+  "categories": ["navigation", "social", "sports"],
+  "icons": [
+    { "src": "/assets/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Tour planen", "short_name": "Planen", "url": "/tour/plan?source=app", "icons": [{ "src": "/assets/img/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Ausfahrten", "url": "/rides?source=app", "icons": [{ "src": "/assets/img/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Wer fährt gerade?", "short_name": "Live", "url": "/live?source=app", "icons": [{ "src": "/assets/img/icon-192.png", "sizes": "192x192" }] }
+  ]
+}
