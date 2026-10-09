@@ -656,9 +656,18 @@
   }
   if (nextBtn) nextBtn.addEventListener('click', function () { if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
 
-  // The "Tour berechnen" button sits right under the map. A ring runs around it: after 6 seconds without a change
+  // The "Tour berechnen" button sits right under the map. A ring runs around it: after a pause without a change
   // (point set, moved, map moved or zoomed) it presses itself. Every change starts the ring anew.
-  var CALC_MS = 6000;
+  // The pause follows the load on the server: while routing answers quickly (smoothed over the last requests) the ring
+  // is nearly instant (0.2 s); the slower the answers, the longer it waits (3 x the answer time, at most 8 s).
+  var CALC_FAST = 200, CALC_START = 1500, CALC_MAX = 8000, answerMs = null;
+  function calcDelay() {
+    if (answerMs === null) return CALC_START;          // nothing measured yet: stay moderate
+    if (answerMs < 600) return CALC_FAST;
+    return Math.min(CALC_MAX, Math.max(1000, Math.round(answerMs * 3)));
+  }
+  function noteAnswer(ms) { answerMs = answerMs === null ? ms : Math.round(answerMs * 0.5 + ms * 0.5); }
+  var calcMs = CALC_START;
   var autoBox = document.getElementById('pl-auto');
   try { if (autoBox && localStorage.getItem('eltouro.autoCalc') === '0') autoBox.checked = false; } catch (e) { /* ignore */ }
   var calcWrap = document.getElementById('calc-wrap');
@@ -669,9 +678,10 @@
   function stopCalc() { clearInterval(calcTick); calcTick = null; }
   function armCalc() {
     calcStart = Date.now();
+    calcMs = calcDelay();
     setRing(0);
     if (!calcTick) calcTick = setInterval(function () {
-      var p = (Date.now() - calcStart) / CALC_MS;
+      var p = (Date.now() - calcStart) / calcMs;
       setRing(p);
       if (p >= 1) { stopCalc(); computeRoute(); }
     }, 80);
@@ -694,7 +704,7 @@
 
   function computeRoute() {
     hideCalcButton();
-    var no = ++requestNo;
+    var no = ++requestNo, t0 = Date.now();
     saveButton.disabled = true;
     setStatus(T.calculating);
     startLoading();
@@ -709,6 +719,7 @@
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     }).then(function (j) {
+      noteAnswer(Date.now() - t0);
       if (no !== requestNo) return;          // ignore outdated responses
       stopLoading(false);
       current = j.geojson;
@@ -732,6 +743,7 @@
       if (nameButton) nameButton.disabled = false;
       suggestName(false);
     }).catch(function () {
+      noteAnswer(Math.max(Date.now() - t0, 4000));   // an error counts as "server is struggling"
       if (no !== requestNo) return;
       stopLoading(false);
       setStatus(navigator.onLine === false ? T.offline : T.error);

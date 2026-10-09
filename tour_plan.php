@@ -233,5 +233,5 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=34"></script>
+<script src="/assets/planner.js?v=35"></script>
 <?php pageFooter();
