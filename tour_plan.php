@@ -93,7 +93,7 @@ if (isPost()) {
 // Texts for the script (i18n in the browser)
 $jsTexts = [];
 foreach (['point', 'calculating', 'done', 'error', 'notice_no_router', 'notice_partly_freehand', 'empty', 'stats', 'freehand_share', 'locate_error',
-          'leg_too_long', 'calc_button', 'press_calc', 'pause_1', 'pause_2', 'pause_3', 'pause_4', 'open_maps', 'optimize_few', 'optimize_none', 'optimize_done', 'uturns_avoided', 'uturns_left', 'remove', 'up', 'down', 'leg', 'start', 'finish', 'searching', 'search_none', 'search_error', 'search_slow', 'add_point', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
+          'leg_too_long', 'calc_button', 'press_calc', 'press_calc_manual', 'pause_1', 'pause_2', 'pause_3', 'pause_4', 'open_maps', 'optimize_few', 'optimize_none', 'optimize_done', 'uturns_avoided', 'uturns_left', 'remove', 'up', 'down', 'leg', 'start', 'finish', 'searching', 'search_none', 'search_error', 'search_slow', 'add_point', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
     $jsTexts[$k] = t('planner.' . $k);
 }
 
@@ -108,27 +108,23 @@ foreach ($TEXTS[$LANG] as $k => $v) {
 pageHeader($tour ? t('tour.edit') : t('tour.new'));
 ?>
 <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
-<h1><?= te($tour ? 'tour.edit' : 'tour.new') ?></h1>
+<h1 class="plan-title"><?= te($tour ? 'tour.edit' : 'tour.new') ?></h1>
 <?php foreach ($errors as $err): ?><p class="alert alert-error" role="alert"><?= e($err) ?></p><?php endforeach; ?>
 
-<p class="hint"><?= te('planner.instructions') ?></p>
+<?php
+$lbl = fn(string $k) => preg_replace('/^[^\p{L}\p{N}]+/u', '', t($k));
+$tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.loop', ''], ['pl-reverse', '⇄', 'planner.reverse', ''], ['pl-optimize', '🪄', 'planner.optimize', ''],
+          ['pl-stops', '☕', 'planner.suggest_stops', 'disabled'], ['pl-locate', '📍', 'planner.locate', ''], ['pl-clear', '🗑', 'planner.clear', 'danger']];
+?>
+<details class="plan-help"><summary><?= te('planner.help_title') ?></summary><p class="hint"><?= te('planner.instructions') ?></p>
+  <ul class="plan-legend"><?php foreach ($tools as [$id, $icon, $key, $flag]): ?><li><span aria-hidden="true"><?= $icon ?></span> <?= e($lbl($key)) ?></li><?php endforeach; ?>
+    <li><span aria-hidden="true">↩</span> <?= te('planner.avoid_uturns') ?></li><li><span aria-hidden="true">⏱</span> <?= te('planner.auto_calc') ?></li></ul></details>
 <form class="place-search" id="place-search" role="search">
   <label for="place-q" class="visually-hidden"><?= te('planner.search_label') ?></label>
   <input id="place-q" type="search" maxlength="120" autocomplete="off" placeholder="<?= te('planner.search_placeholder') ?>">
-  <button type="submit" class="secondary-submit"><?= te('planner.search_button') ?></button>
+  <button type="submit" class="secondary-submit" aria-label="<?= te('planner.search_button') ?>"><span aria-hidden="true">🔍</span><span class="tl"> <?= te('planner.search_button') ?></span></button>
 </form>
 <ul id="place-results" class="place-results" hidden></ul>
-<div class="planner-bar">
-  <button type="button" class="link" id="pl-undo"><?= te('planner.undo') ?></button>
-  <button type="button" class="link" id="pl-loop"><?= te('planner.loop') ?></button>
-  <button type="button" class="link" id="pl-reverse"><?= te('planner.reverse') ?></button>
-  <button type="button" class="link" id="pl-optimize"><?= te('planner.optimize') ?></button>
-  <button type="button" class="link" id="pl-stops" disabled><?= te('planner.suggest_stops') ?></button>
-  <label class="planner-check"><input type="checkbox" id="pl-uturns" checked> <?= te('planner.avoid_uturns') ?></label>
-  <button type="button" class="link" id="pl-locate"><?= te('planner.locate') ?></button>
-  <button type="button" class="link danger" id="pl-clear"><?= te('planner.clear') ?></button>
-</div>
-<p class="alert alert-info" id="optimize-note" role="status" hidden><span id="optimize-text"></span> <button type="button" class="link" id="pl-opt-undo"><?= te('planner.optimize_undo') ?></button></p>
 <div class="planner-wrap">
 <div id="planner-map" class="map-large"
      <?= mapData() ?>
@@ -162,18 +158,28 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
     <div class="loading-bar"><span id="planner-progress"></span></div>
   </div>
 </div>
+<div class="planner-bar" role="toolbar" aria-label="<?= te('planner.tools') ?>">
+  <?php foreach ($tools as [$id, $icon, $key, $flag]): ?>
+    <button type="button" class="tool<?= $flag === 'danger' ? ' danger' : '' ?>" id="<?= $id ?>" title="<?= e($lbl($key)) ?>" aria-label="<?= e($lbl($key)) ?>"<?= $flag === 'disabled' ? ' disabled' : '' ?>><span class="ti" aria-hidden="true"><?= $icon ?></span><span class="tl"><?= e($lbl($key)) ?></span></button>
+  <?php endforeach; ?>
+  <label class="tool tool-toggle" title="<?= te('planner.avoid_uturns') ?>"><input type="checkbox" id="pl-uturns" checked><span class="ti" aria-hidden="true">↩</span><span class="tl"><?= te('planner.avoid_uturns') ?></span></label>
+  <label class="tool tool-toggle" title="<?= te('planner.auto_calc') ?>"><input type="checkbox" id="pl-auto" checked><span class="ti" aria-hidden="true">⏱</span><span class="tl"><?= te('planner.auto_calc') ?></span></label>
+</div>
+<p class="alert alert-info" id="optimize-note" role="status" hidden><span id="optimize-text"></span> <button type="button" class="link" id="pl-opt-undo"><?= te('planner.optimize_undo') ?></button></p>
 <div class="calc-wrap" id="calc-wrap" hidden>
   <div class="calc-ring" id="calc-ring"><button type="button" id="calc-btn" class="calc-btn"><?= te('planner.calc_button') ?></button></div>
 </div>
 <p id="planner-status" class="muted" role="status" aria-live="polite"></p>
 <p id="planner-info" class="stats"></p>
 <section id="stop-suggestions" class="stop-suggestions" hidden aria-live="polite"></section>
-<section id="waypoints" class="waypoints" hidden>
-  <h2><?= te('planner.waypoints') ?></h2>
+<details id="waypoints" class="waypoints" hidden>
+  <summary><?= te('planner.waypoints') ?> <span id="wp-count" class="badge"></span></summary>
   <ol id="waypoint-list" class="waypoint-list"></ol>
-</section>
+</details>
+<p class="plan-next-wrap"><button type="button" class="btn" id="plan-next" hidden><?= te('planner.next') ?> ↓</button></p>
 
-<form method="post" class="form wide" id="tour-form">
+<form method="post" class="form wide" id="tour-form"<?= ($tour || $errors || $w['geojson'] !== '') ? '' : ' hidden' ?>>
+  <h2 class="step2-title"><?= te('planner.details_title') ?></h2>
   <?= csrfField() ?>
   <input type="hidden" name="id" value="<?= (int)($tour['id'] ?? 0) ?>">
   <input type="hidden" name="waypoints_json" id="waypoints_json" value="<?= e($w['waypoints']) ?>">
@@ -220,5 +226,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=31"></script>
+<script src="/assets/planner.js?v=32"></script>
 <?php pageFooter();

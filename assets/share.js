@@ -22,3 +22,13 @@
     });
   }
 })();
+
+// "Teilen" in the action bar opens the share panel
+(function () {
+  var panel = document.getElementById('share');
+  if (!panel || panel.tagName !== 'DETAILS') return;
+  if (location.hash === '#share') panel.open = true;
+  Array.prototype.forEach.call(document.querySelectorAll('a[data-open="share"]'), function (a) {
+    a.addEventListener('click', function () { panel.open = true; });
+  });
+})();

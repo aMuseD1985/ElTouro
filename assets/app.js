@@ -22,6 +22,15 @@
   }
   window.elToast = toast;
 
+  // ---- Forms asking "really?" (data-confirm) and menus that close on an outside click
+  document.addEventListener('submit', function (e) {
+    var msg = e.target && e.target.getAttribute && e.target.getAttribute('data-confirm');
+    if (msg && !window.confirm(msg)) e.preventDefault();
+  });
+  document.addEventListener('click', function (e) {
+    Array.prototype.forEach.call(document.querySelectorAll('details.more-menu[open]'), function (d) { if (!d.contains(e.target)) d.removeAttribute('open'); });
+  });
+
   // ---- App lock: the context menu follows the same exceptions as the CSS (input fields, code, posts, messages, .selectable)
   var SELECTABLE = 'input, textarea, select, [contenteditable], pre, code, kbd, .post-text, .tb-text, .alert, .selectable';
   document.addEventListener('contextmenu', function (e) {

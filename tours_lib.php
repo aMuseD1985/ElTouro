@@ -210,3 +210,54 @@ function formatKm(int $meters): string
     global $LANG;
     return number_format($meters / 1000, 1, $LANG === 'de' ? ',' : '.', $LANG === 'de' ? '.' : ',') . ' km';
 }
+
+
+/** Riding time in minutes at the same cruising speed the ride mode assumes (18 km/h). */
+function tourDurationMinutes(int $distanceM): int
+{
+    return (int)round($distanceM / 1000 / 18 * 60);
+}
+
+function formatDuration(int $minutes): string
+{
+    return $minutes >= 60 ? intdiv($minutes, 60) . ':' . str_pad((string)($minutes % 60), 2, '0', STR_PAD_LEFT) . ' h' : $minutes . ' min';
+}
+
+/**
+ * Elevation profile as an inline SVG (distance on x, elevation on y) or null when the track has no elevation data
+ * (freehand tours). Returns ['svg' => string, 'min' => int, 'max' => int].
+ */
+function elevationProfile(string $geojson): ?array
+{
+    $fc = json_decode($geojson, true);
+    $pts = []; $cum = 0.0; $prev = null;
+    foreach ($fc['features'] ?? [] as $f) {
+        foreach ($f['geometry']['coordinates'] ?? [] as $c) {
+            if (!isset($c[2])) { $prev = null; continue; }
+            if ($prev !== null) {
+                $dLat = deg2rad($c[1] - $prev[1]); $dLng = deg2rad($c[0] - $prev[0]);
+                $a = sin($dLat / 2) ** 2 + cos(deg2rad($prev[1])) * cos(deg2rad($c[1])) * sin($dLng / 2) ** 2;
+                $cum += 2 * 6371008.8 * asin(min(1, sqrt($a)));
+            }
+            $pts[] = [$cum, (float)$c[2]];
+            $prev = $c;
+        }
+    }
+    if (count($pts) < 2 || $cum < 200) {
+        return null;
+    }
+    $step = max(1, (int)ceil(count($pts) / 160));
+    $pts = array_values(array_filter($pts, fn($p, $i) => $i % $step === 0 || $i === count($pts) - 1, ARRAY_FILTER_USE_BOTH));
+    $min = min(array_column($pts, 1)); $max = max(array_column($pts, 1));
+    $span = max($max - $min, 10.0);                     // flat tours stay flat instead of looking like mountains
+    $w = 600; $h = 120; $padY = 8;
+    $line = [];
+    foreach ($pts as [$d, $z]) {
+        $line[] = sprintf('%.1f,%.1f', $d / $cum * $w, $h - $padY - ($z - $min) / $span * ($h - 2 * $padY));
+    }
+    $poly = implode(' ', $line);
+    $svg = '<svg viewBox="0 0 ' . $w . ' ' . $h . '" preserveAspectRatio="none" class="profile-svg" aria-hidden="true">'
+         . '<polygon points="0,' . $h . ' ' . $poly . ' ' . $w . ',' . $h . '" class="profile-fill"/>'
+         . '<polyline points="' . $poly . '" class="profile-line" vector-effect="non-scaling-stroke"/></svg>';
+    return ['svg' => $svg, 'min' => (int)round($min), 'max' => (int)round($max)];
+}

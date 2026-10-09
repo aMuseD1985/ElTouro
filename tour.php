@@ -66,53 +66,52 @@ pageHeader($tour['title']);
   · <?= te('tour.v_' . $tour['visibility']) ?>
 </p>
 
+<div class="tour-actions">
+  <a class="btn" href="/tour/<?= (int)$tour['id'] ?>/go"><?= te('tour.go') ?></a>
+  <?php if ($canShare): ?><a class="btn secondary" href="#share" data-open="share"><?= te('tour.share_jump') ?></a><?php endif; ?>
+  <?php if ($tour['visibility'] !== 'private'): ?><a class="btn secondary" href="/ride/new?tour=<?= (int)$tour['id'] ?>"><?= te('tour.offer_ride') ?></a><?php endif; ?>
+  <details class="more-menu">
+    <summary class="btn secondary" aria-label="<?= te('tour.more') ?>" title="<?= te('tour.more') ?>">⋯</summary>
+    <div class="more-list">
+      <a href="/tour/<?= (int)$tour['id'] ?>/gpx"><?= te('tour.gpx') ?></a>
+      <a href="/tour/<?= (int)$tour['id'] ?>/go?sim=1"><?= te('tour.simulate') ?></a>
+      <?php if (!$canEdit): ?><a href="/report?type=tour&amp;id=<?= (int)$tour['id'] ?>"><?= te('report.link') ?></a><?php endif; ?>
+      <?php if ($canEdit): ?>
+        <form method="post" data-confirm="<?= te('tour.delete_confirm') ?>"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>"><input type="hidden" name="action" value="delete">
+          <button class="link danger"><?= te('tour.delete') ?></button></form>
+      <?php endif; ?>
+    </div>
+  </details>
+</div>
+<p class="hint tour-hint"><?= te('tour.on_site') ?> <?= te('tour.assessment') ?></p>
+<?php if ((int)$tour['freehand_share_pct'] > 0): ?>
+  <p class="alert alert-info"><?= te('tour.freehand_warning', ['p' => (int)$tour['freehand_share_pct']]) ?></p>
+<?php endif; ?>
+
 <div id="tour-map" class="map-large"
      data-geojson="<?= e($tour['geojson']) ?>"
      <?= mapData() ?>
      data-stops="<?= e(stopsForMap(tourStops($tour))) ?>"
      data-start="<?= te('tour.start') ?>" data-finish="<?= te('tour.finish') ?>"></div>
 
-<dl class="facts">
+<?php $profile = elevationProfile($tour['geojson']); if ($profile): ?>
+<figure class="profile" role="group" aria-label="<?= te('tour.profile_alt', ['min' => $profile['min'], 'max' => $profile['max']]) ?>">
+  <?= $profile['svg'] ?>
+  <figcaption><?= te('tour.profile_title') ?> · <?= te('tour.profile_range', ['min' => $profile['min'], 'max' => $profile['max']]) ?></figcaption>
+</figure>
+<?php endif; ?>
+
+<dl class="facts facts-key">
   <div><dt><?= te('tour.length') ?></dt><dd><?= e(formatKm((int)$tour['distance_m'])) ?></dd></div>
   <?php if ($tour['ascent_m'] !== null): ?><div><dt><?= te('tour.ascent') ?></dt><dd><?= (int)$tour['ascent_m'] ?> m</dd></div><?php endif; ?>
+  <div><dt><?= te('tour.duration') ?></dt><dd><?= e(formatDuration(tourDurationMinutes((int)$tour['distance_m']))) ?></dd></div>
   <div><dt><?= te('tour.difficulty') ?></dt><dd><?= te('tour.d_' . $tour['difficulty']) ?></dd></div>
-  <div><dt><?= te('tour.style') ?></dt><dd><?= te('tour.s_' . $tour['style']) ?></dd></div>
-  <div><dt><?= te('tour.rule_set') ?></dt><dd><?= te('tour.r_' . $tour['rule_set']) ?></dd></div>
-  <div><dt><?= te('tour.vehicle_class') ?></dt><dd><?= te('tour.vc_' . VEHICLE_CLASSES[vehicleClass($tour['vehicle_class'] ?? 2)]) ?></dd></div>
 </dl>
-<p class="hint"><?= te('tour.assessment') ?></p>
-
-<?php if ((int)$tour['freehand_share_pct'] > 0): ?>
-  <p class="alert alert-info"><?= te('tour.freehand_warning', ['p' => (int)$tour['freehand_share_pct']]) ?></p>
-<?php endif; ?>
-<p class="alert alert-info"><?= te('tour.on_site') ?></p>
-
-<?php if ($tour['description']): ?><div class="description"><?= formatText($tour['description']) ?></div><?php endif; ?>
-
-<section>
-  <h2><?= te('tour.rides') ?></h2>
-  <?php rideCards($tourRides, 'tour.no_rides'); ?>
-  <?php if ($tour['visibility'] !== 'private'): ?><p><a class="btn" href="/ride/new?tour=<?= (int)$tour['id'] ?>"><?= te('tour.offer_ride') ?></a></p>
-  <?php else: ?><p class="hint"><?= te('tour.private_no_ride') ?></p><?php endif; ?>
-</section>
-
-<?php if ($canShare): $shareUrl = shareUrl($tour); ?>
-<section class="panel share-panel" id="share">
-  <h2><?= te('share.title') ?></h2>
-  <p class="muted"><?= te('share.what_is_visible', ['m' => SHARE_PRIVACY_METERS]) ?></p>
-  <?php if ($tour['visibility'] !== 'public'): ?><p class="hint"><?= te('share.private_hint') ?></p><?php endif; ?>
-  <?php if ($shareUrl === null): ?>
-    <form method="post"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>"><input type="hidden" name="action" value="share">
-      <button type="submit"><?= te('share.create') ?></button></form>
-  <?php else: $text = $tour['title'] . ' – ' . shareSummary($tour); ?>
-    <?= shareBox($shareUrl, $tour['title'], $text) ?>
-    <?php if ($canEdit): ?>
-      <form method="post"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>"><input type="hidden" name="action" value="unshare">
-        <button class="link danger"><?= te('share.revoke') ?></button></form>
-    <?php endif; ?>
-  <?php endif; ?>
-</section>
-<?php endif; ?>
+<ul class="chips">
+  <li><?= te('tour.style') ?>: <strong><?= te('tour.s_' . $tour['style']) ?></strong></li>
+  <li><?= te('tour.rule_set') ?>: <strong><?= te('tour.r_' . $tour['rule_set']) ?></strong></li>
+  <li><?= te('tour.vehicle_class') ?>: <strong><?= te('tour.vc_' . VEHICLE_CLASSES[vehicleClass($tour['vehicle_class'] ?? 2)]) ?></strong></li>
+</ul>
 
 <?php if ($stops): ?>
 <section class="panel">
@@ -125,12 +124,35 @@ pageHeader($tour['title']);
 </section>
 <?php endif; ?>
 
-<p class="action-bar">
-  <a class="btn" href="/tour/<?= (int)$tour['id'] ?>/go"><?= te('tour.go') ?></a>
-  <a class="btn secondary" href="/tour/<?= (int)$tour['id'] ?>/go?sim=1"><?= te('tour.simulate') ?></a>
-  <a class="btn secondary" href="/tour/<?= (int)$tour['id'] ?>/gpx"><?= te('tour.gpx') ?></a>
-  <a href="/report?type=tour&amp;id=<?= (int)$tour['id'] ?>"><?= te('report.link') ?></a>
-</p>
+<?php if ($tour['description']): ?><div class="description"><?= formatText($tour['description']) ?></div><?php endif; ?>
+
+<section>
+  <h2><?= te('tour.rides') ?></h2>
+  <?php rideCards($tourRides, 'tour.no_rides'); ?>
+  <?php if ($tour['visibility'] === 'private'): ?><p class="hint"><?= te('tour.private_no_ride') ?></p><?php endif; ?>
+</section>
+
+<?php if ($canShare): $shareUrl = shareUrl($tour); ?>
+<details class="panel share-panel" id="share"<?= shareUrl($tour) !== null ? ' open' : '' ?>>
+  <summary><?= te('share.title') ?></summary>
+  <p class="muted"><?= te('share.what_is_visible', ['m' => SHARE_PRIVACY_METERS]) ?></p>
+  <?php if ($tour['visibility'] !== 'public'): ?><p class="hint"><?= te('share.private_hint') ?></p><?php endif; ?>
+  <?php if ($shareUrl === null): ?>
+    <form method="post"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>"><input type="hidden" name="action" value="share">
+      <button type="submit"><?= te('share.create') ?></button></form>
+  <?php else: $text = $tour['title'] . ' – ' . shareSummary($tour); ?>
+    <?= shareBox($shareUrl, $tour['title'], $text) ?>
+    <?php if ($canEdit): ?>
+      <form method="post"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>"><input type="hidden" name="action" value="unshare">
+        <button class="link danger"><?= te('share.revoke') ?></button></form>
+    <?php endif; ?>
+  <?php endif; ?>
+</details>
+<?php endif; ?>
+
+
+
+
 
 <?php if ($myTracks): ?>
 <section class="panel" id="my-rides">
@@ -148,11 +170,8 @@ pageHeader($tour['title']);
 </section>
 <?php endif; ?>
 
-<?php if ($canEdit): ?>
-<form method="post" class="spaced"><?= csrfField() ?><input type="hidden" name="id" value="<?= (int)$tour['id'] ?>"><input type="hidden" name="action" value="delete">
-  <button class="link danger"><?= te('tour.delete') ?></button></form>
-<?php endif; ?>
+
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
 <script src="/assets/tour_map.js?v=7"></script>
-<script src="/assets/share.js?v=1"></script>
+<script src="/assets/share.js?v=2"></script>
 <?php pageFooter();

@@ -240,6 +240,7 @@
     if (!list) return;
     list.textContent = '';
     listBox.hidden = points.length === 0;
+    var cnt = document.getElementById('wp-count'); if (cnt) cnt.textContent = points.length ? String(points.length) : '';
     points.forEach(function (p, i) {
       var li = document.createElement('li');
       if (i === selected) li.className = 'is-selected';
@@ -622,6 +623,7 @@
       showStats(null);
       stopLoading(true);
       saveButton.disabled = true;
+      if (nextBtn) nextBtn.hidden = true;
       if (nameButton) nameButton.disabled = true;
       setStatus(T.empty);
       hideCalcButton();
@@ -637,14 +639,28 @@
     saveButton.disabled = true;
     if (nameButton) nameButton.disabled = true;
     stopLoading(true);
+    if (nextBtn) nextBtn.hidden = true;
     setStatus(T.press_calc);
     calcAuto = true;
     showCalcButton();
   }
 
+  // Step 2 (name, description, visibility, save) appears once there is a route; "Weiter" scrolls to it
+  var formEl = document.getElementById('tour-form');
+  var nextBtn = document.getElementById('plan-next');
+  var wideMq = window.matchMedia ? window.matchMedia('(min-width: 800px)') : { matches: true };
+  function revealStep2() {
+    if (formEl) formEl.hidden = false;
+    if (nextBtn) nextBtn.hidden = false;
+    if (listBox && wideMq.matches) listBox.open = true;
+  }
+  if (nextBtn) nextBtn.addEventListener('click', function () { if (formEl) formEl.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+
   // The "Tour berechnen" button sits right under the map. A ring runs around it: after 6 seconds without a change
   // (point set, moved, map moved or zoomed) it presses itself. Every change starts the ring anew.
   var CALC_MS = 6000;
+  var autoBox = document.getElementById('pl-auto');
+  try { if (autoBox && localStorage.getItem('eltouro.autoCalc') === '0') autoBox.checked = false; } catch (e) { /* ignore */ }
   var calcWrap = document.getElementById('calc-wrap');
   var calcRing = document.getElementById('calc-ring');
   var calcBtn = document.getElementById('calc-btn');
@@ -664,8 +680,14 @@
   function showCalcButton() {
     if (!calcWrap) return;
     calcWrap.hidden = false;
-    if (calcAuto) armCalc(); else { stopCalc(); setRing(0); }
+    var auto = calcAuto && (!autoBox || autoBox.checked);
+    if (auto) armCalc(); else { stopCalc(); setRing(0); }
+    if (points.length >= 2 && !current) setStatus(autoBox && !autoBox.checked ? T.press_calc_manual : T.press_calc);
   }
+  if (autoBox) autoBox.addEventListener('change', function () {
+    try { localStorage.setItem('eltouro.autoCalc', autoBox.checked ? '1' : '0'); } catch (e) { /* ignore */ }
+    if (calcWrap && !calcWrap.hidden) { calcAuto = true; showCalcButton(); }
+  });
   if (calcBtn) calcBtn.addEventListener('click', function () { if (points.length >= 2) { stopCalc(); computeRoute(); } });
   // Moving the map or a marker means the rider is still working: start the ring again
   map.on('move zoom', function () { if (calcTick) armCalc(); });
@@ -700,6 +722,7 @@
       if (fieldGuidance) fieldGuidance.value = JSON.stringify(j.guidance || []);
       drawRoute(current);
       showStats(current);
+      revealStep2();
       saveButton.disabled = false;
       if (stopsButton) stopsButton.disabled = false;
       var msg = j.notice ? T['notice_' + j.notice] : T.done;
@@ -912,6 +935,7 @@
   if (current) {
     drawRoute(current);
     showStats(current);
+    revealStep2();
     map.fitBounds(L.geoJSON(current).getBounds(), { padding: [30, 30] });
     saveButton.disabled = false;
     if (nameButton) nameButton.disabled = false;
