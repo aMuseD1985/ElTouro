@@ -27,6 +27,8 @@
   var fieldGuidance = document.getElementById('guidance_json');
   var fieldStops = document.getElementById('stops_json');
   var stopsButton = document.getElementById('pl-stops');
+  var uturnBox = document.getElementById('pl-uturns');
+  try { if (uturnBox && localStorage.getItem('eltouro.avoidUturns') === '0') uturnBox.checked = false; } catch (e) { /* ignore */ }
   var fieldRules = document.getElementById('rule_set');
   var fieldVehicle = document.getElementById('vehicle_class');
   var bullrunHint = document.getElementById('bullrun-hint');
@@ -496,7 +498,9 @@
       method: 'POST',
       credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json', 'X-CSRF': d.csrf },
-      body: JSON.stringify({ points: clean(points), rule_set: fieldRules ? fieldRules.value : 'ekfv', vehicle: fieldVehicle ? parseInt(fieldVehicle.value, 10) : 2 })
+      body: JSON.stringify({ points: clean(points), rule_set: fieldRules ? fieldRules.value : 'ekfv', vehicle: fieldVehicle ? parseInt(fieldVehicle.value, 10) : 2,
+                             avoid_uturns: !!(uturnBox && uturnBox.checked),
+                             stops: points.map(function (p, i) { return p[2] ? i : -1; }).filter(function (i) { return i >= 0; }) })
     }).then(function (r) {
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
@@ -505,12 +509,21 @@
       stopLoading(false);
       current = j.geojson;
       fieldGj.value = JSON.stringify(current);
+      // Waypoints the server moved to avoid a U-turn: the pins follow, the stop info stays with them
+      if (j.waypoints && j.waypoints.length === points.length) {
+        points = points.map(function (p, i) { var q = [j.waypoints[i][0], j.waypoints[i][1]]; if (p[2]) q.push(p[2]); return q; });
+        fieldWp.value = JSON.stringify(clean(points));
+        drawMarkers();
+      }
       if (fieldGuidance) fieldGuidance.value = JSON.stringify(j.guidance || []);
       drawRoute(current);
       showStats(current);
       saveButton.disabled = false;
       if (stopsButton) stopsButton.disabled = false;
-      setStatus(j.notice ? T['notice_' + j.notice] : T.done);
+      var msg = j.notice ? T['notice_' + j.notice] : T.done;
+      if (j.uturns && j.uturns.avoided) msg += ' ' + T.uturns_avoided.replace('{n}', j.uturns.avoided);
+      if (j.uturns && j.uturns.left) msg += ' ' + T.uturns_left.replace('{n}', j.uturns.left);
+      setStatus(msg);
       if (nameButton) nameButton.disabled = false;
       suggestName(false);
     }).catch(function () {
@@ -615,6 +628,10 @@
   });
   if (nameButton) nameButton.addEventListener('click', function () { suggestName(true); });
   if (fieldRules) fieldRules.addEventListener('change', function () { if (points.length >= 2) calculate(); });
+  if (uturnBox) uturnBox.addEventListener('change', function () {
+    try { localStorage.setItem('eltouro.avoidUturns', uturnBox.checked ? '1' : '0'); } catch (e) { /* ignore */ }
+    if (points.length >= 2) calculate();
+  });
   if (fieldVehicle) fieldVehicle.addEventListener('change', function () {
     if (bullrunHint) bullrunHint.hidden = fieldVehicle.value !== '4';
     if (points.length >= 2) calculate();

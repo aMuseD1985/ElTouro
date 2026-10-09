@@ -93,7 +93,7 @@ if (isPost()) {
 // Texts for the script (i18n in the browser)
 $jsTexts = [];
 foreach (['point', 'calculating', 'done', 'error', 'notice_no_router', 'notice_partly_freehand', 'empty', 'stats', 'freehand_share', 'locate_error',
-          'leg_too_long', 'remove', 'up', 'down', 'leg', 'start', 'finish', 'searching', 'search_none', 'search_error', 'search_slow', 'add_point', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
+          'leg_too_long', 'uturns_avoided', 'uturns_left', 'remove', 'up', 'down', 'leg', 'start', 'finish', 'searching', 'search_none', 'search_error', 'search_slow', 'add_point', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
     $jsTexts[$k] = t('planner.' . $k);
 }
 
@@ -123,6 +123,7 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="button" class="link" id="pl-loop"><?= te('planner.loop') ?></button>
   <button type="button" class="link" id="pl-reverse"><?= te('planner.reverse') ?></button>
   <button type="button" class="link" id="pl-stops" disabled><?= te('planner.suggest_stops') ?></button>
+  <label class="planner-check"><input type="checkbox" id="pl-uturns" checked> <?= te('planner.avoid_uturns') ?></label>
   <button type="button" class="link" id="pl-locate"><?= te('planner.locate') ?></button>
   <button type="button" class="link danger" id="pl-clear"><?= te('planner.clear') ?></button>
 </div>
@@ -205,5 +206,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=13"></script>
+<script src="/assets/planner.js?v=14"></script>
 <?php pageFooter();
