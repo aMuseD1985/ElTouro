@@ -456,12 +456,12 @@ a.secondary-submit { display: inline-flex; align-items: center; text-decoration:
 @keyframes et-indet { from { transform: translateX(-100%); } to { transform: translateX(300%); } }
 @media (prefers-reduced-motion: reduce) { .pause-scene.is-on, .pause-steam, .loading-bar.indeterminate span { animation: none; } }
 
-.calc-btn-wrap { background: none; border: 0; width: 0; height: 0; overflow: visible; }
-.calc-btn { transform: translate(-50%, -50%); white-space: nowrap; padding: .6rem 1.1rem; border-radius: 999px; border: 3px solid var(--night); background: var(--gold); color: var(--night);
-  font: inherit; font-weight: 800; font-style: italic; font-size: 1.05rem; cursor: pointer; box-shadow: 0 4px 14px rgba(0, 0, 0, .4); animation: et-pulse 1.8s ease-in-out infinite; }
-.calc-btn:hover, .calc-btn:focus-visible { background: #fff; }
-@keyframes et-pulse { 50% { box-shadow: 0 4px 14px rgba(0, 0, 0, .4), 0 0 0 9px rgba(215, 168, 69, .35); } }
-@media (prefers-reduced-motion: reduce) { .calc-btn { animation: none; } }
+/* "Tour berechnen" under the map; the ring around it fills in 10 s, then the button presses itself */
+.calc-wrap { display: flex; justify-content: center; margin: .8rem 0 .4rem; }
+.calc-ring { --p: 0; padding: 6px; border-radius: 999px; background: conic-gradient(var(--gold) calc(var(--p) * 1%), #D5DCE5 0); }
+.calc-btn { display: block; border: 0; border-radius: 999px; padding: .8rem 1.8rem; background: var(--night); color: #fff; font: inherit; font-weight: 800; font-style: italic;
+  font-size: 1.1rem; cursor: pointer; white-space: nowrap; }
+.calc-btn:hover, .calc-btn:focus-visible { background: var(--denim); }
 
 /* The consent page fits the screen: text scrolls inside, the question stays in view */
 .consent { display: flex; flex-direction: column; min-height: 0; max-width: 46rem; height: calc(100dvh - 7rem); }

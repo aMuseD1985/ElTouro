@@ -27,7 +27,6 @@
   var fieldGuidance = document.getElementById('guidance_json');
   var fieldStops = document.getElementById('stops_json');
   var stopsButton = document.getElementById('pl-stops');
-  var calcBtnTop = null;
   var uturnBox = document.getElementById('pl-uturns');
   try { if (uturnBox && localStorage.getItem('eltouro.avoidUturns') === '0') uturnBox.checked = false; } catch (e) { /* ignore */ }
   var fieldRules = document.getElementById('rule_set');
@@ -206,6 +205,7 @@
     points.forEach(function (p, i) {
       var m = L.marker(p, { draggable: true, keyboard: true, title: T.point + ' ' + (i + 1), icon: pinIcon(i),
                             zIndexOffset: i === selected ? 1000 : 0 });
+      m.on('dragstart drag', function () { if (calcTick) armCalc(); });
       m.on('dragend', function (e) {
         var ll = e.target.getLatLng();
         var moved = [ll.lat, ll.lng];
@@ -632,25 +632,37 @@
     if (nameButton) nameButton.disabled = true;
     stopLoading(true);
     setStatus(T.press_calc);
+    calcAuto = true;
     showCalcButton();
   }
 
-  // The "Tour berechnen" button sits on the map in the centre of all points
-  var calcLayer = L.layerGroup().addTo(map);
-  function hideCalcButton() { calcLayer.clearLayers(); }
-  function showCalcButton() {
-    hideCalcButton();
-    var b = L.latLngBounds(points.map(function (p) { return [p[0], p[1]]; })).getCenter();
-    var html = document.createElement('button');
-    html.type = 'button';
-    html.className = 'calc-btn';
-    html.textContent = '🛴 ' + T.calc_button;
-    var icon = L.divIcon({ className: 'calc-btn-wrap', html: html, iconSize: null });
-    var m = L.marker(b, { icon: icon, zIndexOffset: 2000, keyboard: false, riseOnHover: true }).addTo(calcLayer);
-    html.addEventListener('click', function (ev) { ev.stopPropagation(); computeRoute(); });
-    L.DomEvent.disableClickPropagation(html);
+  // The "Tour berechnen" button sits right under the map. A ring runs around it: after 10 seconds without a change
+  // (point set, moved, map moved or zoomed) it presses itself. Every change starts the ring anew.
+  var CALC_MS = 10000;
+  var calcWrap = document.getElementById('calc-wrap');
+  var calcRing = document.getElementById('calc-ring');
+  var calcBtn = document.getElementById('calc-btn');
+  var calcStart = 0, calcTick = null, calcAuto = true;
+  function setRing(p) { if (calcRing) calcRing.style.setProperty('--p', String(Math.max(0, Math.min(100, p * 100)))); }
+  function stopCalc() { clearInterval(calcTick); calcTick = null; }
+  function armCalc() {
+    calcStart = Date.now();
+    setRing(0);
+    if (!calcTick) calcTick = setInterval(function () {
+      var p = (Date.now() - calcStart) / CALC_MS;
+      setRing(p);
+      if (p >= 1) { stopCalc(); computeRoute(); }
+    }, 80);
   }
-  if (calcBtnTop) calcBtnTop.addEventListener('click', function () { if (points.length >= 2) computeRoute(); });
+  function hideCalcButton() { stopCalc(); if (calcWrap) calcWrap.hidden = true; }
+  function showCalcButton() {
+    if (!calcWrap) return;
+    calcWrap.hidden = false;
+    if (calcAuto) armCalc(); else { stopCalc(); setRing(0); }
+  }
+  if (calcBtn) calcBtn.addEventListener('click', function () { if (points.length >= 2) { stopCalc(); computeRoute(); } });
+  // Moving the map or a marker means the rider is still working: start the ring again
+  map.on('move zoom', function () { if (calcTick) armCalc(); });
 
   function computeRoute() {
     hideCalcButton();
@@ -694,6 +706,8 @@
       if (no !== requestNo) return;
       stopLoading(false);
       setStatus(T.error);
+      calcAuto = false;      // no endless retries: the button stays, the rider presses it
+      showCalcButton();
     });
   }
 

@@ -162,6 +162,9 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
     <div class="loading-bar"><span id="planner-progress"></span></div>
   </div>
 </div>
+<div class="calc-wrap" id="calc-wrap" hidden>
+  <div class="calc-ring" id="calc-ring"><button type="button" id="calc-btn" class="calc-btn"><?= te('planner.calc_button') ?></button></div>
+</div>
 <p id="planner-status" class="muted" role="status" aria-live="polite"></p>
 <p id="planner-info" class="stats"></p>
 <section id="stop-suggestions" class="stop-suggestions" hidden aria-live="polite"></section>
@@ -217,5 +220,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=24"></script>
+<script src="/assets/planner.js?v=26"></script>
 <?php pageFooter();
