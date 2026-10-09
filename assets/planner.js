@@ -245,16 +245,31 @@
       var num = document.createElement('span');
       num.className = 'wp-pin' + (i === 0 ? ' is-start' : '') + (i === selected ? ' is-selected' : '');
       num.textContent = i + 1;
-      var main = document.createElement('button');
-      main.type = 'button'; main.className = 'link wp-main';
+      var main = document.createElement('div');
+      main.className = 'wp-main';
       var leg = i === 0 ? T.start : T.leg.replace('{km}', fmtKm(distance([points[i - 1][1], points[i - 1][0]], [p[1], p[0]])));
       if (i > 0 && i === points.length - 1) leg += ' · ' + T.finish;
-      var nameText = document.createElement('span');
-      nameText.textContent = p[2] ? STOP_ICON[p[2].type] + ' ' + (p[2].name || pointName(i)) : pointName(i);
-      var legText = document.createElement('small');
-      legText.textContent = leg;
-      main.appendChild(nameText); main.appendChild(legText);
-      main.addEventListener('click', function () { select(i, true); });
+      var nameBtn = document.createElement('button');
+      nameBtn.type = 'button'; nameBtn.className = 'link wp-name';
+      nameBtn.textContent = p[2] ? STOP_ICON[p[2].type] + ' ' + (p[2].name || pointName(i)) : pointName(i);
+      nameBtn.addEventListener('click', function () { select(i, true); });
+      // Second line: distance on the left, coordinates on the right (link to Google Maps in a new window – only here in the planner)
+      var sub = document.createElement('div');
+      sub.className = 'wp-sub';
+      var legBtn = document.createElement('button');
+      legBtn.type = 'button'; legBtn.className = 'link wp-leg';
+      legBtn.textContent = leg;
+      legBtn.addEventListener('click', function () { select(i, true); });
+      var lat = p[0].toFixed(5), lng = p[1].toFixed(5);
+      var coords = document.createElement('a');
+      coords.className = 'wp-coords';
+      coords.href = 'https://www.google.com/maps/search/?api=1&query=' + lat + ',' + lng;
+      coords.target = '_blank';
+      coords.rel = 'noopener noreferrer';
+      coords.textContent = lat + ', ' + lng;
+      coords.title = T.open_maps;
+      sub.appendChild(legBtn); sub.appendChild(coords);
+      main.appendChild(nameBtn); main.appendChild(sub);
       li.appendChild(num);
       li.appendChild(main);
       li.appendChild(stopSelect(i));
@@ -470,6 +485,7 @@
   }
 
   function calculate() {
+    hideOptimizeNote();
     drawMarkers();
     fieldWp.value = JSON.stringify(clean(points));
     if (fieldStops) {
@@ -613,6 +629,86 @@
     selected = -1;
     calculate();
   });
+  // ---- Route optimieren: shortest order of the points between start and finish (straight lines), stops travel with their point
+  var optNote = document.getElementById('optimize-note');
+  var optText = document.getElementById('optimize-text');
+  var optBefore = null;
+
+  function pathLength(order) {
+    var sum = 0;
+    for (var i = 1; i < order.length; i++) sum += distance([order[i - 1][1], order[i - 1][0]], [order[i][1], order[i][0]]);
+    return sum;
+  }
+
+  /** Best order of the inner points between fixed first and last (exact up to 11 inner points, else nearest neighbour + 2-opt). */
+  function bestOrder(pts) {
+    var first = pts[0], last = pts[pts.length - 1], inner = pts.slice(1, -1), n = inner.length;
+    function dd(a, b) { return distance([a[1], a[0]], [b[1], b[0]]); }
+    if (n <= 1) return pts.slice();
+    if (n <= 11) {   // Held-Karp
+      var size = 1 << n, INF = 1e18, cost = [], from = [], k, m, mask;
+      for (mask = 0; mask < size; mask++) { cost.push(new Array(n).fill(INF)); from.push(new Array(n).fill(-1)); }
+      for (k = 0; k < n; k++) cost[1 << k][k] = dd(first, inner[k]);
+      for (mask = 1; mask < size; mask++) for (k = 0; k < n; k++) {
+        if (!(mask & (1 << k)) || cost[mask][k] >= INF) continue;
+        for (m = 0; m < n; m++) {
+          if (mask & (1 << m)) continue;
+          var nm = mask | (1 << m), c = cost[mask][k] + dd(inner[k], inner[m]);
+          if (c < cost[nm][m]) { cost[nm][m] = c; from[nm][m] = k; }
+        }
+      }
+      var full = size - 1, bestK = 0, best = INF;
+      for (k = 0; k < n; k++) { var c2 = cost[full][k] + dd(inner[k], last); if (c2 < best) { best = c2; bestK = k; } }
+      var seq = [], cur = bestK, mk = full;
+      while (cur >= 0) { seq.push(inner[cur]); var prev = from[mk][cur]; mk &= ~(1 << cur); cur = prev; }
+      return [first].concat(seq.reverse(), [last]);
+    }
+    var route = [first], left = inner.slice();
+    while (left.length) {
+      var at = route[route.length - 1], bi = 0;
+      for (var q = 1; q < left.length; q++) if (dd(at, left[q]) < dd(at, left[bi])) bi = q;
+      route.push(left.splice(bi, 1)[0]);
+    }
+    route.push(last);
+    var improved = true;
+    while (improved) {
+      improved = false;
+      for (var i = 1; i < route.length - 2; i++) for (var j = i + 1; j < route.length - 1; j++) {
+        if (dd(route[i - 1], route[j]) + dd(route[i], route[j + 1]) < dd(route[i - 1], route[i]) + dd(route[j], route[j + 1]) - 1) {
+          route = route.slice(0, i).concat(route.slice(i, j + 1).reverse(), route.slice(j + 1));
+          improved = true;
+        }
+      }
+    }
+    return route;
+  }
+
+  function hideOptimizeNote() { if (optNote) optNote.hidden = true; optBefore = null; }
+
+  var optButton = document.getElementById('pl-optimize');
+  if (optButton) optButton.addEventListener('click', function () {
+    if (points.length < 4) { setStatus(T.optimize_few); return; }
+    var closed = distance([points[0][1], points[0][0]], [points[points.length - 1][1], points[points.length - 1][0]]) < 150;
+    var before = points.slice(), oldLen = pathLength(before);
+    var candidate = bestOrder(before);
+    var newLen = pathLength(candidate);
+    if (newLen > oldLen * 0.97) { setStatus(T.optimize_none); return; }
+    if (!legsOk(candidate)) { tooFar(); return; }
+    points = candidate;
+    selected = -1;
+    calculate();
+    optBefore = before;
+    optText.textContent = T.optimize_done.replace('{new}', fmtKm(newLen)).replace('{old}', fmtKm(oldLen));
+    optNote.hidden = false;
+  });
+  var optUndo = document.getElementById('pl-opt-undo');
+  if (optUndo) optUndo.addEventListener('click', function () {
+    if (!optBefore) return;
+    points = optBefore;
+    selected = -1;
+    calculate();
+  });
+
   document.getElementById('pl-loop').addEventListener('click', function () {
     if (points.length < 2 || points.length >= MAX) return;
     if (!legOk(points[points.length - 1], points[0])) { tooFar(); return; }

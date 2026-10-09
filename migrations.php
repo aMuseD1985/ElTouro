@@ -455,6 +455,19 @@ function runMigrations(): array
       CONSTRAINT fk_freact_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) $opt");
 
+    /* ---------- Consent before first use, data export and account deletion (2026-10, consent.php, account_data_lib.php) ---------- */
+    if (!columnExists('users', 'consent_version')) {
+        db()->exec('ALTER TABLE users ADD consent_version SMALLINT UNSIGNED NOT NULL DEFAULT 0, ADD consent_at DATETIME NULL');
+        $log[] = '~ users.consent_version, consent_at angelegt (alle bestehenden Konten werden einmal um ihre Einwilligung gebeten)';
+    }
+    // Stand-in author for content that has to stay after an account is deleted (replies of other riders in a thread):
+    // text erased, no link to the person. Cannot log in (status deleted, unusable password).
+    if (dbOne('SELECT id FROM users WHERE email = ?', [DELETED_USER_EMAIL]) === null) {
+        dbExec("INSERT INTO users (email, password_hash, display_name, birth_date, locale, is_admin, status, email_verified_at, terms_accepted_at, consent_version)
+                VALUES (?, '!', 'Gelöscht / Deleted', '1900-01-01', 'de', 0, 'deleted', UTC_TIMESTAMP(), UTC_TIMESTAMP(), 0)", [DELETED_USER_EMAIL]);
+        $log[] = '+ Platzhalter-Nutzer für gelöschte Konten angelegt';
+    }
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
         'privacy' => ['de' => ['7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
@@ -465,7 +478,8 @@ function runMigrations(): array
                              '7138011091b3de4b6f57285f571dd5afef90525aa2f2bb45add76e9999ffc7f5',
                              '003ae2085ccf42b074041c51e3f4095f7be1e9d76f53d3fb3e982f958860270f',
                              'e6d5d37fba3f4db3e29e12df2a3b624a0033373cbe4ad58cdc8008d758618972',
-                             '4a331b03478cfccdfb7ae9fcb9cdde9fd361b38d79cf216a1f12c3037a1b6c02'],
+                             '4a331b03478cfccdfb7ae9fcb9cdde9fd361b38d79cf216a1f12c3037a1b6c02',
+                             '8e68a6134dd7e5694a5b11f1cb995167833924cc938f9142b8d0721bc40ef2e7'],
                       'en' => ['d626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024',
                              '97ec6abe9fd9c9dafcd7f9bf64af86374052b671234a1c8b3b4cbcfd8524b93d',
                              'aad225fefb56e29cc0c861f4a05f7f448e8b226d93e0ee18366cd6eb8fb240c4',
@@ -474,9 +488,10 @@ function runMigrations(): array
                              'cf1fd4c7a5d5f41a31b25595e37dca64b136fb9d6b707f984bcfc610c6d6e244',
                              'd38e6bb8f7a70aecf2705f9b1fcf76f21c9642fbfbaae45592686616f2e5584e',
                              'ff93fa22adc6d6dafc2d0844122330c68bd3462434c706173931e4b63257df45',
-                             'e8632a26cb0b5b2b11c19824af57dd5fb2700a8b6fe5f1f56fae787b3ee89662']],
-        'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab', 'feaac83164b6aa8d5cb9441fc8bf1a9ab32abc0c9c34f0c69c777f46fd29cc44', 'dc5f8ddd572ab58b3741a32db8a468c60073ace583c934c62f299f650cbc972b'],
-                      'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d', '63498436ed4f625110f2b427930d9feb7e2d6dd1c5ec947d7bd74de655560d81', 'a0a3110ea0dab0f4759f757a08a9250654931353e03a1e742c6f776f320e08b9']],
+                             'e8632a26cb0b5b2b11c19824af57dd5fb2700a8b6fe5f1f56fae787b3ee89662',
+                             '324ead27ecaf38bbabc0ac23f4446377a456af781bcafe9f9890e399a76ed4f6']],
+        'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab', 'feaac83164b6aa8d5cb9441fc8bf1a9ab32abc0c9c34f0c69c777f46fd29cc44', 'dc5f8ddd572ab58b3741a32db8a468c60073ace583c934c62f299f650cbc972b', '75b1f4e84a84c1c7e7a25109060f5ec1efd0212fd330740929345f6c3fd34760'],
+                      'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d', '63498436ed4f625110f2b427930d9feb7e2d6dd1c5ec947d7bd74de655560d81', 'a0a3110ea0dab0f4759f757a08a9250654931353e03a1e742c6f776f320e08b9', '0c6fa707fc188c146fd501b82c95d3ce71490e01c912d2e8fc8acdd5d82a965f']],
     ];
     foreach ($earlierDefaults as $slug => $byLang) {
         foreach ($byLang as $loc => $hashes) {
@@ -503,12 +518,12 @@ function legalPagesNeedingUpdate(): array
 {
     $markers = [
         'privacy' => [
-            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:', 'Kartenstil' => 'Kartenstil und Zwischenspeicher:'],
-            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:', 'Kartenstil' => 'Map style and cache:'],
+            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:', 'Kartenstil' => 'Kartenstil und Zwischenspeicher:', 'Einwilligung' => 'Einwilligung zu Beginn der Nutzung:', 'Google Maps' => 'Link zu Google Maps:'],
+            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:', 'Kartenstil' => 'Map style and cache:', 'Einwilligung' => 'Consent at the start of use:', 'Google Maps' => 'Link to Google Maps:'],
         ],
         'terms' => [
-            'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run', 'Profilfoto' => 'Als Profilfoto nimm nur'],
-            'en' => ['Ausfahrten' => 'sets a participant limit', 'Teilen' => 'share a route via link', 'Bull-Run' => 'Bull-Run', 'Profilfoto' => 'For your profile photo'],
+            'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run', 'Profilfoto' => 'Als Profilfoto nimm nur', 'Selbst löschen' => 'Profil → „Meine Daten“'],
+            'en' => ['Ausfahrten' => 'sets a participant limit', 'Teilen' => 'share a route via link', 'Bull-Run' => 'Bull-Run', 'Profilfoto' => 'For your profile photo', 'Selbst löschen' => 'Profile → “My data”'],
         ],
     ];
     $missing = [];

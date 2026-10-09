@@ -102,7 +102,11 @@ Zum Schutz vor Angriffen speichern wir fehlgeschlagene Anmeldeversuche mit IP-Ad
 
 **Einladungen:** Kommst du über einen Einladungslink, einen geteilten Tour-Link oder die Einladung einer Herde zu ElTouro, speichern wir bei deiner Registrierung, über wen bzw. welche Herde oder Tour du gekommen bist und über welchen Weg der Link geteilt wurde (zum Beispiel WhatsApp oder E-Mail – das steht als Kennzeichen in unseren eigenen Links, es gibt kein Tracking durch Dritte). Bis zur Registrierung merkt sich das nur deine Sitzung. Außerdem speichern wir, was du auf ElTouro tust, als Ereignisse (etwa Konto bestätigt, Tour angelegt, Link geteilt). Daraus entstehen später Punkte, Ränge und Abzeichen; dein Rang wird dann allen angemeldeten Nutzern angezeigt. Wer dich eingeladen hat, sieht nur, wie viele Fahrer über seine Links gekommen sind, nicht wer. Du siehst in deinem Profil, über wen du gekommen bist. Rechtsgrundlage ist der Nutzungsvertrag (Art. 6 Abs. 1 lit. b DSGVO), für die Erkennung von Missbrauch unser berechtigtes Interesse (Art. 6 Abs. 1 lit. f DSGVO).
 
-Deine Kontodaten speichern wir, solange dein Konto besteht. Wenn du dein Konto löschen möchtest, schreib uns an {{operator_email}}; wir löschen es innerhalb von 30 Tagen. Beiträge in Foren und Herden werden dabei anonymisiert oder gelöscht.
+Deine Kontodaten speichern wir, solange dein Konto besteht. Du kannst dein Konto jederzeit selbst unter Profil → „Meine Daten“ löschen. Dann sind Profil, Profilfoto, Anmeldedaten, Touren, Aufzeichnungen, Mitgliedschaften, Reaktionen und deine Anmeldungen zu Ausfahrten sofort und endgültig weg. Beiträge in Forum und Tränke verschwinden samt Thema, wenn niemand darauf geantwortet hat; sonst bleibt der Platz ohne deinen Namen und ohne deinen Text als „Gelöscht“ stehen, damit die Antworten anderer verständlich bleiben. Touren, auf denen Ausfahrten anderer Fahrer geplant sind, bleiben ohne Beschreibung, ohne Link und ohne Bezug zu dir erhalten. Eigene Ausfahrten ohne weitere Teilnehmer werden gelöscht, kommende mit Teilnehmern abgesagt (Mail an die Teilnehmer). Du bekommst eine Bestätigung per Mail.
+
+**Einwilligung zu Beginn der Nutzung:** Bevor du ElTouro nutzen kannst, zeigen wir dir verständlich, welche Daten wir wozu und wie lange speichern, und bitten um deine Einwilligung. Ohne sie kannst du ElTouro nicht nutzen. Wir speichern als Nachweis, dass und wann du eingewilligt hast (Zeitpunkt und Fassung des Textes). Du kannst die Einwilligung jederzeit unter Profil → „Meine Daten“ widerrufen; danach kannst du ElTouro erst wieder nutzen, wenn du erneut einwilligst. Wenn wir ändern, was wir speichern, fragen wir erneut.
+
+**Datenexport:** Unter Profil → „Meine Daten“ kannst du alles, was wir zu deinem Konto speichern, als ZIP-Datei (JSON, maschinenlesbar) herunterladen – Art. 15 und 20 DSGVO.
 
 ## 5. Was andere Nutzer von dir sehen
 
@@ -122,6 +126,8 @@ Eine Tour besteht aus den Wegpunkten, die du auf der Karte setzt, und der daraus
 **Namensvorschlag:** Damit der Planer Name und Beschreibung für deine Tour vorschlagen kann, schickt unser Server Punkte innerhalb der Strecke – die Mitte, bei Touren ab 10 km auch die beiden Viertelpunkte, jeweils auf etwa 100 Meter gerundet – an den Ortsnamen-Dienst Nominatim der OpenStreetMap Foundation (Vereinigtes Königreich) und erhält die Namen der Ortsteile zurück. Start und Ziel der Tour, deine IP-Adresse und dein Konto werden dabei nicht übermittelt. Das Ergebnis speichern wir zwischen, damit derselbe Punkt nicht erneut abgefragt wird. Für das Vereinigte Königreich gilt ein Angemessenheitsbeschluss der EU-Kommission. Rechtsgrundlage ist unser berechtigtes Interesse an einer bequemen Tourenplanung (Art. 6 Abs. 1 lit. f DSGVO). Den Vorschlag kannst du jederzeit überschreiben.
 
 **Ortssuche:** Wenn du im Planer nach einem Ort oder einer Adresse suchst, schickt unser Server deinen Suchbegriff an denselben Dienst (Nominatim) und zeigt dir die Treffer an. Deine IP-Adresse und dein Konto werden dabei nicht übermittelt; den Suchbegriff und die Treffer speichern wir bis zu 30 Tage zwischen, damit dieselbe Suche nicht erneut geschickt wird. Rechtsgrundlage ist unser berechtigtes Interesse an einer bequemen Tourenplanung (Art. 6 Abs. 1 lit. f DSGVO).
+
+**Link zu Google Maps:** Die Wegpunktliste im Planer zeigt die Koordinaten jedes Punktes mit einem Link zu Google Maps. Er öffnet in einem neuen Fenster und nur, wenn du ihn anklickst – dann erhält Google die Koordinaten und deine IP-Adresse und verarbeitet sie nach eigenen Datenschutzregeln. Ohne Klick wird nichts übertragen.
 
 **Namen der Wegpunkte:** Damit die Wegpunktliste im Planer Straße und Hausnummer zeigt, schickt unser Server die Koordinaten deiner Wegpunkte – auch Start und Ziel – auf etwa 10 Meter gerundet an Nominatim und erhält die Adresse zurück. Deine IP-Adresse und dein Konto werden dabei nicht übermittelt, gespeichert werden die Adressen nur als Zwischenspeicher pro Koordinate (bis zu 90 Tage), nicht an deiner Tour. Rechtsgrundlage ist unser berechtigtes Interesse an einer bequemen Tourenplanung (Art. 6 Abs. 1 lit. f DSGVO).
 
@@ -173,7 +179,7 @@ Zur Absicherung gegen Datenverlust erstellen wir regelmäßig Sicherungskopien d
 
 ## 13. Deine Rechte
 
-Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21). Schreib uns dafür einfach an {{operator_email}}.
+Du hast das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21). Auskunft, Datenübertragbarkeit und Löschung erledigst du selbst und sofort unter Profil → „Meine Daten“ (Export als ZIP, Konto löschen); für alles andere schreib uns einfach an {{operator_email}}.
 
 Außerdem kannst du dich bei einer Datenschutz-Aufsichtsbehörde beschweren, zum Beispiel bei der Aufsichtsbehörde deines Wohnorts oder bei der für uns zuständigen: {{supervisory_authority}}.
 
@@ -211,7 +217,11 @@ We send emails with one-time links to confirm your address and reset your passwo
 
 **Invitations:** If you join ElTouro through an invite link, a shared route link or a crew invitation, we store at sign-up through whom or which crew or route you came and how the link was shared (for example WhatsApp or email – this is a marker in our own links, there is no third-party tracking). Until you sign up, only your session remembers it. We also store what you do on ElTouro as events (such as account confirmed, route created, link shared). Points, ranks and badges will be derived from them; your rank will then be shown to all logged-in users. Whoever invited you only sees how many riders joined through their links, not who. Your profile shows through whom you joined. Legal basis: the user agreement (Art. 6(1)(b) GDPR) and, for detecting abuse, our legitimate interest (Art. 6(1)(f) GDPR).
 
-We keep your account data as long as your account exists. To delete your account, email {{operator_email}}; we’ll delete it within 30 days, and your forum and crew posts will be anonymised or deleted.
+We keep your account data as long as your account exists. You can delete your account yourself at any time under Profile → “My data”. Profile, profile photo, sign-in data, routes, recordings, memberships, reactions and your ride sign-ups are then gone immediately and for good. Posts in the forum and crew talk disappear with their topic if nobody replied; otherwise the place stays as “Deleted”, without your name and without your text, so the replies of others remain understandable. Routes that other riders’ rides are planned on stay without description, without link and without any reference to you. Your own rides without other participants are deleted, upcoming ones with participants are cancelled (mail to the participants). You get a confirmation by mail.
+
+**Consent at the start of use:** Before you can use ElTouro we show you in plain words which data we store, what for and how long, and ask for your consent. Without it you cannot use ElTouro. As proof we store that and when you consented (time and version of the text). You can withdraw your consent at any time under Profile → “My data”; after that you can only use ElTouro again once you consent anew. If we change what we store, we ask again.
+
+**Data export:** Under Profile → “My data” you can download everything we store about your account as a ZIP file (JSON, machine-readable) – Art. 15 and 20 GDPR.
 
 ## 5. What other users see
 
@@ -226,6 +236,8 @@ A route consists of the waypoints you set on the map and the calculated track. W
 **Name suggestions:** So the planner can suggest a name and description for your route, our server sends points inside the track – the middle and, for routes from 10 km, the two quarter points, each rounded to about 100 metres – to the place-name service Nominatim of the OpenStreetMap Foundation (United Kingdom) and receives the names of the neighbourhoods. Start and finish of the route, your IP address and your account are not transmitted. We cache the result so the same point is not looked up again. The United Kingdom is covered by an adequacy decision of the European Commission. Legal basis: our legitimate interest in convenient route planning (Art. 6(1)(f) GDPR). You can overwrite the suggestion at any time.
 
 **Place search:** When you search for a place or address in the planner, our server sends your search term to the same service (Nominatim) and shows you the hits. Your IP address and account are not transmitted; we cache the search term and its hits for up to 30 days so the same search is not sent again. Legal basis: our legitimate interest in convenient route planning (Art. 6(1)(f) GDPR).
+
+**Link to Google Maps:** The waypoint list in the planner shows each point's coordinates with a link to Google Maps. It opens in a new window and only when you click it – Google then receives the coordinates and your IP address and processes them under its own privacy rules. Nothing is transmitted without a click.
 
 **Waypoint names:** So the planner's waypoint list can show street and house number, our server sends the coordinates of your waypoints – including start and finish – rounded to about 10 metres to Nominatim and receives the address. Your IP address and account are not transmitted; the addresses are only cached per coordinate (up to 90 days), not stored with your route. Legal basis: our legitimate interest in convenient route planning (Art. 6(1)(f) GDPR).
 
@@ -271,7 +283,7 @@ We regularly back up the database on our web space. Only the most recent backups
 
 ## 13. Your rights
 
-You have the right of access, rectification, erasure, restriction, data portability and objection (Art. 15–18, 20, 21 GDPR). Just email {{operator_email}}. You can also complain to a data protection authority, e.g. the one where you live or ours: {{supervisory_authority}}.
+You have the right of access, rectification, erasure, restriction, data portability and objection (Art. 15–18, 20, 21 GDPR). Access, portability and erasure you can do yourself, immediately, under Profile → “My data” (export as ZIP, delete account); for everything else just email {{operator_email}}. You can also complain to a data protection authority, e.g. the one where you live or ours: {{supervisory_authority}}.
 
 Last updated: {{updated}}. This translation is provided for convenience; the German version is legally binding.
 TXT,
@@ -331,7 +343,7 @@ Wir haften unbeschränkt bei Vorsatz und grober Fahrlässigkeit sowie für Schä
 
 ## 8. Konto beenden
 
-Du kannst dein Konto jederzeit löschen lassen (Mail an {{operator_email}}). Wir können den Nutzungsvertrag mit einer Frist von zwei Wochen kündigen und bei schweren Verstößen sofort.
+Du kannst dein Konto jederzeit selbst löschen (Profil → „Meine Daten“). Wir können den Nutzungsvertrag mit einer Frist von zwei Wochen kündigen und bei schweren Verstößen sofort.
 
 ## 9. Änderungen
 
@@ -374,7 +386,7 @@ We are fully liable for intent and gross negligence and for injury to life, body
 
 ## 8. Ending your account
 
-You can have your account deleted at any time ({{operator_email}}). We may terminate with two weeks’ notice, and immediately for serious violations.
+You can delete your account yourself at any time (Profile → “My data”). We may terminate with two weeks’ notice, and immediately for serious violations.
 
 ## 9. Changes and final provisions
 

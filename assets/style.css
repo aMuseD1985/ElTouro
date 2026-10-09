@@ -278,7 +278,13 @@ details summary { cursor: pointer; }
 .waypoint-list li.is-selected { background: #FBF4E4; }
 .waypoint-list .wp-pin { flex: none; cursor: default; }
 .waypoint-list .wp-main { flex: 1; display: flex; flex-direction: column; align-items: flex-start; text-align: left; text-decoration: none; }
-.waypoint-list .wp-main small { color: #46566C; font-weight: 400; }
+.waypoint-list .wp-main { min-width: 0; }
+.waypoint-list .wp-name { text-align: left; text-decoration: none; }
+.waypoint-list .wp-sub { display: flex; align-items: center; justify-content: space-between; gap: .6rem; width: 100%; flex-wrap: wrap; }
+.waypoint-list .wp-leg { color: #46566C; font-weight: 400; font-size: .85rem; text-decoration: none; text-align: left; min-height: 0; padding: .1rem 0; }
+.waypoint-list .wp-name { min-height: 0; padding: .15rem 0; }
+.waypoint-list .wp-coords { margin-left: auto; font-size: .72rem; color: #5B6B80; font-variant-numeric: tabular-nums; white-space: nowrap; text-decoration: none; padding: .1rem 0; }
+.waypoint-list .wp-coords:hover, .waypoint-list .wp-coords:focus { color: var(--denim); text-decoration: underline; }
 .waypoint-list li > .link:not(.wp-main) { flex: none; min-width: 32px; min-height: 32px; text-decoration: none; }
 
 /* Ride mode: full screen over the page – map, next manoeuvre on top, figures and controls at the bottom */
@@ -404,3 +410,14 @@ html:not(.allow-select) body.app-ui :is([contenteditable], pre, code, .post-text
 /* Map style switcher (assets/map_styles.js). Without a dark tile set the normal map is inverted; the hue turn keeps water blue */
 .map-invert .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.92) saturate(.75); }
 .map-style-control select { border: 0; border-radius: 4px; padding: .35rem .4rem; font: inherit; font-size: .85rem; background: #fff; color: var(--night); max-width: 11rem; cursor: pointer; }
+
+/* Consent page, data export and deletion */
+.consent-item { border-top: 1px solid #D5DCE5; padding: .6rem 0; }
+.consent-item h2 { margin: 0 0 .3rem; font-size: 1.15rem; }
+.consent-item dl { margin: 0; display: grid; grid-template-columns: 6.5rem 1fr; gap: .25rem .8rem; }
+.consent-item dt { font-weight: 700; color: var(--denim); }
+.consent-item dd { margin: 0; }
+.consent-form { border-top: 2px solid var(--night); padding-top: 1rem; }
+.consent-buttons { display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; margin-top: 1rem; }
+a.secondary-submit { display: inline-flex; align-items: center; text-decoration: none; }
+@media (max-width: 600px) { .consent-item dl { grid-template-columns: 1fr; } .consent-item dt { margin-top: .3rem; } }

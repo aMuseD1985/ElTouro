@@ -80,7 +80,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
 
   <div class="ride-done" id="ride-done" hidden>
     <div class="ride-done-box">
-      <img class="ride-done-mascot" src="/assets/img/mascot/look-back-large.webp" alt="">
+      <img class="ride-done-mascot" src="/assets/img/mascot/look-back-large.webp?v=2" alt="">
       <h2 id="ride-done-title"></h2>
       <p id="ride-done-text"></p>
       <p><a class="btn" href="/tour/<?= (int)$tour['id'] ?>"><?= te('nav.back_to_tour') ?></a></p>
@@ -88,5 +88,6 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
   </div>
 </div>
 <script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
-<script src="/assets/navigate.js?v=13"></script>
+<script src="/assets/voice.js?v=1"></script>
+<script src="/assets/navigate.js?v=16"></script>
 <?php pageFooter();

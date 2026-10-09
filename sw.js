@@ -4,11 +4,11 @@
    Map tiles of the known providers are kept on the device (up to TILE_MAX, refreshed after TILE_DAYS) – faster maps,
    fewer requests, and a map on the road with a weak signal. Only on the device: MapTiler forbids caching on our server. */
 'use strict';
-var CACHE = 'eltouro-shell-3';
+var CACHE = 'eltouro-shell-4';
 var TILES = 'eltouro-tiles-1';
 var TILE_MAX = 5000;
 var TILE_DAYS = 30;
-var PRECACHE = ['/offline.html', '/assets/style.css', '/assets/img/icon-192.png', '/assets/img/mascot/side-large.webp', '/assets/img/mascot/front.webp'];
+var PRECACHE = ['/offline.html', '/assets/style.css', '/assets/img/icon-192.png', '/assets/img/mascot/side-large.webp?v=2', '/assets/img/mascot/front.webp?v=2'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(PRECACHE); }).then(function () { return self.skipWaiting(); }));

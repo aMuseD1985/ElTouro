@@ -22,5 +22,5 @@ pageHeader(t('live.title'));
      data-texts="<?= e(json_encode($texts, JSON_UNESCAPED_UNICODE)) ?>"></div>
 <p id="live-status" class="muted" role="status" aria-live="polite"></p>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/live_map.js?v=2"></script>
+<script src="/assets/live_map.js?v=3"></script>
 <?php pageFooter();

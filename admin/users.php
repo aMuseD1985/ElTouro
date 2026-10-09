@@ -29,7 +29,7 @@ if (isPost()) {
 $q = mb_substr(trim((string)($_GET['q'] ?? '')), 0, 100);
 $like = '%' . addcslashes($q, '%_\\') . '%';
 $list = dbAll("SELECT id, email, display_name, is_admin, status, email_verified_at, created_at, avatar_version FROM users
-                WHERE ? = '' OR email LIKE ? OR display_name LIKE ? ORDER BY created_at DESC LIMIT 100", [$q, $like, $like]);
+                WHERE email <> ? AND (? = '' OR email LIKE ? OR display_name LIKE ? ) ORDER BY created_at DESC LIMIT 100", [DELETED_USER_EMAIL, $q, $like, $like]);
 
 function actionButton(int $id, string $action, string $label): string
 {

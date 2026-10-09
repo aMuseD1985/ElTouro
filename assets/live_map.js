@@ -13,7 +13,7 @@
   function riderIcon(r) {
     var box = document.createElement('div');
     box.className = 'live-rider';
-    var img = document.createElement('img'); img.src = '/assets/img/mascot/front.webp'; img.alt = '';
+    var img = document.createElement('img'); img.src = '/assets/img/mascot/front.webp?v=2'; img.alt = '';
     var label = document.createElement('span');
     label.textContent = r.name + (r.crew ? ' · ' + r.crew : '');
     box.appendChild(img); box.appendChild(label);

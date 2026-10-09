@@ -110,13 +110,13 @@
   map.on('load', function () {
     var round = { 'line-cap': 'round', 'line-join': 'round' };
     map.addSource('route', { type: 'geojson', data: gj });
-    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: round, paint: { 'line-color': '#14263F', 'line-width': 8, 'line-opacity': 0.3 } });
+    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: round, paint: { 'line-color': '#14263F', 'line-width': 8, 'line-opacity': 0.45 } });
     map.addLayer({ id: 'route', type: 'line', source: 'route', layout: round, filter: ['!=', ['get', 'freehand'], true],
-                   paint: { 'line-color': '#2F5E8C', 'line-width': 5 } });
+                   paint: { 'line-color': '#E6BE62', 'line-width': 5 } });   // ahead: sand yellow
     map.addLayer({ id: 'route-free', type: 'line', source: 'route', filter: ['==', ['get', 'freehand'], true],
                    paint: { 'line-color': '#A3261B', 'line-width': 5, 'line-dasharray': [1.5, 1.5] } });
     map.addSource('done', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } } });
-    map.addLayer({ id: 'done', type: 'line', source: 'done', layout: round, paint: { 'line-color': '#8A96A8', 'line-width': 5 } });
+    map.addLayer({ id: 'done', type: 'line', source: 'done', layout: round, paint: { 'line-color': '#3779B8', 'line-width': 5 } });   // ridden: blue
     ready = true;
   });
 
@@ -155,7 +155,7 @@
   }
   function placeRider(pos, heading, lean) {
     var sprite = spriteFor(heading, lean || 0);
-    if (sprite !== riderSprite) { riderSprite = sprite; riderImg.src = '/assets/img/mascot/' + sprite + '.webp'; }
+    if (sprite !== riderSprite) { riderSprite = sprite; riderImg.src = '/assets/img/mascot/' + sprite + '.webp?v=2'; }
     if (!rider) rider = new maplibregl.Marker({ element: riderEl, anchor: 'bottom', rotationAlignment: 'viewport', pitchAlignment: 'viewport' })
       .setLngLat([pos[1], pos[0]]).addTo(map);
     rider.setLngLat([pos[1], pos[0]]);
@@ -205,30 +205,16 @@
   }
   function shownDistance(m) { return m >= 1000 ? fmt(m / 1000, 1) + ' km' : (m >= 100 ? Math.round(m / 10) * 10 : Math.round(m)) + ' m'; }
 
-  var voiceOn = true;
-  var voice = null;
-  function pickVoice() {
-    if (voice || !window.speechSynthesis) return voice;
-    var vs = speechSynthesis.getVoices().filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf(d.lang) === 0; });
-    voice = vs.filter(function (v) { return /premium|enhanced|neural|google/i.test(v.name); })[0] || vs[0] || null;
-    return voice;
-  }
-  if (window.speechSynthesis) speechSynthesis.onvoiceschanged = function () { voice = null; pickVoice(); };
+  // Recorded bull voice if clips exist, the device voice otherwise (assets/voice.js)
+  var voice = ElTouroVoice.create({ lang: d.lang, locale: LOCALE });
   var subtitleTimer = null;
-  // queue: wait for the current prompt instead of cutting it off (a stop right after a turn)
-  function say(text, queue) {
+  // queue: wait for the current prompt instead of cutting it off (a stop right after a turn); cue: sound played first
+  function say(text, queue, cue) {
     ui.subtitle.textContent = text;
     ui.subtitle.hidden = false;
     clearTimeout(subtitleTimer);
     subtitleTimer = setTimeout(function () { ui.subtitle.hidden = true; }, 5000);
-    if (!voiceOn || !window.speechSynthesis) return;
-    if (!queue) speechSynthesis.cancel();
-    var u = new SpeechSynthesisUtterance(text);
-    u.lang = LOCALE;
-    var v = pickVoice();
-    if (v) u.voice = v;
-    u.rate = 1.05;
-    speechSynthesis.speak(u);
+    voice.say(text, queue, cue);
   }
   function hintText(h, prefix) {
     if (h.kind === 'stop') {
@@ -241,7 +227,7 @@
 
   // ---------------------------------------------------------------- following the track
   var state = { along: 0, seg: 0, off: 0, offRoute: false, halfway: false, arrived: false, lastSpeedWarn: 0, running: false };
-  if (/[?&]debug=1/.test(location.search)) window.__nav = { hints: hints, state: state, total: total };   // for testing only
+  if (/[?&]debug=1/.test(location.search)) window.__nav = { hints: hints, state: state, total: total, voice: voice };   // for testing only
 
   // Nearest point of the track to p, searched around the last position (a loop crosses itself – don't jump ahead)
   function project(p, wide) {
@@ -265,9 +251,9 @@
     if (m.d > 60) { var w = project(p, true); if (w.d < m.d) m = w; }   // after a long detour
     var limit = Math.max(35, Math.min(80, (fix.acc || 10) * 1.5));
     if (m.d > limit) {
-      if (++state.off >= 3 && !state.offRoute) { state.offRoute = true; say(T.offroute); }
+      if (++state.off >= 3 && !state.offRoute) { state.offRoute = true; say(T.offroute, false, 'offroute'); }
     } else {
-      if (state.offRoute) say(T.back);
+      if (state.offRoute) say(T.back, false, 'back');
       state.off = 0; state.offRoute = false;
       state.along = m.along; state.seg = m.seg;
     }
@@ -301,10 +287,10 @@
 
   function guide(speedMs, fix) {
     var left = total - state.along;
-    if (!state.arrived && left < 25) { state.arrived = true; say(T.arrive); finish(true); return; }
+    if (!state.arrived && left < 25) { state.arrived = true; say(T.arrive, false, 'arrive'); finish(true); return; }
     if (!state.halfway && state.along > total / 2 && total > 4000) {
       state.halfway = true;
-      say(T.halfway.replace('{km}', fmt(left / 1000, 1)));
+      say(T.halfway.replace('{km}', Math.max(1, Math.round(left / 1000))), false, 'halfway');
     }
     var next = null, nextIdx = -1;
     for (var k = 0; k < hints.length; k++) if (hints[k].at > state.along + 3) { next = hints[k]; nextIdx = k; break; }
@@ -323,7 +309,7 @@
       } else if (!next.saidNow && togo <= Math.max(30, 6 * v)) {
         next.saidNow = next.saidFar = true;
         coverFollowing(nextIdx, 'saidNow');
-        say(hintText(next, 'now'), next.kind === 'stop');
+        say(hintText(next, 'now'), next.kind === 'stop', next.kind === 'stop' ? 'stop' : 'turn');
       }
     } else {
       ui.arrow.textContent = '🏁'; ui.arrow.style.transform = 'none';
@@ -342,12 +328,12 @@
       // ...and are announced on arrival even when a turn sits on the same spot (a via point at the end of a cul-de-sac)
       if (!h.saidNow && ahead <= Math.max(30, 6 * v) && ahead > -50) {
         h.saidNow = h.saidFar = true;
-        say(hintText(h, 'now'), true);
+        say(hintText(h, 'now'), true, 'stop');
       }
     }
     if (!SIM && fix.speedMs != null && fix.speedMs * 3.6 > LEGAL_KMH + 4 && Date.now() - state.lastSpeedWarn > 120000) {
       state.lastSpeedWarn = Date.now();
-      say(T.speed);
+      say(T.speed, false, 'speed');
     }
   }
 
@@ -421,7 +407,7 @@
   function otherMarker(r) {
     var box = document.createElement('div');
     box.className = 'live-rider';
-    var img = document.createElement('img'); img.src = '/assets/img/mascot/front.webp'; img.alt = '';
+    var img = document.createElement('img'); img.src = '/assets/img/mascot/front.webp?v=2'; img.alt = '';
     var label = document.createElement('span');
     box.appendChild(img); box.appendChild(label);
     return { el: box, label: label, marker: new maplibregl.Marker({ element: box, anchor: 'bottom' }) };
@@ -496,7 +482,9 @@
     keepAwake();
     follow = true;
     // The first utterance must come from this click – browsers (iOS in particular) only allow speech after a gesture
-    say((SIM ? T.start_sim : T.start).replace('{km}', fmt(total / 1000, 1)) + (hints.length ? '' : ' ' + T.no_hints));
+    voice.unlock();
+    say((SIM ? T.start_sim : T.start).replace('{km}', Math.max(1, Math.round(total / 1000))), false, 'start');
+    if (!hints.length) say(T.no_hints, true);
     if (SIM) startSim();
     else {
       if (ui.record && ui.record.checked) record = new Recorder();
@@ -508,11 +496,11 @@
   });
   ui.stop.addEventListener('click', function () { finish(false); });
   ui.voice.addEventListener('click', function () {
-    voiceOn = !voiceOn;
+    var voiceOn = ui.voice.getAttribute('aria-pressed') !== 'true';
+    voice.setOn(voiceOn);
     ui.voice.textContent = voiceOn ? '🔊' : '🔇';
     ui.voice.setAttribute('aria-pressed', voiceOn ? 'true' : 'false');
     ui.voice.title = voiceOn ? T.voice_on : T.voice_off;
-    if (!voiceOn && window.speechSynthesis) speechSynthesis.cancel();
   });
   ui.follow.addEventListener('click', function () {
     follow = true;

@@ -33,6 +33,8 @@ if (isPost()) {
 $p = dbOne('SELECT bio, home_region FROM user_profiles WHERE user_id = ?', [$me['id']]) ?? ['bio' => '', 'home_region' => ''];
 $avatarVersion = dbOne('SELECT avatar_version FROM users WHERE id = ?', [$me['id']])['avatar_version'] ?? null;
 $google = dbOne("SELECT email FROM user_identities WHERE provider = 'google' AND user_id = ?", [$me['id']]);
+$consentRow = dbOne('SELECT consent_version, consent_at FROM users WHERE id = ?', [$me['id']]);
+require_once __DIR__ . '/rides_lib.php';
 $inviteUrl = inviteUrl(userInviteCode((int)$me['id']));
 $brought = confirmedReferralCount((int)$me['id']);
 $cameVia = dbOne('SELECT r.source, u.display_name FROM referrals r LEFT JOIN users u ON u.id = r.referrer_user_id AND u.status = \'active\' WHERE r.user_id = ?', [$me['id']]);
@@ -77,6 +79,21 @@ pageHeader(t('profile.title'));
   <label class="check"><input type="checkbox" id="allow-select"> <?= te('profile.allow_select') ?></label>
   <p class="hint"><?= te('profile.allow_select_hint') ?></p>
 </details>
+
+<section class="panel narrow" id="data">
+  <h2><?= te('privacy.heading') ?></h2>
+  <p><?= te('privacy.intro') ?></p>
+  <?php if ($consentRow && (int)$consentRow['consent_version'] > 0): ?>
+    <p class="muted"><?= te('privacy.consent_line', ['when' => formatRideTime((string)$consentRow['consent_at']), 'version' => (int)$consentRow['consent_version']]) ?>
+      <a href="/consent"><?= te('privacy.consent_open') ?></a></p>
+  <?php endif; ?>
+  <form method="post" action="/account/export">
+    <?= csrfField() ?>
+    <button type="submit" class="secondary-submit"><?= te('privacy.export') ?></button>
+    <p class="hint"><?= te('privacy.export_hint') ?></p>
+  </form>
+  <p><a class="danger" href="/account/delete"><?= te('privacy.delete') ?></a><br><span class="hint"><?= te('privacy.delete_hint') ?></span></p>
+</section>
 
 <section class="panel narrow" id="invite">
   <h2><?= te('invite.title') ?></h2>

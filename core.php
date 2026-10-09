@@ -4,6 +4,11 @@
  */
 declare(strict_types=1);
 
+// Bump when what we store or why changes: everybody is then asked for consent again (consent.php)
+const CONSENT_VERSION = 1;
+// Stand-in author for content that stays after an account is deleted (see account_data_lib.php)
+const DELETED_USER_EMAIL = 'deleted-user@eltouro.invalid';
+
 // $CONFIG is loaded and checked in bootstrap.php
 
 const LANGUAGES = ['de', 'en'];
@@ -247,7 +252,7 @@ function sendSecurityHeaders(): void
     }
     $tileSrc = implode('', $hosts);
     // Leaflet loads tiles as images, MapLibre (ride mode) and the service worker fetch them; MapLibre decodes via blob:
-    header("Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:$tileSrc; style-src 'self' 'unsafe-inline'; font-src 'self'; "
+    header("Content-Security-Policy: default-src 'self'; img-src 'self' data: blob:$tileSrc; style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'self' blob: data:; "
          . "script-src 'self'; worker-src 'self'; connect-src 'self'$tileSrc; form-action 'self'; frame-ancestors 'none'; base-uri 'self'");
 }
 
@@ -260,8 +265,16 @@ function currentUser(): ?array
         $user = null;
         $id = (int)($_SESSION['uid'] ?? 0);
         if ($id > 0) {
-            $user = dbOne("SELECT id, email, display_name, locale, is_admin FROM users
-                            WHERE id = ? AND status = 'active' AND email_verified_at IS NOT NULL", [$id]);
+            try {
+                $user = dbOne("SELECT id, email, display_name, locale, is_admin, consent_version FROM users
+                                WHERE id = ? AND status = 'active' AND email_verified_at IS NOT NULL", [$id]);
+            } catch (PDOException $ex) {   // migration for consent_version has not run yet: do not lock anybody out meanwhile
+                $user = dbOne("SELECT id, email, display_name, locale, is_admin FROM users
+                                WHERE id = ? AND status = 'active' AND email_verified_at IS NOT NULL", [$id]);
+                if ($user !== null) {
+                    $user['consent_version'] = CONSENT_VERSION;
+                }
+            }
             if ($user === null) {
                 unset($_SESSION['uid']);
             }
@@ -542,7 +555,7 @@ function pageHeader(string $title, array $meta = []): void
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/assets/app-pref.js?v=1"></script>
 <script src="/assets/map_styles.js?v=1"></script>
-<link rel="stylesheet" href="/assets/style.css?v=22">
+<link rel="stylesheet" href="/assets/style.css?v=25">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>
@@ -603,3 +616,31 @@ foreach (['install_title', 'install_text', 'install_button', 'later', 'ios_text'
 </html>
 <?php
 }
+
+/**
+ * Nobody takes part before consenting to what we store and why (consent.php). Runs on every request of a logged-in
+ * rider; pages that must stay reachable (consent, logout, legal texts, shared tours, export/deletion) define
+ * NO_CONSENT_NEEDED before requiring bootstrap.php. Scripts get a 403 as JSON instead of a redirect.
+ */
+function consentGate(): void
+{
+    if (PHP_SAPI === 'cli' || defined('NO_CONSENT_NEEDED') || defined('SKIP_ACCESS_GATE')) {
+        return;
+    }
+    $u = currentUser();
+    if ($u === null || (int)($u['consent_version'] ?? 0) >= CONSENT_VERSION) {
+        return;
+    }
+    $uri = (string)($_SERVER['REQUEST_URI'] ?? '/');
+    $path = (string)parse_url($uri, PHP_URL_PATH);
+    if (str_starts_with($path, '/api/') || str_starts_with($path, '/avatar/') || str_contains((string)($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')
+        || isset($_SERVER['HTTP_X_CSRF'])) {
+        http_response_code(403);
+        header('Content-Type: application/json; charset=utf-8');
+        exit(json_encode(['error' => 'consent']));
+    }
+    $next = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && str_starts_with($uri, '/') && !str_starts_with($uri, '//') ? '?next=' . rawurlencode($uri) : '';
+    redirect('/consent' . $next);
+}
+
+consentGate();
