@@ -4,6 +4,7 @@ Der Fahrmodus (`assets/navigate.js`) spricht über `assets/voice.js`:
 
 1. **Aufgenommene Clips** (`assets/voice/<de|en>/<id>.mp3` + `manifest.json`) – wenn zu einem Satz ein Clip da ist, wird er abgespielt.
 2. **Sonst die Gerätestimme** (Web Speech API, `speechSynthesis`) – das ist die Stimme des Handys und nicht einstellbar.
+   Die App nimmt dafür bevorzugt männliche Stimmen (Rocko, Eddy, Reed, Conrad, Markus … je nachdem, was das Gerät hat), spricht etwas zackiger und tiefer, und im Fahrmodus wechselt der Knopf 🎙 durch die vorhandenen Stimmen (gemerkt in `localStorage`).
    Sie bleibt Rückfall für Pausennamen („Pause bei Café Müller“), Touren über 60 km und alles ohne Clip.
 
 Ohne `manifest.json` ändert sich nichts. Clips lassen sich satzweise nachliefern.

@@ -502,6 +502,19 @@
     ui.voice.setAttribute('aria-pressed', voiceOn ? 'true' : 'false');
     ui.voice.title = voiceOn ? T.voice_on : T.voice_off;
   });
+  // Cycle through the device's voices (male ones first); the rider hears a sample line with each
+  var pickBtn = document.getElementById('ride-voice-pick');
+  if (pickBtn) {
+    var showPick = function () { pickBtn.hidden = voice.voiceCount() < 2; };
+    showPick();
+    if (window.speechSynthesis) speechSynthesis.addEventListener('voiceschanged', showPick);
+    pickBtn.addEventListener('click', function () {
+      var name = voice.cycleVoice();
+      if (!name) return;
+      if (window.elToast) window.elToast(T.voice_changed.replace('{name}', name));
+      say(T.voice_sample);
+    });
+  }
   ui.follow.addEventListener('click', function () {
     follow = true;
     if (lastPos) camera(lastPos, lastHeading, false);

@@ -29,13 +29,34 @@
       })
       .catch(function () { /* no recorded voice: device voice only */ });
 
+    // Male voices first (the bull is a guy), cheeky ones at the top; the rider can cycle through them (cycleVoice)
+    var MALE = /rocko|eddy|reed|grandpa|conrad|markus|yannick|viktor|stefan|jonas|florian|daniel|thomas|martin|\balex\b|fred|ralph|albert|junior|oliver|arthur|\bguy\b|ryan|george|david|mark\b|james|male|männlich/i;
+    var FEMALE = /anna|petra|helena|sandy|shelley|\bflo\b|grandma|katja|marlene|vicki|hedda|amala|female|weiblich|samantha|kathy|linda|zira|susan|karen|moira|fiona|tessa|ava|allison|carmit|hanna/i;
+    var CHEEKY = ['rocko', 'eddy', 'reed', 'conrad', 'markus', 'yannick', 'viktor', 'stefan', 'daniel', 'arthur', 'guy', 'ryan'];
+    var KEY = 'eltouro.voice';
+    function candidates() {
+      if (!window.speechSynthesis) return [];
+      var vs = speechSynthesis.getVoices().filter(function (v) { return v.lang && v.lang.toLowerCase().replace('_', '-').indexOf(lang) === 0; });
+      function score(v) {
+        var n = v.name.toLowerCase(), s = 0, c = -1;
+        if (MALE.test(n) && !FEMALE.test(n)) s += 100;
+        else if (FEMALE.test(n)) s -= 50;
+        CHEEKY.forEach(function (k, i) { if (c < 0 && n.indexOf(k) >= 0) c = i; });
+        if (c >= 0) s += 40 - c;
+        if (/premium|enhanced|neural|natural/i.test(n)) s += 15;
+        if (/google/i.test(n)) s += 5;
+        return s;
+      }
+      return vs.sort(function (a, b) { return score(b) - score(a); });
+    }
+    function isMale(v) { return !!v && MALE.test(v.name) && !FEMALE.test(v.name); }
     function pickVoice() {
-      if (voice || !window.speechSynthesis) return voice;
-      var vs = speechSynthesis.getVoices().filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf(lang) === 0; });
-      voice = vs.filter(function (v) { return /premium|enhanced|neural|google/i.test(v.name); })[0] || vs[0] || null;
+      var list = candidates(), saved = null;
+      try { saved = localStorage.getItem(KEY); } catch (e) { /* ignore */ }
+      voice = list.filter(function (v) { return v.name === saved; })[0] || list[0] || null;
       return voice;
     }
-    if (window.speechSynthesis) speechSynthesis.onvoiceschanged = function () { voice = null; pickVoice(); };
+    if (window.speechSynthesis) speechSynthesis.onvoiceschanged = function () { voice = null; };
 
     function blobFor(url) {
       if (blobs[url]) return Promise.resolve(blobs[url]);
@@ -64,9 +85,10 @@
         if (!window.speechSynthesis || myGen !== gen) return resolve();
         var u = new SpeechSynthesisUtterance(text);
         u.lang = locale;
-        var v = pickVoice();
+        var v = voice || pickVoice();
         if (v) u.voice = v;
-        u.rate = 1.05;
+        u.rate = 1.08;                       // a bit brisk
+        u.pitch = isMale(v) ? 0.9 : 1;       // and a bit gravelly
         var t = setTimeout(resolve, 20000);
         u.onend = u.onerror = function () { clearTimeout(t); resolve(); };
         speechSynthesis.speak(u);
@@ -115,6 +137,16 @@
         try { player.pause(); } catch (e) { /* ignore */ }
         if (window.speechSynthesis) speechSynthesis.cancel();
       },
+      /** Next voice of this language (male ones first); returns its name, null if there is no choice. */
+      cycleVoice: function () {
+        var list = candidates();
+        if (list.length < 2) return null;
+        var cur = voice || pickVoice(), i = list.indexOf(cur);
+        voice = list[(i + 1) % list.length];
+        try { localStorage.setItem(KEY, voice.name); } catch (e) { /* ignore */ }
+        return voice.name.replace(/\s*\(.*\)\s*$/, '');
+      },
+      voiceCount: function () { return candidates().length; },
       setOn: function (v) { on = !!v; if (!on) this.cancel(); },
       hasClips: function () { return ready.then(function () { return Object.keys(clips).length > 0; }); }
     };

@@ -15,7 +15,7 @@ if ($tour === null || !canSeeTour($tour, (int)$me['id'])) {
 }
 
 $keys = ['start', 'start_sim', 'arrive', 'halfway', 'offroute', 'back', 'speed', 'gps_wait', 'gps_error', 'gps_denied', 'wakelock',
-         'in_m', 'in_km', 'now', 'remaining', 'eta_min', 'eta_h', 'speed_unit', 'sim_clock', 'follow', 'voice_on', 'voice_off',
+         'in_m', 'in_km', 'now', 'remaining', 'eta_min', 'eta_h', 'speed_unit', 'sim_clock', 'follow', 'voice_on', 'voice_off', 'voice_pick', 'voice_changed', 'voice_sample',
          'view_heading', 'view_3d', 'view_north', 'far_stop', 'now_stop_charge', 'now_stop_food', 'now_stop_break', 'now_stop_sight', 'label_stop', 'done_title', 'done_arrived', 'done_text', 'done_recorded', 'done_not_recorded', 'saving', 'no_hints'];
 foreach (['left', 'slight_left', 'sharp_left', 'right', 'slight_right', 'sharp_right', 'keep_left', 'keep_right', 'uturn',
           'roundabout', 'exit_left', 'exit_right', 'straight'] as $m) {
@@ -70,6 +70,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
       <?php endif; ?>
       <button type="button" id="ride-stop" class="btn secondary" hidden><?= te('nav.stop_button') ?></button>
       <button type="button" id="ride-voice" class="secondary-submit" aria-pressed="true">🔊</button>
+      <button type="button" id="ride-voice-pick" class="secondary-submit" title="<?= te('nav.voice_pick') ?>" aria-label="<?= te('nav.voice_pick') ?>" hidden>🎙</button>
       <button type="button" id="ride-view" class="secondary-submit">➤</button>
       <button type="button" id="ride-style" class="secondary-submit" title="<?= te('map.style_choose') ?>" aria-label="<?= te('map.style_choose') ?>">🗺</button>
       <button type="button" id="ride-follow" class="secondary-submit" title="<?= te('nav.follow') ?>" aria-label="<?= te('nav.follow') ?>">⌖</button>
@@ -88,6 +89,6 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
   </div>
 </div>
 <script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
-<script src="/assets/voice.js?v=1"></script>
-<script src="/assets/navigate.js?v=16"></script>
+<script src="/assets/voice.js?v=2"></script>
+<script src="/assets/navigate.js?v=17"></script>
 <?php pageFooter();
