@@ -8,6 +8,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/tours_lib.php';
 require __DIR__ . '/poi_lib.php';
+require __DIR__ . '/rewards_lib.php';
 $me = requireLogin();
 $tour = loadTour((int)($_GET['id'] ?? 0));
 if ($tour === null || !canSeeTour($tour, (int)$me['id'])) {
@@ -15,7 +16,7 @@ if ($tour === null || !canSeeTour($tour, (int)$me['id'])) {
 }
 
 $keys = ['start', 'start_sim', 'arrive', 'halfway', 'offroute', 'back', 'speed', 'gps_wait', 'gps_error', 'gps_denied', 'wakelock',
-         'in_m', 'in_km', 'now', 'remaining', 'eta_min', 'eta_h', 'speed_unit', 'sim_clock', 'follow', 'voice_on', 'voice_off', 'voice_pick', 'voice_changed', 'voice_sample',
+         'in_m', 'in_km', 'now', 'remaining', 'eta_min', 'eta_h', 'speed_unit', 'sim_clock', 'follow', 'voice_on', 'voice_off', 'voice_pick', 'voice_changed', 'voice_sample', 'share_text', 'link_copied', 'posted', 'post_error', 'post_slow',
          'view_heading', 'view_3d', 'view_north', 'far_stop', 'now_stop_charge', 'now_stop_food', 'now_stop_break', 'now_stop_sight', 'label_stop', 'done_title', 'done_arrived', 'done_text', 'done_recorded', 'done_not_recorded', 'saving', 'no_hints'];
 foreach (['left', 'slight_left', 'sharp_left', 'right', 'slight_right', 'sharp_right', 'keep_left', 'keep_right', 'uturn',
           'roundabout', 'exit_left', 'exit_right', 'straight'] as $m) {
@@ -35,6 +36,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
      data-stops="<?= e(json_encode(array_map(fn($s) => ['lat' => $s['lat'], 'lng' => $s['lng'], 'type' => $s['type'], 'name' => $s['name'] !== '' ? $s['name'] : t('stop.type_' . $s['type'])], tourStops($tour)), JSON_UNESCAPED_UNICODE)) ?>"
      <?= mapData() ?>
      data-csrf="<?= e(csrfToken()) ?>"
+     data-invite="<?= e(inviteUrl(userInviteCode((int)$me['id']))) ?>"
      data-lang="<?= e($LANG) ?>"
      data-tour="<?= (int)$tour['id'] ?>"
      data-sim="<?= $sim ? '1' : '0' ?>"
@@ -105,11 +107,19 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
       <img class="ride-done-mascot" src="/assets/img/mascot/look-back-large.webp?v=2" alt="">
       <h2 id="ride-done-title"></h2>
       <p id="ride-done-text"></p>
+      <div class="after-ride" id="ride-after" hidden>
+        <button type="button" class="btn secondary" id="after-share">📣 <?= te('nav.after_share') ?></button>
+        <div class="after-post" id="after-post" hidden>
+          <select id="after-crew" aria-label="<?= te('nav.after_crew') ?>"></select>
+          <button type="button" class="btn secondary" id="after-post-btn">🐂 <?= te('nav.after_post') ?></button>
+        </div>
+        <p class="hint" id="after-msg" role="status"></p>
+      </div>
       <p><a class="btn" href="/tour/<?= (int)$tour['id'] ?>"><?= te('nav.back_to_tour') ?></a></p>
     </div>
   </div>
 </div>
 <script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
 <script src="/assets/voice.js?v=2"></script>
-<script src="/assets/navigate.js?v=18"></script>
+<script src="/assets/navigate.js?v=19"></script>
 <?php pageFooter();

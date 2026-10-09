@@ -7,6 +7,7 @@
   var d = el.dataset;
   var T = JSON.parse(d.texts || '{}');
   var SIM = d.sim === '1';
+  var rideStartedAt = Date.now();
   var LOCALE = d.lang === 'de' ? 'de-DE' : 'en-GB';
   var CRUISE_KMH = 18;          // planning speed of an e-scooter ride incl. lights and corners
   var LEGAL_KMH = 20;
@@ -482,6 +483,7 @@
     keepAwake();
     follow = true;
     // The first utterance must come from this click – browsers (iOS in particular) only allow speech after a gesture
+    rideStartedAt = Date.now();
     voice.unlock();
     say((SIM ? T.start_sim : T.start).replace('{km}', Math.max(1, Math.round(total / 1000))), false, 'start');
     if (!hints.length) say(T.no_hints, true);
@@ -576,6 +578,39 @@
     }
   }
 
+  // After the ride: share it, post it in a crew's talk (only for real rides, the simulation is no ride)
+  function showAfter(minutes) {
+    var box = document.getElementById('ride-after');
+    if (!box || SIM) return;
+    box.hidden = false;
+    var msg = document.getElementById('after-msg');
+    var km = Math.max(0, state.along / 1000);
+    document.getElementById('after-share').addEventListener('click', function () {
+      var text = T.share_text.replace('{km}', fmt(km, 1));
+      if (navigator.share) {
+        navigator.share({ title: 'ElTouro', text: text, url: d.invite + '?via=native' }).catch(function () { /* cancelled */ });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(text + ' ' + d.invite + '?via=copy').then(function () { msg.textContent = T.link_copied; });
+      }
+    });
+    var crewSel = document.getElementById('after-crew'), postBox = document.getElementById('after-post');
+    function call(payload) {
+      return fetch('/api/ride-report', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-CSRF': d.csrf },
+                                         body: JSON.stringify(payload) }).then(function (r) { return r.json().then(function (j) { return { status: r.status, j: j }; }); });
+    }
+    call({ action: 'crews' }).then(function (x) {
+      if (x.status !== 200 || !x.j.crews || !x.j.crews.length) return;
+      x.j.crews.forEach(function (c) { var o = document.createElement('option'); o.value = c.slug; o.textContent = c.name; crewSel.appendChild(o); });
+      postBox.hidden = false;
+    }).catch(function () { /* no crews offered */ });
+    document.getElementById('after-post-btn').addEventListener('click', function () {
+      var b = this; b.disabled = true;
+      call({ action: 'post', crew: crewSel.value, tour_id: parseInt(d.tour, 10), km: Math.round(km * 10) / 10, min: minutes })
+        .then(function (x) { msg.textContent = x.status === 200 ? T.posted : (x.status === 429 ? T.post_slow : T.post_error); if (x.status !== 200) b.disabled = false; })
+        .catch(function () { msg.textContent = T.post_error; b.disabled = false; });
+    });
+  }
+
   function finish(arrived) {
     if (!state.running) return;
     state.running = false;
@@ -588,6 +623,7 @@
     var text = document.getElementById('ride-done-text');
     text.textContent = T.done_text.replace('{km}', fmt(state.along / 1000, 1));
     ui.done.hidden = false;
+    showAfter(Math.round((Date.now() - rideStartedAt) / 60000));
     if (record) {
       text.textContent += ' ' + T.saving;
       record.finish().then(function (j) {

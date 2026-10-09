@@ -616,3 +616,7 @@ details.panel[open] > summary { margin-bottom: .5rem; }
 .route-opts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; padding: .7rem 0; }
 .ride-when { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
 .ics-btn { font-size: 1rem; min-height: 40px; padding: .4rem .9rem; flex: 0 0 auto; }
+.after-ride { display: grid; gap: .5rem; margin: .6rem 0; }
+.after-post { display: flex; gap: .5rem; flex-wrap: wrap; }
+.after-post select { flex: 1 1 8rem; width: auto; }
+.after-ride .btn { flex: 1 1 auto; }
