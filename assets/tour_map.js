@@ -9,8 +9,8 @@
   var route = L.geoJSON(gj, {
     style: function (f) {
       return f.properties && f.properties.freehand
-        ? { color: '#A3261B', weight: 5, dashArray: '8 8' }
-        : { color: '#2F5E8C', weight: 5 };
+        ? { color: '#A3261B', weight: 4, dashArray: '6 6' }
+        : { color: '#2F5E8C', weight: 4 };
     }
   });
 

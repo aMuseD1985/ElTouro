@@ -87,7 +87,7 @@ Die App ist von Anfang an Deutsch und Englisch; jeder Schlüssel in `lang.php` e
 | Strecke | Tour | route | `tour*`, Tabelle `tours` |
 | Termin mit Treffpunkt | Ausfahrt | ride | `ride*`, Tabellen `rides`, `ride_signups` |
 
-Marke: „ElTouro“ in einem Wort. Farben: Nacht `#14263F`, Jeans `#2F5E8C`, Gold `#D7A845`, Kreide `#E8ECF1` (CSS: `--night`, `--denim`, `--gold`, `--chalk`).
+Maskottchen: der Stier auf dem E-Scooter (`assets/img/mascot/*.webp`, Quellen in `tools/mascot/`) – **trägt immer seine Sonnenbrille**. Fahrmodus: von hinten (in Kurven `rear-left`/`rear-right`), bei „Norden oben“ je nach Richtung vorn/hinten/Seite; Ladeanimation im Planer: Seitenansicht. Marke: „ElTouro“ in einem Wort. Farben: Nacht `#14263F`, Jeans `#2F5E8C`, Gold `#D7A845`, Kreide `#E8ECF1` (CSS: `--night`, `--denim`, `--gold`, `--chalk`).
 
 ## Rechtliche Leitplanken (Produktentscheidungen, nicht verhandelbar)
 

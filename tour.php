@@ -153,6 +153,6 @@ pageHeader($tour['title']);
   <button class="link danger"><?= te('tour.delete') ?></button></form>
 <?php endif; ?>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/tour_map.js?v=4"></script>
+<script src="/assets/tour_map.js?v=5"></script>
 <script src="/assets/share.js?v=1"></script>
 <?php pageFooter();

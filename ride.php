@@ -186,5 +186,5 @@ pageHeader($ride['title']);
 
 <p class="spaced"><a href="/report?type=ride&amp;id=<?= $rid ?>"><?= te('report.link') ?></a></p>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/tour_map.js?v=4"></script>
+<script src="/assets/tour_map.js?v=5"></script>
 <?php pageFooter();

@@ -93,5 +93,5 @@ pageHeader($tour['title'], $meta);
 <p class="spaced muted"><a href="mailto:<?= e($reportMail) ?>?subject=<?= e(rawurlencode(t('share.report_subject') . ' ' . $url)) ?>"><?= te('share.report') ?></a></p>
 <?php endif; ?>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/tour_map.js?v=4"></script>
+<script src="/assets/tour_map.js?v=5"></script>
 <?php pageFooter();

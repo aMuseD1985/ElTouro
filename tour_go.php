@@ -80,6 +80,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
 
   <div class="ride-done" id="ride-done" hidden>
     <div class="ride-done-box">
+      <img class="ride-done-mascot" src="/assets/img/mascot/look-back-large.webp" alt="">
       <h2 id="ride-done-title"></h2>
       <p id="ride-done-text"></p>
       <p><a class="btn" href="/tour/<?= (int)$tour['id'] ?>"><?= te('nav.back_to_tour') ?></a></p>

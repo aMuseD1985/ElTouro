@@ -60,9 +60,11 @@ return [
         'max_backups' => 10,
     ],
 
-    // Map tiles. OSM tiles are fine for beta/test (little traffic, with attribution).
-    // Before going live switch to a provider like MapTiler, e.g.
-    // 'https://api.maptiler.com/maps/streets-v2/{z}/{x}/{y}.png?key=YOUR_KEY'
+    // Map tiles. OSM tiles are fine for beta/test (little traffic, with attribution), but they only exist in normal
+    // resolution and look soft on phone and Retina screens. {r} in the URL becomes "@2x" on such screens (planner,
+    // tour pages and ride mode) – sharp maps with a provider that has those tiles, e.g. MapTiler (256-pixel tiles):
+    // 'https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}{r}.png?key=YOUR_KEY'
+    // with 'attribution' => '© <a href="https://www.maptiler.com/copyright/">MapTiler</a> © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende'
     'map' => [
         'tiles'       => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
         'attribution' => '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende',

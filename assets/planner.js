@@ -74,7 +74,7 @@
           saying.textContent = sayings[no];
         }
       }, 200);
-    }, 300);
+    }, 1000);   // only when it takes a while – quick routes don't flash an animation
   }
 
   function stopLoading(immediate) {
@@ -126,13 +126,16 @@
     if (!gj) return;
     // A click on the line inserts a waypoint there (it must not also reach the map, which would append one)
     L.geoJSON(gj, {
-      bubblingMouseEvents: false,
+      interactive: false,
       style: function (f) {
         return f.properties && f.properties.freehand
-          ? { color: '#A3261B', weight: 6, opacity: 0.9, dashArray: '8 8' }
-          : { color: '#2F5E8C', weight: 6, opacity: 0.9 };
+          ? { color: '#A3261B', weight: 4, opacity: 0.9, dashArray: '6 6' }
+          : { color: '#2F5E8C', weight: 4, opacity: 0.9 };
       }
-    }).on('click', function (e) { insertOnRoute([e.latlng.lat, e.latlng.lng]); }).addTo(routeLayer);
+    }).addTo(routeLayer);
+    // An invisible, wider twin of the line takes the clicks – the thin visible line would be hard to hit
+    L.geoJSON(gj, { bubblingMouseEvents: false, style: function () { return { color: '#000', weight: 18, opacity: 0 }; } })
+      .on('click', function (e) { insertOnRoute([e.latlng.lat, e.latlng.lng]); }).addTo(routeLayer);
   }
 
   // ---- Waypoint editor: numbered pins on the map and the list below it

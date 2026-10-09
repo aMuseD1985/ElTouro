@@ -238,22 +238,23 @@ details summary { cursor: pointer; }
 .planner-wrap { position: relative; }
 .planner-loading { position: absolute; inset: 0; z-index: 1100; display: flex; flex-direction: column; align-items: center; justify-content: center;
   background: rgba(20, 38, 63, .78); color: #fff; border-radius: inherit; padding: 1rem; text-align: center; }
-.loading-orbit { --size: 240px; position: relative; width: var(--size); height: var(--size); flex: none; }
-.loading-logo { position: absolute; width: 44%; height: 44%; left: 28%; top: 28%; border-radius: 50%; box-shadow: 0 0 0 4px var(--gold), 0 6px 18px rgba(0, 0, 0, .35); }
-.orbit { position: absolute; inset: 0; animation: et-orbit 2.6s linear infinite; }
-.orbit .slot { position: absolute; inset: 0; }
-.orbit .slot:nth-child(2) { transform: rotate(120deg); }
-.orbit .slot:nth-child(3) { transform: rotate(240deg); }
-.orbit .rider { position: absolute; width: 31%; left: 34.5%; top: -4%; animation: et-hop .35s ease-in-out infinite alternate; }
-.orbit .slot:nth-child(2) .rider { animation-delay: .12s; }
-.orbit .slot:nth-child(3) .rider { animation-delay: .24s; }
+.loading-stage { position: relative; width: 260px; height: 210px; flex: none; overflow: hidden; }
+.loading-mascot { position: absolute; left: 50%; bottom: 14px; height: 175px; width: auto; transform: translateX(-50%);
+  filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .35)); animation: et-bob .42s ease-in-out infinite alternate; }
+.loading-road { position: absolute; left: 0; right: 0; bottom: 8px; height: 5px; border-radius: 3px;
+  background: repeating-linear-gradient(90deg, var(--gold) 0 30px, transparent 30px 56px); animation: et-road .4s linear infinite; }
+.loading-wind span { position: absolute; left: 0; height: 3px; border-radius: 2px; background: rgba(232, 236, 241, .75); animation: et-wind .7s linear infinite; }
+.loading-wind span:nth-child(1) { top: 70px; width: 46px; }
+.loading-wind span:nth-child(2) { top: 105px; width: 64px; animation-delay: .25s; }
+.loading-wind span:nth-child(3) { top: 140px; width: 38px; animation-delay: .45s; }
+@keyframes et-bob { from { transform: translateX(-50%) translateY(0) rotate(0); } to { transform: translateX(-50%) translateY(-5px) rotate(-1.5deg); } }
+@keyframes et-road { to { background-position: -56px 0; } }
+@keyframes et-wind { from { transform: translateX(70px); opacity: 0; } 30% { opacity: 1; } to { transform: translateX(-60px); opacity: 0; } }
 .loading-saying { min-height: 1.5em; margin: 1rem 0 .7rem; font-weight: 600; font-style: italic; font-size: 1.1rem; }
 .loading-bar { width: min(320px, 80%); height: 10px; border-radius: 999px; background: rgba(255, 255, 255, .2); overflow: hidden; }
 .loading-bar span { display: block; width: 0; height: 100%; background: var(--gold); transition: width .25s ease-out; }
-@keyframes et-orbit { to { transform: rotate(360deg); } }
-@keyframes et-hop { to { transform: translateY(-4px) rotate(-3deg); } }
-@media (max-width: 520px), (max-height: 520px) { .loading-orbit { --size: 150px; } .loading-saying { font-size: 1rem; } }
-@media (prefers-reduced-motion: reduce) { .orbit, .orbit .rider { animation: none; } }
+@media (max-width: 520px), (max-height: 520px) { .loading-stage { transform: scale(.78); margin: -22px 0; } .loading-saying { font-size: 1rem; } }
+@media (prefers-reduced-motion: reduce) { .loading-mascot, .loading-road, .loading-wind span { animation: none; } }
 
 /* Place search above the planner map */
 .place-search { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin: .8rem 0 .4rem; }
@@ -301,9 +302,8 @@ details summary { cursor: pointer; }
 .ride-controls .secondary-submit { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .ride-controls label { display: flex; align-items: center; gap: .4rem; color: #fff; }
 .ride-hint { margin: .5rem 0 0; font-size: .85rem; color: #B9C3D1; }
-.ride-rider { width: 58px; height: 58px; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .5)); }
-.ride-rider img { width: 100%; height: 100%; display: block; }
-.ride-rider.west img { transform: scaleX(-1); }
+.ride-rider { filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .45)); pointer-events: none; }
+.ride-rider img { height: 78px; width: auto; display: block; }
 .ride-map .maplibregl-ctrl-attrib { font-size: 10px; }
 .ride-done { position: absolute; inset: 0; z-index: 1200; display: flex; align-items: center; justify-content: center; background: rgba(20, 38, 63, .8); padding: 1rem; }
 .ride-done-box { max-width: 26rem; padding: 1.4rem; border-radius: 16px; background: #fff; color: var(--night); text-align: center; }
@@ -331,8 +331,14 @@ details summary { cursor: pointer; }
 
 /* Other riders sharing their live location (ride mode and /live) */
 .live-rider { display: flex; flex-direction: column; align-items: center; pointer-events: none; }
-.live-rider img { width: 40px; height: 40px; filter: grayscale(.4) drop-shadow(0 1px 2px rgba(0, 0, 0, .5)); }
+.live-rider img { height: 48px; width: auto; filter: saturate(.7) drop-shadow(0 1px 2px rgba(0, 0, 0, .5)); }
 .live-rider span { margin-top: -2px; padding: 1px 6px; border-radius: 8px; background: rgba(20, 38, 63, .88); color: #fff; font-size: 11px; font-weight: 600; white-space: nowrap; }
 .ride-controls select { padding: .2rem; }
 
 .planner-check { display: inline-flex; align-items: center; gap: .35rem; font-weight: 600; }
+@media (max-width: 600px) {
+  .waypoint-list li { flex-wrap: wrap; }
+  .waypoint-list .wp-main { flex: 1 1 8rem; }
+  .waypoint-list .wp-stop { order: 10; flex: 1 1 100%; max-width: none; margin-left: 38px; }
+}
+.ride-done-mascot { display: block; height: 150px; width: auto; margin: -80px auto .4rem; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .3)); }

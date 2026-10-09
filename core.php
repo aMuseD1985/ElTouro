@@ -460,7 +460,7 @@ function pageHeader(string $title, array $meta = []): void
 <?php if (!isLive()): ?><meta name="robots" content="noindex, nofollow"><?php endif; ?>
 <link rel="icon" href="/assets/img/favicon.png">
 <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-<link rel="stylesheet" href="/assets/style.css?v=16">
+<link rel="stylesheet" href="/assets/style.css?v=19">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>

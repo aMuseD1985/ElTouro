@@ -141,11 +141,10 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
      data-texts="<?= e(json_encode($jsTexts, JSON_UNESCAPED_UNICODE)) ?>"></div>
   <!-- Shown while the route is calculated; the status line below says the same for screen readers -->
   <div id="planner-loading" class="planner-loading" hidden aria-hidden="true">
-    <div class="loading-orbit">
-      <img class="loading-logo" src="/assets/img/apple-touch-icon.png" alt="">
-      <div class="orbit">
-        <?php for ($i = 0; $i < 3; $i++): ?><div class="slot"><img class="rider" src="/assets/img/scooter-bull.svg" alt=""></div><?php endfor; ?>
-      </div>
+    <div class="loading-stage">
+      <div class="loading-wind"><span></span><span></span><span></span></div>
+      <img class="loading-mascot" src="/assets/img/mascot/side-large.webp" alt="">
+      <div class="loading-road"></div>
     </div>
     <p class="loading-saying" id="planner-saying"></p>
     <div class="loading-bar"><span id="planner-progress"></span></div>
@@ -206,5 +205,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=14"></script>
+<script src="/assets/planner.js?v=15"></script>
 <?php pageFooter();

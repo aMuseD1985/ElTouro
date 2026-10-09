@@ -94,8 +94,10 @@
 
   // ---------------------------------------------------------------- map (MapLibre: it can turn and tilt, Leaflet can't)
   maplibregl.setWorkerUrl('/assets/vendor/maplibre/maplibre-gl-csp-worker.js');
-  var tileUrls = d.tiles.indexOf('{s}') < 0 ? [d.tiles.replace('{r}', '')]
-    : ['a', 'b', 'c'].map(function (x) { return d.tiles.replace('{s}', x).replace('{r}', ''); });
+  // {r} becomes @2x on high-density screens – sharp maps with a provider that has such tiles (e.g. MapTiler)
+  var retina = window.devicePixelRatio > 1 ? '@2x' : '';
+  var tileUrls = d.tiles.indexOf('{s}') < 0 ? [d.tiles.replace('{r}', retina)]
+    : ['a', 'b', 'c'].map(function (x) { return d.tiles.replace('{s}', x).replace('{r}', retina); });
   var lngLats = line.map(function (p) { return [p[1], p[0]]; });
   var bounds = lngLats.reduce(function (b, c) {
     return [[Math.min(b[0][0], c[0]), Math.min(b[0][1], c[1])], [Math.max(b[1][0], c[0]), Math.max(b[1][1], c[1])]];
@@ -110,13 +112,13 @@
   map.on('load', function () {
     var round = { 'line-cap': 'round', 'line-join': 'round' };
     map.addSource('route', { type: 'geojson', data: gj });
-    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: round, paint: { 'line-color': '#14263F', 'line-width': 12, 'line-opacity': 0.3 } });
+    map.addLayer({ id: 'route-casing', type: 'line', source: 'route', layout: round, paint: { 'line-color': '#14263F', 'line-width': 8, 'line-opacity': 0.3 } });
     map.addLayer({ id: 'route', type: 'line', source: 'route', layout: round, filter: ['!=', ['get', 'freehand'], true],
-                   paint: { 'line-color': '#2F5E8C', 'line-width': 8 } });
+                   paint: { 'line-color': '#2F5E8C', 'line-width': 5 } });
     map.addLayer({ id: 'route-free', type: 'line', source: 'route', filter: ['==', ['get', 'freehand'], true],
-                   paint: { 'line-color': '#A3261B', 'line-width': 8, 'line-dasharray': [1.2, 1.2] } });
+                   paint: { 'line-color': '#A3261B', 'line-width': 5, 'line-dasharray': [1.5, 1.5] } });
     map.addSource('done', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } } });
-    map.addLayer({ id: 'done', type: 'line', source: 'done', layout: round, paint: { 'line-color': '#8A96A8', 'line-width': 8 } });
+    map.addLayer({ id: 'done', type: 'line', source: 'done', layout: round, paint: { 'line-color': '#8A96A8', 'line-width': 5 } });
     ready = true;
   });
 
@@ -131,19 +133,25 @@
     });
   } catch (e) { /* no stops */ }
 
-  // The rider: the bull faces east in the picture; heading west it is mirrored instead of standing on its head
+  // The rider is the mascot (assets/img/mascot): with the map turned we look over his shoulder (from behind, leaning
+  // into bends); north up we see him from the side the riding direction shows – always with his sunglasses.
   var riderEl = document.createElement('div');
   riderEl.className = 'ride-rider';
-  riderEl.innerHTML = '<img src="/assets/img/scooter-bull.svg" alt="">';
-  var rider = null;
-  // With the map turned the track always runs up the screen, so the bull (a side view) simply stands upright;
-  // north up, it turns with the riding direction.
-  function placeRider(pos, heading) {
-    if (!rider) rider = new maplibregl.Marker({ element: riderEl, rotationAlignment: 'viewport', pitchAlignment: 'viewport' }).setLngLat([pos[1], pos[0]]).addTo(map);
+  var riderImg = document.createElement('img');
+  riderImg.alt = '';
+  riderEl.appendChild(riderImg);
+  var rider = null, riderSprite = '';
+  function spriteFor(heading, lean) {
+    if (view !== 'north') return lean > 18 ? 'rear-right' : lean < -18 ? 'rear-left' : 'rear';
+    var h = (heading + 360) % 360;
+    return h >= 315 || h < 45 ? 'rear' : h < 135 ? 'side' : h < 225 ? 'front' : 'side-left';
+  }
+  function placeRider(pos, heading, lean) {
+    var sprite = spriteFor(heading, lean || 0);
+    if (sprite !== riderSprite) { riderSprite = sprite; riderImg.src = '/assets/img/mascot/' + sprite + '.webp'; }
+    if (!rider) rider = new maplibregl.Marker({ element: riderEl, anchor: 'bottom', rotationAlignment: 'viewport', pitchAlignment: 'viewport' })
+      .setLngLat([pos[1], pos[0]]).addTo(map);
     rider.setLngLat([pos[1], pos[0]]);
-    var west = view === 'north' && heading > 180;
-    rider.setRotation(view !== 'north' ? 0 : west ? heading + 90 : heading - 90);
-    riderEl.classList.toggle('west', west);
   }
 
   // Views: north up, in riding direction, 3D (tilted, riding direction). The rider sits in the lower third when it turns.
@@ -258,7 +266,9 @@
     // Off the track the GPS heading (if the device has one) is better than the track's direction
     var heading = state.offRoute && fix.heading != null && !isNaN(fix.heading) ? fix.heading : bearing(pointAt(state.along), pointAt(state.along + 15));
     var shown = state.offRoute ? p : pointAt(state.along);
-    placeRider(shown, heading);
+    // How the track bends in the next metres – the mascot leans into it
+    var lean = state.offRoute ? 0 : (bearing(pointAt(state.along), pointAt(state.along + 30)) - bearing(pointAt(state.along - 15), pointAt(state.along)) + 540) % 360 - 180;
+    placeRider(shown, heading, lean);
     if (ready) {
       var here = pointAt(state.along);
       map.getSource('done').setData({ type: 'Feature', properties: {},
@@ -401,7 +411,7 @@
   function otherMarker(r) {
     var box = document.createElement('div');
     box.className = 'live-rider';
-    var img = document.createElement('img'); img.src = '/assets/img/scooter-bull.svg'; img.alt = '';
+    var img = document.createElement('img'); img.src = '/assets/img/mascot/front.webp'; img.alt = '';
     var label = document.createElement('span');
     box.appendChild(img); box.appendChild(label);
     return { el: box, label: label, marker: new maplibregl.Marker({ element: box, anchor: 'bottom' }) };
