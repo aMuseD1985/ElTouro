@@ -85,7 +85,7 @@
     setTimeout(function () { if (gen === loadGen) loading.hidden = true; }, 350);
   }
 
-  var map = L.map(el, { zoomControl: true }).setView([51.2, 10.4], 6);
+  var map = L.map(el, { zoomControl: true, zoomSnap: 0.5 }).setView([51.2, 10.4], 6);
   ElTouroMaps.leaflet(map, el);
   var routeLayer = L.layerGroup().addTo(map);
   var markerLayer = L.layerGroup().addTo(map);
@@ -877,13 +877,19 @@
     points.push(points[0].slice(0, 2));
     calculate();
   });
-  document.getElementById('pl-locate').addEventListener('click', function () {
-    if (!navigator.geolocation) { setStatus(T.locate_error); return; }
-    // Location only moves the map – it is never sent anywhere
+  // "My location": the map shows a radius of 40 km around the rider. The location only moves the map – it is never sent anywhere.
+  function goToMe(quiet) {
+    if (!navigator.geolocation) { if (!quiet) setStatus(T.locate_error); return; }
     navigator.geolocation.getCurrentPosition(function (pos) {
-      map.setView([pos.coords.latitude, pos.coords.longitude], 14);
-    }, function () { setStatus(T.locate_error); }, { enableHighAccuracy: false, timeout: 8000 });
-  });
+      if (quiet && (points.length || userMoved)) return;   // the rider started working in the meantime
+      var lat = pos.coords.latitude, lng = pos.coords.longitude;
+      var dLat = 40000 / 111320, dLng = 40000 / (111320 * Math.max(0.2, Math.cos(lat * Math.PI / 180)));
+      map.fitBounds([[lat - dLat, lng - dLng], [lat + dLat, lng + dLng]]);
+    }, function () { if (!quiet) setStatus(T.locate_error); }, { enableHighAccuracy: false, timeout: 8000, maximumAge: 600000 });
+  }
+  var userMoved = false;
+  ['pointerdown', 'wheel', 'keydown'].forEach(function (ev) { el.addEventListener(ev, function () { userMoved = true; }, { passive: true }); });
+  document.getElementById('pl-locate').addEventListener('click', function () { goToMe(false); });
   if (nameButton) nameButton.addEventListener('click', function () { suggestName(true); });
   if (fieldRules) fieldRules.addEventListener('change', function () { if (points.length >= 2) calculate(); });
   if (uturnBox) uturnBox.addEventListener('change', function () {
@@ -906,6 +912,7 @@
     if (stopsButton) stopsButton.disabled = false;
   } else {
     saveButton.disabled = true;
+    if (!points.length) goToMe(true);   // a new tour starts where the rider is
     if (points.length >= 2) { setStatus(T.press_calc); showCalcButton(); } else setStatus(T.empty);
   }
 })();

@@ -139,7 +139,7 @@ Eine Tour besteht aus den Wegpunkten, die du auf der Karte setzt, und der daraus
 
 **Profilfoto und Reaktionen:** Lädst du ein Profilfoto hoch, rechnen wir es auf 256 × 256 Pixel um und speichern nur dieses neue Bild – Metadaten wie Aufnahmeort, Datum oder Kameramodell fallen dabei vollständig weg. Das Foto sehen angemeldete Nutzer neben deinem Namen im Forum und in der Tränke. Du kannst es im Profil jederzeit löschen; Administratoren können unpassende Fotos entfernen. Reaktionen (Emojis) auf Forenbeiträge speichern wir mit deinem Konto; angemeldete Nutzer sehen, wer reagiert hat. Rechtsgrundlage ist der Nutzungsvertrag (Art. 6 Abs. 1 lit. b DSGVO); beides ist freiwillig.
 
-Die Schaltfläche „Mein Standort“ fragt deinen Standort über deinen Browser ab, und nur nach deiner Zustimmung im Browser. Der Standort wird ausschließlich dazu genutzt, die Karte zu verschieben. Er wird nicht an uns übertragen und nicht gespeichert. Für die Navigation im Fahrmodus gilt der Abschnitt „Fahrmodus“.
+Beim Öffnen des Planers für eine neue Tour und mit der Schaltfläche „Mein Standort“ fragt die Seite deinen Standort über deinen Browser ab, und nur nach deiner Zustimmung im Browser; die Karte zeigt dann den Umkreis von 40 km um dich. Lehnst du ab, startet die Karte über Deutschland. Der Standort wird ausschließlich dazu genutzt, die Karte zu verschieben. Er wird nicht an uns übertragen und nicht gespeichert. Für die Navigation im Fahrmodus gilt der Abschnitt „Fahrmodus“.
 
 ## 7. Ausfahrten
 
@@ -229,7 +229,7 @@ Other logged-in users see your display name and the content you publish. Crew me
 
 ## 6. Routes and location
 
-A route consists of the waypoints you set on the map and the calculated track. We store it so you can find and share it (Art. 6(1)(b) GDPR). Make sure start and finish of public routes aren’t right outside your front door. The “My location” button asks your browser for your location, only with your consent, and only uses it to move the map. It is not sent to us or stored. For navigation in ride mode, see “Ride mode”.
+A route consists of the waypoints you set on the map and the calculated track. We store it so you can find and share it (Art. 6(1)(b) GDPR). Make sure start and finish of public routes aren’t right outside your front door. When you open the planner for a new route and with the “My location” button, the page asks your browser for your location, only with your consent; the map then shows a 40 km radius around you. If you decline, the map starts over Germany. The location is only used to move the map. It is not sent to us or stored. For navigation in ride mode, see “Ride mode”.
 
 **Sharing routes:** You can create a link for a route, even if it is otherwise private. Anyone with the link can see, without logging in, the route’s name, length, climb, difficulty, riding style and the track without its first and last 300 metres. Who created it, which crew it belongs to and its description are not shown. You can deactivate the link at any time; the page is then gone. The buttons for WhatsApp, Telegram, Facebook, X and email are plain links: only when you click one does that service open with the link – nothing is transmitted before. For the preview, the service you share on fetches the shared page and a preview image of the track from us.
 

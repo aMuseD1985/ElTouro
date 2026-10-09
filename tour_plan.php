@@ -220,5 +220,5 @@ pageHeader($tour ? t('tour.edit') : t('tour.new'));
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=26"></script>
+<script src="/assets/planner.js?v=29"></script>
 <?php pageFooter();
