@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/forum_lib.php';
+require __DIR__ . '/community_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 $mod = isForumModerator($me);
@@ -36,6 +37,18 @@ if (isPost()) {
             $count = (int)dbOne('SELECT COUNT(*) AS n FROM forum_posts WHERE thread_id = ?', [$tid])['n'];
             redirect($self . '?p=' . (int)ceil($count / FORUM_POSTS_PER_PAGE) . '#b' . $new);
         }
+    } elseif ($action === 'edit_post') {
+        // Riders edit their own posts; the post shows "edited"
+        $text = trim(str_replace("\r", '', (string)($_POST['text'] ?? '')));
+        if (mb_strlen($text) >= 2 && mb_strlen($text) <= FORUM_POST_MAX) {
+            dbExec('UPDATE forum_posts SET body = ?, edited_at = UTC_TIMESTAMP() WHERE id = ? AND thread_id = ? AND user_id = ? AND deleted_at IS NULL',
+                [$text, $pid, $tid, $uid]);
+        }
+        redirect($self . '?p=' . max(1, (int)($_POST['p'] ?? 1)) . '#b' . $pid);
+    } elseif ($action === 'react') {
+        // Without JavaScript the reaction buttons send the page form
+        toggleForumReaction($pid, $uid, (string)($_POST['emoji'] ?? ''));
+        redirect($self . '?p=' . max(1, (int)($_POST['p'] ?? 1)) . '#b' . $pid);
     } elseif ($action === 'delete_post') {
         // Own posts may be deleted, moderators may delete all
         dbExec('UPDATE forum_posts SET deleted_at = UTC_TIMESTAMP() WHERE id = ? AND thread_id = ? AND (user_id = ? OR ? = 1)',
@@ -54,10 +67,13 @@ if (isPost()) {
 $total = (int)dbOne('SELECT COUNT(*) AS n FROM forum_posts WHERE thread_id = ?', [$tid])['n'];
 $pages = max(1, (int)ceil($total / FORUM_POSTS_PER_PAGE));
 $page = min($pages, max(1, (int)($_GET['p'] ?? 1)));
-$posts = dbAll('SELECT p.id, p.user_id, p.body, p.created_at, p.deleted_at, u.display_name
+$posts = dbAll('SELECT p.id, p.user_id, p.body, p.created_at, p.edited_at, p.deleted_at, u.display_name, u.avatar_version,
+                       (SELECT COUNT(*) FROM forum_posts x WHERE x.user_id = p.user_id AND x.deleted_at IS NULL) AS user_posts
                   FROM forum_posts p JOIN users u ON u.id = p.user_id
                  WHERE p.thread_id = ? ORDER BY p.created_at, p.id LIMIT ' . FORUM_POSTS_PER_PAGE . ' OFFSET ' . (($page - 1) * FORUM_POSTS_PER_PAGE), [$tid]);
 
+$reactions = forumReactions(array_column($posts, 'id'), $uid);
+$editing = (int)($_GET['edit'] ?? 0);
 pageHeader($topic['title']);
 ?>
 <p class="breadcrumbs"><a href="/forum"><?= te('forum.title') ?></a> › <a href="/forum/<?= e(rawurlencode($topic['cat_slug'])) ?>"><?= e(categoryName($topic)) ?></a> ›</p>
@@ -77,19 +93,35 @@ pageHeader($topic['title']);
 <ol class="posts">
 <?php foreach ($posts as $b): ?>
   <li class="post" id="b<?= (int)$b['id'] ?>">
-    <header><strong><?= e($b['display_name']) ?></strong> <span class="muted">· <?= e(formatDateTime($b['created_at'])) ?></span></header>
+    <div class="post-avatar"><?= avatarHtml((int)$b['user_id'], $b['display_name'], $b['avatar_version'], 'md') ?></div>
+    <div class="post-main">
+    <header><strong><?= e($b['display_name']) ?></strong>
+      <span class="muted">· <?= te((int)$b['user_posts'] === 1 ? 'forum.user_posts_one' : 'forum.user_posts', ['n' => (int)$b['user_posts']]) ?> · <a href="#b<?= (int)$b['id'] ?>" class="muted"><?= e(formatDateTime($b['created_at'])) ?></a>
+      <?php if ($b['edited_at']): ?>· <?= te('forum.edited') ?><?php endif; ?></span></header>
     <?php if ($b['deleted_at']): ?>
       <p class="muted"><em><?= te('forum.deleted') ?></em></p>
+    <?php elseif ($editing === (int)$b['id'] && (int)$b['user_id'] === $uid): ?>
+      <form method="post" class="form wide">
+        <?= csrfField() ?><input type="hidden" name="action" value="edit_post"><input type="hidden" name="post" value="<?= (int)$b['id'] ?>"><input type="hidden" name="p" value="<?= $page ?>">
+        <textarea name="text" rows="6" required maxlength="<?= FORUM_POST_MAX ?>" data-emoji aria-label="<?= te('forum.text') ?>"><?= e($b['body']) ?></textarea>
+        <p><button type="submit"><?= te('forum.save_edit') ?></button> <a href="<?= e($self) ?>?p=<?= $page ?>#b<?= (int)$b['id'] ?>"><?= te('forum.cancel') ?></a></p>
+      </form>
     <?php else: ?>
       <div class="post-text"><?= formatText($b['body']) ?></div>
+      <form method="post" class="reaction-form"><?= csrfField() ?><input type="hidden" name="action" value="react"><input type="hidden" name="post" value="<?= (int)$b['id'] ?>"><input type="hidden" name="p" value="<?= $page ?>">
+        <?= reactionBar((int)$b['id'], $reactions[(int)$b['id']] ?? [], true, true) ?></form>
       <footer>
+        <?php if (!$topic['is_locked'] || $mod): ?><button type="button" class="link" data-quote="<?= (int)$b['id'] ?>" data-name="<?= e($b['display_name']) ?>"><?= te('forum.quote') ?></button><?php endif; ?>
+        <?php if ((int)$b['user_id'] === $uid): ?><a href="<?= e($self) ?>?p=<?= $page ?>&amp;edit=<?= (int)$b['id'] ?>#b<?= (int)$b['id'] ?>"><?= te('forum.edit') ?></a><?php endif; ?>
         <a href="/report?type=post&amp;id=<?= (int)$b['id'] ?>"><?= te('report.link') ?></a>
         <?php if ((int)$b['user_id'] === $uid || $mod): ?>
           <form method="post" class="inline"><?= csrfField() ?><input type="hidden" name="action" value="delete_post"><input type="hidden" name="post" value="<?= (int)$b['id'] ?>"><input type="hidden" name="p" value="<?= $page ?>">
             <button class="link danger"><?= te('forum.delete') ?></button></form>
         <?php endif; ?>
       </footer>
+      <div class="post-source" hidden data-source="<?= (int)$b['id'] ?>"><?= e($b['body']) ?></div>
     <?php endif; ?>
+    </div>
   </li>
 <?php endforeach; ?>
 </ol>
@@ -109,10 +141,11 @@ pageHeader($topic['title']);
   <form method="post" class="form wide">
     <?= csrfField() ?><input type="hidden" name="action" value="reply">
     <div class="field"><label for="text" class="visually-hidden"><?= te('forum.text') ?></label>
-      <textarea id="text" name="text" rows="6" required maxlength="<?= FORUM_POST_MAX ?>"><?= e($draft) ?></textarea>
+      <textarea id="text" name="text" rows="6" required maxlength="<?= FORUM_POST_MAX ?>" data-emoji><?= e($draft) ?></textarea>
       <p class="hint"><?= te('forum.format') ?></p></div>
     <button type="submit"><?= te('forum.send') ?></button>
   </form>
 </section>
 <?php endif; ?>
+<?= communityAssets() ?>
 <?php pageFooter();

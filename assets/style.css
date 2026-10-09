@@ -342,3 +342,35 @@ details summary { cursor: pointer; }
   .waypoint-list .wp-stop { order: 10; flex: 1 1 100%; max-width: none; margin-left: 38px; }
 }
 .ride-done-mascot { display: block; height: 150px; width: auto; margin: -80px auto .4rem; filter: drop-shadow(0 6px 6px rgba(0, 0, 0, .3)); }
+
+/* Community: avatars, forum posts, reactions, emoji picker */
+.avatar { display: inline-block; flex: none; border-radius: 50%; object-fit: cover; vertical-align: middle; background: var(--chalk); }
+.avatar-sm { width: 28px; height: 28px; font-size: .8rem; }
+.avatar-md { width: 40px; height: 40px; font-size: 1.05rem; }
+.avatar-lg { width: 96px; height: 96px; font-size: 2.4rem; }
+.avatar-initials { display: inline-grid; place-items: center; color: #fff; font-weight: 700; }
+.tb-avatar { background: none !important; width: auto; height: auto; }
+.profile-head { display: flex; gap: 1rem; align-items: center; margin: .5rem 0 1rem; }
+.profile-head .avatar-form { margin: .3rem 0; }
+.profile-head label.secondary-submit { display: inline-flex; cursor: pointer; }
+.post { display: flex; gap: .8rem; }
+.post .post-main { flex: 1; min-width: 0; }
+.post blockquote, .tb-text blockquote { margin: .4rem 0; padding: .4rem .8rem; border-left: 4px solid var(--gold); background: #F6F1E4; border-radius: 0 6px 6px 0; color: #3B4658; }
+.reaction-form { margin: .4rem 0 0; }
+.reactions { display: flex; flex-wrap: wrap; gap: .35rem; }
+.reaction { display: inline-flex; align-items: center; gap: .2rem; min-height: 32px; padding: .1rem .55rem; border: 1px solid #D5DCE5; border-radius: 999px;
+  background: #fff; color: var(--night); font: inherit; font-size: .9rem; cursor: pointer; }
+.reaction.empty { opacity: .55; }
+.reaction.empty .reaction-n { display: none; }
+.reaction:hover, .reaction.empty:hover { opacity: 1; border-color: var(--denim); }
+.reaction.mine { background: #FBF4E4; border-color: var(--gold); font-weight: 700; }
+.emoji-bar { position: relative; margin: .3rem 0; }
+.emoji-toggle { min-width: 40px; min-height: 36px; border: 1px solid #D5DCE5; border-radius: 8px; background: #fff; font-size: 1.15rem; cursor: pointer; }
+.emoji-grid { position: absolute; z-index: 20; top: 40px; left: 0; display: grid; grid-template-columns: repeat(9, 36px); gap: 2px; padding: .4rem;
+  background: #fff; border: 1px solid #D5DCE5; border-radius: 10px; box-shadow: 0 6px 20px rgba(20, 38, 63, .18); }
+.emoji-grid button { width: 36px; height: 36px; border: 0; border-radius: 6px; background: none; font-size: 1.25rem; cursor: pointer; }
+.emoji-grid button:hover { background: var(--chalk); }
+@media (max-width: 420px) { .emoji-grid { grid-template-columns: repeat(7, 36px); } }
+.forum-list li { gap: .8rem; }
+.forum-list .forum-topic { flex: 1; min-width: 0; }
+@media (max-width: 760px) { .forum-list li { flex-direction: row; flex-wrap: wrap; } .forum-list .count { flex-basis: 100%; margin-left: 52px; } }

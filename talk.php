@@ -46,7 +46,7 @@ pageHeader(t('talk.title') . ' · ' . $crew['name']);
   <form method="post" class="form wide">
     <?= csrfField() ?><input type="hidden" name="s" value="<?= e($crew['slug']) ?>">
     <div class="field"><label for="subject"><?= te('forum.subject') ?></label><input id="subject" name="subject" required minlength="3" maxlength="150" value="<?= e($subject) ?>"></div>
-    <div class="field"><label for="text"><?= te('forum.text') ?></label><textarea id="text" name="text" rows="6" required maxlength="<?= TALK_POST_MAX ?>"><?= e($text) ?></textarea>
+    <div class="field"><label for="text"><?= te('forum.text') ?></label><textarea id="text" name="text" rows="6" required maxlength="<?= TALK_POST_MAX ?>" data-emoji><?= e($text) ?></textarea>
       <p class="hint"><?= te('forum.format') ?></p></div>
     <button type="submit"><?= te('forum.publish') ?></button>
   </form>
@@ -60,4 +60,5 @@ pageHeader(t('talk.title') . ' · ' . $crew['name']);
 </ul>
 <div id="topics-more" class="loader" aria-live="polite"></div>
 <script src="/assets/talk.js?v=2"></script>
+<?= communityAssets() ?>
 <?php pageFooter();

@@ -417,6 +417,18 @@ function formatText(string $raw): string
             $html .= "<$tag>" . inlineFormat($m[2]) . "</$tag>\n";
             continue;
         }
+        if (str_starts_with($lines[0], '>')) {
+            // Quote: the leading "> " lines; whatever follows in the same block is a normal paragraph
+            $quote = [];
+            while ($lines && str_starts_with($lines[0], '>')) {
+                $quote[] = inlineFormat(trim(substr(array_shift($lines), 1)));
+            }
+            $html .= '<blockquote>' . implode("<br>\n", $quote) . "</blockquote>\n";
+            if ($lines) {
+                $html .= '<p>' . implode("<br>\n", array_map('inlineFormat', $lines)) . "</p>\n";
+            }
+            continue;
+        }
         if (str_starts_with($lines[0], '- ')) {
             $html .= "<ul>\n";
             foreach ($lines as $l) {
@@ -460,7 +472,7 @@ function pageHeader(string $title, array $meta = []): void
 <?php if (!isLive()): ?><meta name="robots" content="noindex, nofollow"><?php endif; ?>
 <link rel="icon" href="/assets/img/favicon.png">
 <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
-<link rel="stylesheet" href="/assets/style.css?v=19">
+<link rel="stylesheet" href="/assets/style.css?v=20">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>

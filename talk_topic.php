@@ -101,9 +101,10 @@ pageHeader($topic['title']);
 <form id="composer" class="composer" method="post" action="/api/talk?action=reply">
   <div id="reply-to" class="reply-to" hidden><span></span> <button type="button" class="link" id="reply-clear" aria-label="<?= te('talk.reply_clear') ?>">✕</button></div>
   <label for="composer-text" class="visually-hidden"><?= te('forum.text') ?></label>
-  <textarea id="composer-text" rows="3" maxlength="<?= TALK_POST_MAX ?>" placeholder="<?= te('talk.placeholder') ?>" required></textarea>
+  <textarea id="composer-text" rows="3" maxlength="<?= TALK_POST_MAX ?>" placeholder="<?= te('talk.placeholder') ?>" required data-emoji></textarea>
   <div class="composer-bar"><span class="hint"><?= te('talk.send_hint') ?></span><button type="submit"><?= te('forum.send') ?></button></div>
 </form>
 <?php endif; ?>
 <script src="/assets/talk.js?v=2"></script>
+<?= communityAssets() ?>
 <?php pageFooter();

@@ -1,13 +1,17 @@
 <?php
-/** User management: grant/revoke admin rights, block/unblock accounts. */
+/** User management: grant/revoke admin rights, block/unblock accounts, remove profile photos. */
 declare(strict_types=1);
 require __DIR__ . '/../bootstrap.php';
+require __DIR__ . '/../community_lib.php';
 $me = requireAdmin();
 
 if (isPost()) {
     checkCsrf();
     $target = (int)($_POST['user'] ?? 0);
-    if ($target === (int)$me['id']) {
+    if (($_POST['action'] ?? '') === 'avatar_remove') {
+        deleteAvatar($target);   // moderation: also allowed for the admin's own account
+        flash('Profilfoto entfernt.');
+    } elseif ($target === (int)$me['id']) {
         flash('Dein eigenes Konto kannst du hier nicht ändern.', 'error');
     } else {
         match ($_POST['action'] ?? '') {
@@ -24,7 +28,7 @@ if (isPost()) {
 
 $q = mb_substr(trim((string)($_GET['q'] ?? '')), 0, 100);
 $like = '%' . addcslashes($q, '%_\\') . '%';
-$list = dbAll("SELECT id, email, display_name, is_admin, status, email_verified_at, created_at FROM users
+$list = dbAll("SELECT id, email, display_name, is_admin, status, email_verified_at, created_at, avatar_version FROM users
                 WHERE ? = '' OR email LIKE ? OR display_name LIKE ? ORDER BY created_at DESC LIMIT 100", [$q, $like, $like]);
 
 function actionButton(int $id, string $action, string $label): string
@@ -47,11 +51,12 @@ require __DIR__ . '/_nav.php';
   <tbody>
   <?php foreach ($list as $u): $id = (int)$u['id']; ?>
     <tr>
-      <td><?= e($u['display_name']) ?><?= $u['is_admin'] ? ' <span class="badge">Admin</span>' : '' ?></td>
+      <td><?= avatarHtml($id, $u['display_name'], $u['avatar_version'], 'sm') ?> <?= e($u['display_name']) ?><?= $u['is_admin'] ? ' <span class="badge">Admin</span>' : '' ?></td>
       <td><?= e($u['email']) ?></td>
       <td><?= $u['status'] === 'blocked' ? 'gesperrt' : ($u['email_verified_at'] ? 'aktiv' : 'unbestätigt') ?></td>
       <td><?= e(substr($u['created_at'], 0, 10)) ?></td>
-      <td><?php if ($id !== (int)$me['id']): ?>
+      <td><?= $u['avatar_version'] ? actionButton($id, 'avatar_remove', 'Foto entfernen') : '' ?>
+        <?php if ($id !== (int)$me['id']): ?>
         <?= $u['is_admin'] ? actionButton($id, 'admin_off', 'Admin entziehen') : actionButton($id, 'admin_on', 'Zum Admin machen') ?>
         <?= $u['status'] === 'blocked' ? actionButton($id, 'unblock', 'Entsperren') : actionButton($id, 'block', 'Sperren') ?>
       <?php endif; ?></td>

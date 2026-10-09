@@ -5,7 +5,7 @@ Options -Indexes -MultiViews
 DirectoryIndex index.php
 
 # Libraries, includes and docs are never served directly
-<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|rides_lib\.php|share_lib\.php|tour_name_lib\.php|geocoder_lib\.php|track_lib\.php|poi_lib\.php|live_lib\.php|google_lib\.php|rewards_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
+<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|rides_lib\.php|share_lib\.php|tour_name_lib\.php|geocoder_lib\.php|track_lib\.php|poi_lib\.php|live_lib\.php|community_lib\.php|google_lib\.php|rewards_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
     Require all denied
 </FilesMatch>
 <FilesMatch "^_">
@@ -64,6 +64,8 @@ RewriteRule ^api/place-name/?$ place_name.php [L,QSA]
 RewriteRule ^api/track/?$ track.php [L,QSA]
 RewriteRule ^api/stops/?$ stops.php [L,QSA]
 RewriteRule ^api/live/?$ live.php [L,QSA]
+RewriteRule ^avatar/([0-9]+)/?$ avatar.php?id=$1 [L,QSA]
+RewriteRule ^api/forum/react/?$ forum_react.php [L,QSA]
 RewriteRule ^live/?$ live_map.php [L,QSA]
 RewriteRule ^s/([A-Za-z0-9_-]{24})/?$ share.php?token=$1 [L,QSA]
 RewriteRule ^s/([A-Za-z0-9_-]{24})/image\.png$ share.php?token=$1&image=1 [L,QSA]

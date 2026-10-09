@@ -437,6 +437,24 @@ function runMigrations(): array
       CONSTRAINT fk_live_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) $opt");
 
+    /* ---------- Community: profile photos, forum reactions, editing forum posts (2026-10, community_lib.php) ---------- */
+    if (!columnExists('users', 'avatar_version')) {
+        db()->exec('ALTER TABLE users ADD avatar_version VARCHAR(16) NULL');
+        $log[] = '~ users.avatar_version angelegt';
+    }
+    if (!columnExists('forum_posts', 'edited_at')) {
+        db()->exec('ALTER TABLE forum_posts ADD edited_at DATETIME NULL AFTER created_at');
+        $log[] = '~ forum_posts.edited_at angelegt';
+    }
+    $create('forum_reactions', "CREATE TABLE forum_reactions (
+      post_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL,
+      emoji VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,   -- _ci collations treat many emojis as equal
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (post_id, user_id, emoji), KEY ix_freact_user (user_id),
+      CONSTRAINT fk_freact_post FOREIGN KEY (post_id) REFERENCES forum_posts(id) ON DELETE CASCADE,
+      CONSTRAINT fk_freact_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
         'privacy' => ['de' => ['7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
@@ -445,16 +463,18 @@ function runMigrations(): array
                              '9bb92bbe55987f3de8a55cd7711ca553faa325e04600c69a49baa642defb77ad',
                              'cb593a7e30ded0d3335a0bbb9592c902346b30e7a10b2701a47aaf099d7ae748',
                              '7138011091b3de4b6f57285f571dd5afef90525aa2f2bb45add76e9999ffc7f5',
-                             '003ae2085ccf42b074041c51e3f4095f7be1e9d76f53d3fb3e982f958860270f'],
+                             '003ae2085ccf42b074041c51e3f4095f7be1e9d76f53d3fb3e982f958860270f',
+                             'e6d5d37fba3f4db3e29e12df2a3b624a0033373cbe4ad58cdc8008d758618972'],
                       'en' => ['d626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024',
                              '97ec6abe9fd9c9dafcd7f9bf64af86374052b671234a1c8b3b4cbcfd8524b93d',
                              'aad225fefb56e29cc0c861f4a05f7f448e8b226d93e0ee18366cd6eb8fb240c4',
                              '1bdb2d4a39f593ef2343d1e87df96f3a77f24ab7e357242e7e2fe27779010bb8',
                              '45465297f7907a6f2e7b75334d9b12ca5da7a81cc9d69393954b945f947bc7b4',
                              'cf1fd4c7a5d5f41a31b25595e37dca64b136fb9d6b707f984bcfc610c6d6e244',
-                             'd38e6bb8f7a70aecf2705f9b1fcf76f21c9642fbfbaae45592686616f2e5584e']],
-        'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab', 'feaac83164b6aa8d5cb9441fc8bf1a9ab32abc0c9c34f0c69c777f46fd29cc44'],
-                      'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d', '63498436ed4f625110f2b427930d9feb7e2d6dd1c5ec947d7bd74de655560d81']],
+                             'd38e6bb8f7a70aecf2705f9b1fcf76f21c9642fbfbaae45592686616f2e5584e',
+                             'ff93fa22adc6d6dafc2d0844122330c68bd3462434c706173931e4b63257df45']],
+        'terms'   => ['de' => ['f67bd7aca3213e8da07881163f4f0844e9892c8d8e49717ae92766a59b86a2ab', 'feaac83164b6aa8d5cb9441fc8bf1a9ab32abc0c9c34f0c69c777f46fd29cc44', 'dc5f8ddd572ab58b3741a32db8a468c60073ace583c934c62f299f650cbc972b'],
+                      'en' => ['dd40215568b28ad2acdb14ff89336d92e22c091fd4e8e40e5fe08c8d60de8f2d', '63498436ed4f625110f2b427930d9feb7e2d6dd1c5ec947d7bd74de655560d81', 'a0a3110ea0dab0f4759f757a08a9250654931353e03a1e742c6f776f320e08b9']],
     ];
     foreach ($earlierDefaults as $slug => $byLang) {
         foreach ($byLang as $loc => $hashes) {
@@ -481,12 +501,12 @@ function legalPagesNeedingUpdate(): array
 {
     $markers = [
         'privacy' => [
-            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:'],
-            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:'],
+            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:'],
+            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:'],
         ],
         'terms' => [
-            'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run'],
-            'en' => ['Ausfahrten' => 'sets a participant limit', 'Teilen' => 'share a route via link', 'Bull-Run' => 'Bull-Run'],
+            'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run', 'Profilfoto' => 'Als Profilfoto nimm nur'],
+            'en' => ['Ausfahrten' => 'sets a participant limit', 'Teilen' => 'share a route via link', 'Bull-Run' => 'Bull-Run', 'Profilfoto' => 'For your profile photo'],
         ],
     ];
     $missing = [];

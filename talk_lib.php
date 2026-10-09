@@ -5,6 +5,7 @@
  * Posts are rendered as HTML on the server (escaped) – also when loaded later via fetch.
  */
 declare(strict_types=1);
+require_once __DIR__ . '/community_lib.php';
 require_once __DIR__ . '/crews_lib.php';
 
 const TALK_PAGE_SIZE = 20;          // posts per load
@@ -30,11 +31,6 @@ function loadTalkTopic(int $id): ?array
 }
 
 /** Consistent colour per user for the avatar circle */
-function avatarColor(int $userId): string
-{
-    $colors = ['#2F5E8C', '#8A6412', '#2F7D5B', '#7A3E8C', '#A34B2B', '#1F6F7A', '#5B6B2F', '#8C2F4E'];
-    return $colors[$userId % count($colors)];
-}
 
 function relativeTime(string $utc): string
 {
@@ -55,7 +51,7 @@ function relativeTime(string $utc): string
 function loadTalkPosts(int $topicId, int $userId, string $condition = '1=1', array $params = [], bool $descending = false, int $limit = TALK_PAGE_SIZE): array
 {
     $sort = $descending ? 'DESC' : 'ASC';
-    $rows = dbAll("SELECT p.*, u.display_name, (m.role = 'admin') AS is_lead,
+    $rows = dbAll("SELECT p.*, u.display_name, u.avatar_version, (m.role = 'admin') AS is_lead,
                           (SELECT 1 FROM herd_reactions r WHERE r.post_id = p.id AND r.user_id = ?) AS i_like,
                           q.id AS quote_id, qu.display_name AS quote_name, q.body AS quote_text, q.deleted_at AS quote_deleted
                      FROM herd_posts p
@@ -75,7 +71,7 @@ function renderTalkPost(array $p, int $userId, bool $moderator): string
     $id = (int)$p['id'];
     $name = (string)$p['display_name'];
     $h = '<article class="tb" id="p' . $id . '" data-id="' . $id . '">';
-    $h .= '<div class="tb-avatar" style="background:' . avatarColor((int)$p['user_id']) . '" aria-hidden="true">' . e(mb_strtoupper(mb_substr($name, 0, 1))) . '</div>';
+    $h .= '<div class="tb-avatar">' . avatarHtml((int)$p['user_id'], $name, $p['avatar_version'] ?? null, 'md') . '</div>';
     $h .= '<div class="tb-body"><header><strong>' . e($name) . '</strong>';
     if (!empty($p['is_lead'])) {
         $h .= ' <span class="badge">' . te('crew.lead') . '</span>';

@@ -42,8 +42,9 @@ pageHeader(t('forum.new_topic'));
 <form method="post" class="form wide">
   <?= csrfField() ?><input type="hidden" name="c" value="<?= e($cat['slug']) ?>">
   <div class="field"><label for="subject"><?= te('forum.subject') ?></label><input id="subject" name="subject" required minlength="5" maxlength="150" value="<?= e($subject) ?>"></div>
-  <div class="field"><label for="text"><?= te('forum.text') ?></label><textarea id="text" name="text" rows="10" required maxlength="<?= FORUM_POST_MAX ?>"><?= e($text) ?></textarea>
+  <div class="field"><label for="text"><?= te('forum.text') ?></label><textarea id="text" name="text" rows="10" required maxlength="<?= FORUM_POST_MAX ?>" data-emoji><?= e($text) ?></textarea>
     <p class="hint"><?= te('forum.format') ?></p></div>
   <button type="submit"><?= te('forum.publish') ?></button>
 </form>
+<?php require_once __DIR__ . '/community_lib.php'; echo communityAssets(); ?>
 <?php pageFooter();

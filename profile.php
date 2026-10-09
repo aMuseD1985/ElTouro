@@ -3,7 +3,21 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/rewards_lib.php';
 require __DIR__ . '/share_lib.php';
+require __DIR__ . '/community_lib.php';
 $me = requireLogin();
+
+if (isPost() && in_array($_POST['action'] ?? '', ['avatar', 'avatar_delete'], true)) {
+    checkCsrf();
+    if ($_POST['action'] === 'avatar_delete') {
+        deleteAvatar((int)$me['id']);
+        flash(t('profile.avatar_deleted'));
+    } elseif (($err = saveAvatar((int)$me['id'], $_FILES['avatar'] ?? [])) !== null) {
+        flash(t('profile.' . $err), 'error');
+    } else {
+        flash(t('profile.avatar_saved'));
+    }
+    redirect('/profile#avatar');
+}
 
 if (isPost()) {
     checkCsrf();
@@ -17,6 +31,7 @@ if (isPost()) {
 }
 
 $p = dbOne('SELECT bio, home_region FROM user_profiles WHERE user_id = ?', [$me['id']]) ?? ['bio' => '', 'home_region' => ''];
+$avatarVersion = dbOne('SELECT avatar_version FROM users WHERE id = ?', [$me['id']])['avatar_version'] ?? null;
 $google = dbOne("SELECT email FROM user_identities WHERE provider = 'google' AND user_id = ?", [$me['id']]);
 $inviteUrl = inviteUrl(userInviteCode((int)$me['id']));
 $brought = confirmedReferralCount((int)$me['id']);
@@ -25,7 +40,22 @@ pageHeader(t('profile.title'));
 ?>
 <section class="narrow">
   <h1><?= te('profile.title') ?></h1>
-  <p class="muted"><?= e($me['display_name']) ?> · <?= e($me['email']) ?></p>
+  <div class="profile-head" id="avatar">
+    <?= avatarHtml((int)$me['id'], $me['display_name'], $avatarVersion, 'lg') ?>
+    <div>
+      <p class="muted"><?= e($me['display_name']) ?> · <?= e($me['email']) ?></p>
+      <form method="post" enctype="multipart/form-data" class="avatar-form">
+        <?= csrfField() ?><input type="hidden" name="action" value="avatar">
+        <label for="avatar-file" class="secondary-submit"><?= te($avatarVersion ? 'profile.avatar_change' : 'profile.avatar_add') ?></label>
+        <input type="file" id="avatar-file" name="avatar" accept="image/jpeg,image/png,image/webp" class="visually-hidden" data-autosubmit>
+        <noscript><button type="submit"><?= te('profile.avatar_upload') ?></button></noscript>
+      </form>
+      <?php if ($avatarVersion): ?>
+        <form method="post" class="inline"><?= csrfField() ?><input type="hidden" name="action" value="avatar_delete"><button class="link danger"><?= te('profile.avatar_remove') ?></button></form>
+      <?php endif; ?>
+      <p class="hint"><?= te('profile.avatar_hint') ?></p>
+    </div>
+  </div>
   <?php if ($google): ?><p class="muted"><?= te('google.connected', ['email' => $google['email']]) ?></p><?php endif; ?>
   <form method="post" class="form">
     <?= csrfField() ?>
@@ -50,4 +80,5 @@ pageHeader(t('profile.title'));
   <?php if ($cameVia && $cameVia['display_name']): ?><p class="muted"><?= te('invite.came_via', ['name' => $cameVia['display_name']]) ?></p><?php endif; ?>
 </section>
 <script src="/assets/share.js?v=1"></script>
+<?= communityAssets() ?>
 <?php pageFooter();

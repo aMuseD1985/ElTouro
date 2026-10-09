@@ -131,6 +131,8 @@ Eine Tour besteht aus den Wegpunkten, die du auf der Karte setzt, und der daraus
 
 **Live-Standort:** Schaltest du im Fahrmodus „Live teilen“ ein, schickt die App etwa alle zehn Sekunden deine Position, Richtung und Geschwindigkeit an unseren Server. Wir speichern nur die jeweils letzte Position, keine Spur. Sichtbar ist sie – mit deinem Anzeigenamen und einer gemeinsamen Herde – je nach deiner Wahl nur für Mitglieder deiner Herden oder für alle angemeldeten Nutzer, und erst, wenn du dich 300 Meter von dem Ort entfernt hast, an dem du das Teilen gestartet hast. Beendest du die Fahrt, löschen wir die Position sofort, sonst spätestens zwei Minuten nach dem letzten Lebenszeichen. Das Teilen ist freiwillig und muss für jede Fahrt neu eingeschaltet werden. Rechtsgrundlage ist deine Einwilligung (Art. 6 Abs. 1 lit. a DSGVO), die du jederzeit durch Beenden widerrufen kannst.
 
+**Profilfoto und Reaktionen:** Lädst du ein Profilfoto hoch, rechnen wir es auf 256 × 256 Pixel um und speichern nur dieses neue Bild – Metadaten wie Aufnahmeort, Datum oder Kameramodell fallen dabei vollständig weg. Das Foto sehen angemeldete Nutzer neben deinem Namen im Forum und in der Tränke. Du kannst es im Profil jederzeit löschen; Administratoren können unpassende Fotos entfernen. Reaktionen (Emojis) auf Forenbeiträge speichern wir mit deinem Konto; angemeldete Nutzer sehen, wer reagiert hat. Rechtsgrundlage ist der Nutzungsvertrag (Art. 6 Abs. 1 lit. b DSGVO); beides ist freiwillig.
+
 Die Schaltfläche „Mein Standort“ fragt deinen Standort über deinen Browser ab, und nur nach deiner Zustimmung im Browser. Der Standort wird ausschließlich dazu genutzt, die Karte zu verschieben. Er wird nicht an uns übertragen und nicht gespeichert. Für die Navigation im Fahrmodus gilt der Abschnitt „Fahrmodus“.
 
 ## 7. Ausfahrten
@@ -231,6 +233,8 @@ A route consists of the waypoints you set on the map and the calculated track. W
 
 **Live location:** If you switch on “Share live” in ride mode, the app sends your position, direction and speed to our server about every ten seconds. We only keep the latest position, no trail. Depending on your choice it is visible – with your display name and a shared crew – only to members of your crews or to all logged-in users, and only once you are 300 metres away from where you started sharing. When you finish the ride we delete the position immediately, otherwise at the latest two minutes after the last update. Sharing is voluntary and has to be switched on for every ride. Legal basis: your consent (Art. 6(1)(a) GDPR), which you can withdraw at any time by stopping.
 
+**Profile photo and reactions:** If you upload a profile photo, we convert it to 256 × 256 pixels and store only this new image – metadata such as where and when it was taken or the camera model are removed completely. Logged-in users see the photo next to your name in the forum and crew talk. You can delete it in your profile at any time; administrators can remove unsuitable photos. Reactions (emojis) on forum posts are stored with your account; logged-in users see who reacted. Legal basis: the user agreement (Art. 6(1)(b) GDPR); both are voluntary.
+
 ## 7. Rides
 
 When you offer a ride, we store date, meeting point, participant limit and description as well as your confirmations: that you ride a road-legal e-scooter and, for large groups, that you checked whether a permit under Section 29 StVO is required. When you sign up for a ride, we store your sign-up, whether you are on the waiting list and your confirmation that you ride a road-legal, insured e-scooter (Art. 6(1)(b) GDPR).
@@ -309,6 +313,8 @@ Für deine Inhalte bist du selbst verantwortlich. Nicht erlaubt sind insbesonder
 - Werbung oder Spam sind, oder
 - personenbezogene Daten anderer ohne deren Einverständnis enthalten.
 
+Als Profilfoto nimm nur Bilder, an denen du die Rechte hast; andere Personen nur mit deren Einverständnis, und nichts Anstößiges oder Werbliches.
+
 Wenn du eine Tour per Link teilst, kann sie jeder sehen, der den Link hat – auch ohne ElTouro-Konto. Du räumst uns das einfache, unentgeltliche Recht ein, deine Inhalte auf ElTouro im Rahmen der von dir gewählten Sichtbarkeit anzuzeigen und dafür technisch zu verarbeiten. Das Recht endet, wenn du den Inhalt löschst; Kopien in Sicherungen werden mit dem regulären Löschzyklus entfernt.
 
 ## 6. Melden und Moderation
@@ -352,7 +358,7 @@ You agree to ride in public only with a road-legal, insured e-scooter, to follow
 
 ## 5. What you publish
 
-You are responsible for your content. Not allowed: illegal content or content infringing others’ rights, insults, threats, hate or discrimination, instructions for dangerous or prohibited behaviour on the road, advertising or spam, and personal data of others without consent. If you share a route via link, anyone with the link can see it, even without an ElTouro account. You grant us a simple, free right to display and technically process your content on ElTouro within the visibility you choose, ending when you delete it.
+You are responsible for your content. Not allowed: illegal content or content infringing others’ rights, insults, threats, hate or discrimination, instructions for dangerous or prohibited behaviour on the road, advertising or spam, and personal data of others without consent. For your profile photo use only images you hold the rights to; other people only with their consent, and nothing offensive or promotional. If you share a route via link, anyone with the link can see it, even without an ElTouro account. You grant us a simple, free right to display and technically process your content on ElTouro within the visibility you choose, ending when you delete it.
 
 ## 6. Reporting and moderation
 
