@@ -7,5 +7,6 @@
   <a href="/admin/forum">Forum</a>
   <a href="/admin/reports">Meldungen</a>
   <a href="/admin/spots">Orte</a>
+  <a href="/admin/api">API</a>
   <a href="/admin/ops">Betrieb</a>
 </nav>

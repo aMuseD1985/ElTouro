@@ -552,6 +552,30 @@ function runMigrations(): array
         $log[] = vapidKeys() !== null ? '+ VAPID-Schlüsselpaar für Web-Push erzeugt (in den Einstellungen gespeichert; nicht ersetzen)' : '! VAPID-Schlüssel konnten nicht erzeugt werden (OpenSSL?)';
     }
 
+    /* ---------- REST API for approved users (2026-10, api_lib.php) ---------- */
+    if (!columnExists('users', 'api_access')) {
+        db()->exec("ALTER TABLE users ADD api_access TINYINT(1) NOT NULL DEFAULT 0");
+        $log[] = '~ users.api_access angelegt';
+    }
+    $create('api_requests', "CREATE TABLE api_requests (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, reason VARCHAR(500) NOT NULL,
+      status VARCHAR(10) NOT NULL DEFAULT 'open', created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, handled_by BIGINT UNSIGNED NULL, handled_at DATETIME NULL,
+      KEY ix_apireq_user (user_id, status),
+      CONSTRAINT fk_apireq_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    $create('api_tokens', "CREATE TABLE api_tokens (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, name VARCHAR(60) NOT NULL, token_hash CHAR(64) NOT NULL, prefix VARCHAR(12) NOT NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, last_used_at DATETIME NULL, revoked_at DATETIME NULL,
+      UNIQUE KEY uq_apitoken_hash (token_hash), KEY ix_apitoken_user (user_id),
+      CONSTRAINT fk_apitoken_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    $create('api_hits', "CREATE TABLE api_hits (
+      token_id BIGINT UNSIGNED NOT NULL, minute_at INT UNSIGNED NOT NULL, n SMALLINT UNSIGNED NOT NULL DEFAULT 1, PRIMARY KEY (token_id, minute_at),
+      CONSTRAINT fk_apihit_token FOREIGN KEY (token_id) REFERENCES api_tokens(id) ON DELETE CASCADE
+    ) $opt");
+    // The first admin may use the API right away; everybody else needs the admin's approval
+    dbExec('UPDATE users SET api_access = 1 WHERE is_admin = 1 AND api_access = 0');
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
         'privacy' => ['de' => ['d1fd3d0814e71f30d20659d660c744d8c41e25ba28297f881a3d1f556fa76e15', 'f8b5527c07daaa6fff2cca20f8df52aee270b872ede74f6c558b7e3a10c027de', '0b48a1a125758f83b569b8b147f16ab6a28f5a5bf999449649641f5d27dfbba1', '7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
