@@ -353,7 +353,7 @@ details summary { cursor: pointer; }
 .poi-hours td { padding: .15rem 0; }
 .poi-hours tr + tr th, .poi-hours tr + tr td { border-top: 1px solid #EEF1F5; }
 .poi-hours tr.is-today { background: #FBF4E4; font-weight: 700; }
-.poi-hours td.is-closed { color: #8A96A8; }
+.poi-hours td.is-closed { color: #5E6E83; }
 .poi-hours-raw { margin: .3rem 0 0; color: #46566C; }
 .poi-actions { display: flex; gap: .5rem; margin-top: auto; padding-top: .3rem; }
 .poi-actions button { flex: 1; padding: .5rem .6rem; min-height: 40px; }
@@ -532,3 +532,75 @@ body:has(.consent.is-gate) .site-footer { display: none; }
 .profile figcaption { font-size: .85rem; color: var(--muted); margin-top: .2rem; }
 details.panel > summary { cursor: pointer; font-family: var(--display); font-weight: 800; font-style: italic; font-size: 1.4rem; }
 details.panel[open] > summary { margin-bottom: .5rem; }
+
+/* ---- UX round 2: bottom tab bar on phones, slim header ---- */
+.tabbar { display: none; }
+@media (max-width: 799px) {
+  body.app-ui { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  body.app-ui .site-header { padding-block: .45rem; flex-wrap: nowrap; }
+  body.app-ui .site-header .main-nav, body.app-ui .site-header .lang-switch { display: none; }
+  body.app-ui .brand { font-size: 1.45rem; }
+  body.app-ui .site-footer { margin-bottom: 0; }
+  .tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 1500; background: var(--night); border-top: 3px solid var(--gold);
+    padding-bottom: env(safe-area-inset-bottom); }
+  .tabbar a { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 60px; padding: .25rem 0; color: #B7C3D3; text-decoration: none; font-weight: 600; }
+  .tabbar .tb-i { font-size: 1.35rem; line-height: 1; }
+  .tabbar .tb-l { font-size: .72rem; line-height: 1.1; }
+  .tabbar a.is-on { color: var(--gold); background: rgba(255, 255, 255, .06); }
+  body.app-ui .toast { bottom: calc(76px + env(safe-area-inset-bottom)); }
+  body.app-ui .install-banner { bottom: calc(72px + env(safe-area-inset-bottom)); }
+  body:has(.consent.is-gate) .tabbar { display: none; }
+  body:has(.consent.is-gate) { padding-bottom: 0; }
+}
+@media (max-width: 599px) { .env-long { display: none; } .env-band { padding: .15rem 1rem; font-size: .8rem; } }
+.more-links { display: none; }
+@media (max-width: 799px) { body.app-ui .more-links { display: flex; flex-wrap: wrap; gap: .2rem 1.2rem; align-items: center; margin: 0 0 1rem; } .more-links form { margin: 0; } }
+
+/* ---- UX round 2: ride mode controls with labels, confirm and intro ---- */
+.ride-tools { flex: 1 1 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(54px, 1fr)); gap: .4rem; margin-top: .3rem; }
+.ride-panel .rt { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 56px; padding: .3rem .1rem; border: 0; border-radius: 10px;
+  background: var(--chalk); color: var(--night); font: inherit; text-decoration: none; cursor: pointer; }
+.ride-panel .rt .ico { font-size: 1.45rem; line-height: 1; font-weight: 800; font-style: normal; }
+.ride-panel .rt .lbl { font-size: .72rem; font-weight: 600; line-height: 1.1; }
+.ride-panel .rt.ride-close { background: #F3D9D3; }
+.confirm-buttons { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: center; }
+.ride-done-box { color: var(--night); }
+.intro-list { text-align: left; list-style: none; padding: 0; margin: .5rem 0 1rem; display: grid; gap: .5rem; }
+
+/* ---- UX round 2: home ---- */
+.landing-hero { display: grid; grid-template-columns: 1fr auto; gap: 1.5rem; align-items: center; }
+.landing-lead { font-size: 1.2rem; max-width: 34rem; }
+.landing-cta { display: flex; flex-wrap: wrap; gap: .6rem; }
+.landing-cta .btn { flex: 0 1 auto; }
+.landing-mascot { height: 260px; width: auto; filter: drop-shadow(0 8px 10px rgba(20, 38, 63, .25)); }
+.landing-steps { list-style: none; padding: 0; margin: 2rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
+.landing-steps li { background: #fff; border-radius: 12px; padding: 1rem 1.1rem; box-shadow: 0 1px 3px rgba(20, 38, 63, .08); }
+.landing-steps h3 { margin: .2rem 0 .3rem; font-family: var(--display); font-style: italic; font-weight: 800; font-size: 1.35rem; }
+.landing-steps p { margin: 0; color: var(--muted); }
+.step-i { font-size: 1.8rem; }
+@media (max-width: 640px) { .landing-hero { grid-template-columns: 1fr; } .landing-mascot { order: -1; justify-self: center; height: 170px; } }
+.home-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: .2rem 0 1rem; }
+.home-actions .btn { flex: 1 1 12rem; }
+.todo h2 { margin-top: 0; font-size: 1.4rem; }
+.todo-list { list-style: none; padding: 0; margin: .3rem 0 0; display: grid; gap: .3rem; }
+.todo-list li span { display: inline-block; width: 1.4rem; font-weight: 800; color: var(--denim); }
+.todo-list li.is-done { color: var(--muted); text-decoration: line-through; }
+
+/* ---- UX round 2: tour list ---- */
+.filters { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin: .4rem 0 .8rem; }
+.filters input[type=search] { flex: 1 1 14rem; width: auto; }
+.filters select { flex: 1 1 9rem; width: auto; }
+.tour-cards { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr)); gap: .8rem; }
+.tour-card { display: grid; grid-template-columns: 7.5rem 1fr; gap: .8rem; align-items: center; padding: .6rem; }
+.tour-thumb img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: var(--chalk); }
+.tour-body h3 { margin: 0 0 .15rem; font-size: 1.1rem; line-height: 1.2; }
+.tour-body p { margin: 0; }
+.tour-meta { font-size: .92rem; }
+.tour-by { font-size: .85rem; }
+
+.filters { flex-direction: column; align-items: stretch; gap: .4rem; }
+.filters-row { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+.filters-row input[type=search] { flex: 1 1 auto; min-width: 0; }
+.filters-more summary { cursor: pointer; color: var(--denim); font-weight: 600; padding: .3rem 0; }
+.filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .5rem; margin: .3rem 0; }
+.filters-grid select { width: 100%; }

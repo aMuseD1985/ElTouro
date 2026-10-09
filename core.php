@@ -339,6 +339,11 @@ function t(string $key, array $vars = []): string
 {
     global $TEXTS, $LANG;
     $text = $TEXTS[$LANG][$key] ?? $TEXTS['de'][$key] ?? $key;
+    // "one|other" – singular for n = 1
+    if (isset($vars['n']) && str_contains($text, '|')) {
+        $parts = explode('|', $text, 2);
+        $text = (int)$vars['n'] === 1 ? $parts[0] : $parts[1];
+    }
     foreach ($vars as $k => $v) {
         $text = str_replace('{' . $k . '}', (string)$v, $text);
     }
@@ -555,7 +560,7 @@ function pageHeader(string $title, array $meta = []): void
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/assets/app-pref.js?v=1"></script>
 <script src="/assets/map_styles.js?v=1"></script>
-<link rel="stylesheet" href="/assets/style.css?v=34">
+<link rel="stylesheet" href="/assets/style.css?v=39">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>
@@ -563,7 +568,7 @@ function pageHeader(string $title, array $meta = []): void
 <?php // The app interface (logged in, not on public pages like legal texts or shared tours) behaves like an app ?>
 <body<?= $u && !defined('PUBLIC_PAGE') ? ' class="app-ui"' : '' ?>>
 <a class="skip" href="#content"><?= te('nav.skip') ?></a>
-<?php if (!isLive()): ?><div class="env-band env-<?= e($env) ?>"><?= e(strtoupper($env)) ?> · <?= te('env.notice') ?></div><?php endif; ?>
+<?php if (!isLive()): ?><div class="env-band env-<?= e($env) ?>"><?= e(strtoupper($env)) ?><span class="env-long"> · <?= te('env.notice') ?></span></div><?php endif; ?>
 <?php if ($banner !== ''): ?><div class="banner" role="status"><?= inlineFormat($banner) ?></div><?php endif; ?>
 <header class="site-header">
   <a class="brand" href="/">ElTouro</a>
@@ -610,6 +615,7 @@ function pageFooter(): void
 foreach (['install_title', 'install_text', 'install_button', 'later', 'ios_text', 'installed', 'back', 'select_on', 'select_off'] as $k) {
     $appTexts[$k] = t('app.' . $k);
 } ?>
+<?= tabBar() ?>
 <div id="app-texts" data-texts="<?= e(json_encode($appTexts, JSON_UNESCAPED_UNICODE)) ?>" hidden></div>
 <script src="/assets/app.js?v=2"></script>
 </body>
@@ -644,3 +650,34 @@ function consentGate(): void
 }
 
 consentGate();
+
+
+/**
+ * Bottom tab bar of the app on phones (CSS shows it below 800 px only): the five places a rider goes to most.
+ * Only for logged-in riders on app pages; language and logout live in the profile on small screens.
+ */
+function tabBar(): string
+{
+    if (currentUser() === null || defined('PUBLIC_PAGE')) {
+        return '';
+    }
+    $path = (string)(strtok($_SERVER['REQUEST_URI'] ?? '/', '?') ?: '/');
+    $tabs = [
+        ['/tours', '🗺', 'nav.tours', ['/tour']],
+        ['/rides', '📅', 'nav.rides', ['/ride', '/live']],
+        ['/crews', '🐂', 'nav.crews', ['/crew', '/talk']],
+        ['/forum', '💬', 'nav.forum', ['/forum']],
+        ['/profile', '👤', 'nav.profile', ['/profile', '/admin', '/consent', '/account']],
+    ];
+    $h = '<nav class="tabbar" aria-label="' . te('nav.main') . '">';
+    foreach ($tabs as [$href, $icon, $key, $prefixes]) {
+        $on = false;
+        foreach ($prefixes as $p) {
+            if ($path === $p || str_starts_with($path, $p . '/') || ($p === '/tour' && $path === '/tours') || ($p === '/ride' && $path === '/rides')) {
+                $on = true;
+            }
+        }
+        $h .= '<a href="' . $href . '"' . ($on ? ' aria-current="page" class="is-on"' : '') . '><span class="tb-i" aria-hidden="true">' . $icon . '</span><span class="tb-l">' . te($key) . '</span></a>';
+    }
+    return $h . '</nav>';
+}

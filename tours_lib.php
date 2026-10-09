@@ -261,3 +261,61 @@ function elevationProfile(string $geojson): ?array
          . '<polyline points="' . $poly . '" class="profile-line" vector-effect="non-scaling-stroke"/></svg>';
     return ['svg' => $svg, 'min' => (int)round($min), 'max' => (int)round($max)];
 }
+
+
+/**
+ * Small preview picture of a tour for lists (480×270): the route on a light map-like ground, start and finish marked.
+ * Cached in data/thumbs per tour state. Only for riders who may see the tour (tour_thumb.php checks that).
+ */
+function tourThumbPath(array $tour): ?string
+{
+    if (!function_exists('imagecreatetruecolor')) {
+        return null;
+    }
+    $file = dataDir('thumbs') . '/' . (int)$tour['id'] . '-' . strtotime($tour['updated_at'] . ' UTC') . '.png';
+    if (is_file($file)) {
+        return $file;
+    }
+    foreach (glob(dataDir('thumbs') . '/' . (int)$tour['id'] . '-*.png') ?: [] as $old) {
+        @unlink($old);   // older states of this tour
+    }
+    $fc = json_decode((string)$tour['geojson'], true);
+    $w = 480; $h = 270; $pad = 36;
+    $img = imagecreatetruecolor($w, $h);
+    $col = fn(int $hex) => imagecolorallocate($img, ($hex >> 16) & 255, ($hex >> 8) & 255, $hex & 255);
+    $chalk = $col(0xE8ECF1); $grid = $col(0xD3DBE5); $denim = $col(0x2F5E8C); $white = $col(0xFFFFFF); $gold = $col(0xD7A845); $night = $col(0x14263F); $red = $col(0xC2553F);
+    imagefilledrectangle($img, 0, 0, $w, $h, $chalk);
+    imagesetthickness($img, 1);
+    for ($x = 0; $x < $w; $x += 40) { imageline($img, $x, 0, $x, $h, $grid); }
+    for ($y = 0; $y < $h; $y += 40) { imageline($img, 0, $y, $w, $y, $grid); }
+    $all = [];
+    foreach ($fc['features'] ?? [] as $f) {
+        foreach ($f['geometry']['coordinates'] ?? [] as $c) { $all[] = $c; }
+    }
+    if (count($all) >= 2) {
+        $lats = array_column($all, 1); $lngs = array_column($all, 0);
+        $k = cos(deg2rad((min($lats) + max($lats)) / 2));
+        $minX = min($lngs) * $k; $maxX = max($lngs) * $k; $minY = min($lats); $maxY = max($lats);
+        $scale = min(($w - 2 * $pad) / max($maxX - $minX, 1e-9), ($h - 2 * $pad) / max($maxY - $minY, 1e-9));
+        $offX = ($w - ($maxX - $minX) * $scale) / 2; $offY = ($h - ($maxY - $minY) * $scale) / 2;
+        $px = fn(float $lng, float $lat) => [(int)round($offX + ($lng * $k - $minX) * $scale), (int)round($offY + ($maxY - $lat) * $scale)];
+        foreach ([[12, $white], [6, null]] as [$thick, $color]) {
+            imagesetthickness($img, $thick);
+            foreach ($fc['features'] as $f) {
+                $c = $color ?? (!empty($f['properties']['freehand']) ? $red : $denim);
+                $prev = null;
+                foreach ($f['geometry']['coordinates'] as $pt) {
+                    $p = $px($pt[0], $pt[1]);
+                    if ($prev) { imageline($img, $prev[0], $prev[1], $p[0], $p[1], $c); }
+                    $prev = $p;
+                }
+            }
+        }
+        $s = $px($all[0][0], $all[0][1]); $e = $px(end($all)[0], end($all)[1]);
+        imagefilledellipse($img, $s[0], $s[1], 20, 20, $night); imagefilledellipse($img, $s[0], $s[1], 13, 13, $gold);
+        imagefilledellipse($img, $e[0], $e[1], 20, 20, $white); imagefilledellipse($img, $e[0], $e[1], 12, 12, $night);
+    }
+    imagepng($img, $file . '.tmp', 6);
+    rename($file . '.tmp', $file);
+    return $file;
+}

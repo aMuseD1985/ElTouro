@@ -69,14 +69,35 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
         <button type="button" id="ride-start" class="btn"><?= te('nav.start_button') ?></button>
       <?php endif; ?>
       <button type="button" id="ride-stop" class="btn secondary" hidden><?= te('nav.stop_button') ?></button>
-      <button type="button" id="ride-voice" class="secondary-submit" aria-pressed="true">🔊</button>
-      <button type="button" id="ride-voice-pick" class="secondary-submit" title="<?= te('nav.voice_pick') ?>" aria-label="<?= te('nav.voice_pick') ?>" hidden>🎙</button>
-      <button type="button" id="ride-view" class="secondary-submit">➤</button>
-      <button type="button" id="ride-style" class="secondary-submit" title="<?= te('map.style_choose') ?>" aria-label="<?= te('map.style_choose') ?>">🗺</button>
-      <button type="button" id="ride-follow" class="secondary-submit" title="<?= te('nav.follow') ?>" aria-label="<?= te('nav.follow') ?>">⌖</button>
-      <a class="secondary-submit ride-close" href="/tour/<?= (int)$tour['id'] ?>" aria-label="<?= te('nav.close') ?>">✕</a>
+      <div class="ride-tools">
+        <button type="button" id="ride-voice" class="rt" aria-pressed="true"><span class="ico">🔊</span><span class="lbl"><?= te('nav.lbl_voice') ?></span></button>
+        <button type="button" id="ride-voice-pick" class="rt" title="<?= te('nav.voice_pick') ?>" aria-label="<?= te('nav.voice_pick') ?>" hidden><span class="ico">🎙</span><span class="lbl"><?= te('nav.lbl_pick') ?></span></button>
+        <button type="button" id="ride-view" class="rt"><span class="ico">➤</span><span class="lbl"><?= te('nav.lbl_view') ?></span></button>
+        <button type="button" id="ride-style" class="rt" title="<?= te('map.style_choose') ?>" aria-label="<?= te('map.style_choose') ?>"><span class="ico">🗺</span><span class="lbl"><?= te('nav.lbl_map') ?></span></button>
+        <button type="button" id="ride-follow" class="rt" title="<?= te('nav.follow') ?>" aria-label="<?= te('nav.follow') ?>"><span class="ico">⌖</span><span class="lbl"><?= te('nav.lbl_follow') ?></span></button>
+        <a class="rt ride-close" id="ride-close" href="/tour/<?= (int)$tour['id'] ?>" aria-label="<?= te('nav.close') ?>"><span class="ico">✕</span><span class="lbl"><?= te('nav.lbl_close') ?></span></a>
+      </div>
     </div>
     <?php if (!$sim): ?><p class="ride-hint"><?= te('nav.record_hint') ?> <?= te('nav.live_hint') ?></p><?php endif; ?>
+  </div>
+
+  <div class="ride-done" id="ride-confirm" hidden role="dialog" aria-modal="true" aria-labelledby="ride-confirm-title">
+    <div class="ride-done-box">
+      <h2 id="ride-confirm-title"><?= te('nav.confirm_title') ?></h2>
+      <p><?= te('nav.confirm_text') ?></p>
+      <p class="confirm-buttons"><button type="button" class="btn" id="ride-confirm-stay"><?= te('nav.confirm_stay') ?></button>
+        <button type="button" class="btn secondary" id="ride-confirm-end"><?= te('nav.confirm_end') ?></button></p>
+    </div>
+  </div>
+
+  <div class="ride-done" id="ride-intro" hidden role="dialog" aria-modal="true" aria-labelledby="ride-intro-title">
+    <div class="ride-done-box">
+      <h2 id="ride-intro-title"><?= te('nav.intro_title') ?></h2>
+      <ul class="intro-list">
+        <li>▶ <?= te('nav.intro_1') ?></li><li>🔊 🎙 <?= te('nav.intro_2') ?></li><li>➤ 🗺 <?= te('nav.intro_3') ?></li><li>⌖ <?= te('nav.intro_4') ?></li><li>✕ <?= te('nav.intro_5') ?></li>
+      </ul>
+      <p><button type="button" class="btn" id="ride-intro-ok"><?= te('nav.intro_ok') ?></button></p>
+    </div>
   </div>
 
   <div class="ride-done" id="ride-done" hidden>
@@ -90,5 +111,5 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
 </div>
 <script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
 <script src="/assets/voice.js?v=2"></script>
-<script src="/assets/navigate.js?v=17"></script>
+<script src="/assets/navigate.js?v=18"></script>
 <?php pageFooter();

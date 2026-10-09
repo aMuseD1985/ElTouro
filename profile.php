@@ -42,6 +42,11 @@ pageHeader(t('profile.title'));
 ?>
 <section class="narrow">
   <h1><?= te('profile.title') ?></h1>
+  <nav class="more-links" aria-label="<?= te('profile.more') ?>">
+    <a href="/live"><?= te('profile.more_live') ?></a>
+    <?php if ((int)$me['is_admin'] === 1): ?><a href="/admin/"><?= te('nav.admin') ?></a><?php endif; ?>
+    <form method="post" action="/logout" class="inline"><?= csrfField() ?><button type="submit" class="link"><?= te('nav.logout') ?></button></form>
+  </nav>
   <div class="profile-head" id="avatar">
     <?= avatarHtml((int)$me['id'], $me['display_name'], $avatarVersion, 'lg') ?>
     <div>

@@ -498,7 +498,7 @@
   ui.voice.addEventListener('click', function () {
     var voiceOn = ui.voice.getAttribute('aria-pressed') !== 'true';
     voice.setOn(voiceOn);
-    ui.voice.textContent = voiceOn ? '🔊' : '🔇';
+    ui.voice.querySelector('.ico').textContent = voiceOn ? '🔊' : '🔇';
     ui.voice.setAttribute('aria-pressed', voiceOn ? 'true' : 'false');
     ui.voice.title = voiceOn ? T.voice_on : T.voice_off;
   });
@@ -520,7 +520,7 @@
     if (lastPos) camera(lastPos, lastHeading, false);
   });
   function showView() {
-    ui.view.textContent = { heading: '➤', '3d': '3D', north: 'N' }[view];
+    ui.view.querySelector('.ico').textContent = { heading: '➤', '3d': '3D', north: 'N' }[view];
     ui.view.title = T['view_' + view];
     ui.view.setAttribute('aria-label', T['view_' + view]);
   }
@@ -542,6 +542,38 @@
     });
   } else if (styleBtn) {
     styleBtn.hidden = true;
+  }
+
+  // Leaving while the ride runs asks first – a stray tap on ✕ must not end the ride
+  var closeLink = document.getElementById('ride-close'), confirmBox = document.getElementById('ride-confirm');
+  if (closeLink && confirmBox) {
+    closeLink.addEventListener('click', function (ev) {
+      if (!state.running) return;
+      ev.preventDefault();
+      confirmBox.hidden = false;
+      document.getElementById('ride-confirm-stay').focus();
+    });
+    document.getElementById('ride-confirm-stay').addEventListener('click', function () { confirmBox.hidden = true; });
+    document.getElementById('ride-confirm-end').addEventListener('click', function () { confirmBox.hidden = true; finish(false); });
+  }
+  window.addEventListener('beforeunload', function (ev) {
+    if (!state.running) return;
+    ev.preventDefault();
+    ev.returnValue = '';
+  });
+
+  // First time here: a short tour of the buttons
+  var introBox = document.getElementById('ride-intro');
+  if (introBox) {
+    var seen = false;
+    try { seen = localStorage.getItem('eltouro.rideIntro') === '1'; } catch (e) { /* ignore */ }
+    if (!seen) {
+      introBox.hidden = false;
+      document.getElementById('ride-intro-ok').addEventListener('click', function () {
+        introBox.hidden = true;
+        try { localStorage.setItem('eltouro.rideIntro', '1'); } catch (e) { /* ignore */ }
+      });
+    }
   }
 
   function finish(arrived) {
