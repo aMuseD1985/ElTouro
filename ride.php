@@ -74,7 +74,8 @@ pageHeader($ride['title']);
   <h1><?= e($ride['title']) ?></h1>
   <?php if ($canManage && $open): ?><a class="btn secondary" href="/ride/<?= $rid ?>/edit"><?= te('ride.edit') ?></a><?php endif; ?>
 </div>
-<p class="ride-when big"><?= e(formatRideTime($ride['starts_at'])) ?></p>
+<p class="ride-when big"><?= e(formatRideTime($ride['starts_at'])) ?>
+  <?php if ($ride['status'] !== 'cancelled'): ?><a class="btn secondary ics-btn" href="/ride/<?= $rid ?>/ics" download>📅 <?= te('ride.ics') ?></a><?php endif; ?></p>
 <p class="muted"><?= te('ride.by', ['name' => $ride['organizer']]) ?> ·
   <?= $ride['visibility'] === 'public' ? te('ride.v_public') : te('ride.v_group', ['name' => (string)$ride['crew_name']]) ?></p>
 

@@ -734,7 +734,7 @@
     }).catch(function () {
       if (no !== requestNo) return;
       stopLoading(false);
-      setStatus(T.error);
+      setStatus(navigator.onLine === false ? T.offline : T.error);
       calcAuto = false;      // no endless retries: the button stays, the rider presses it
       showCalcButton();
     });
@@ -925,6 +925,18 @@
     try { localStorage.setItem('eltouro.avoidUturns', uturnBox.checked ? '1' : '0'); } catch (e) { /* ignore */ }
     if (points.length >= 2) calculate();
   });
+  // No network: the map tiles come from the device cache, but routing, names and stops need the server
+  var offlineBanner = document.getElementById('offline-banner');
+  function netState() {
+    var off = navigator.onLine === false;
+    if (offlineBanner) offlineBanner.hidden = !off;
+    if (off) { stopCalc(); }
+    else if (calcWrap && !calcWrap.hidden) { calcAuto = true; showCalcButton(); }
+  }
+  window.addEventListener('offline', netState);
+  window.addEventListener('online', function () { netState(); if (points.length >= 2 && !current) setStatus(T.back_online); });
+  netState();
+
   // Summary of the route options ("Allrounder · aktuelle eKFV") and the crew field only when "my crew" is chosen
   function optsLabel() {
     var out = document.getElementById('route-opts-label');

@@ -614,3 +614,5 @@ details.panel[open] > summary { margin-bottom: .5rem; }
 .route-opts > summary { cursor: pointer; font-weight: 600; padding: .6rem 0; }
 .route-opts[open] > summary { border-bottom: 1px solid var(--chalk); }
 .route-opts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; padding: .7rem 0; }
+.ride-when { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.ics-btn { font-size: 1rem; min-height: 40px; padding: .4rem .9rem; flex: 0 0 auto; }

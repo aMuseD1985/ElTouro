@@ -93,7 +93,7 @@ if (isPost()) {
 // Texts for the script (i18n in the browser)
 $jsTexts = [];
 foreach (['point', 'calculating', 'done', 'error', 'notice_no_router', 'notice_partly_freehand', 'empty', 'stats', 'freehand_share', 'locate_error',
-          'leg_too_long', 'calc_button', 'press_calc', 'press_calc_manual', 'pause_1', 'pause_2', 'pause_3', 'pause_4', 'open_maps', 'optimize_few', 'optimize_none', 'optimize_done', 'uturns_avoided', 'uturns_left', 'remove', 'up', 'down', 'leg', 'start', 'finish', 'searching', 'search_none', 'search_error', 'search_slow', 'add_point', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
+          'leg_too_long', 'calc_button', 'press_calc', 'press_calc_manual', 'offline', 'back_online', 'pause_1', 'pause_2', 'pause_3', 'pause_4', 'open_maps', 'optimize_few', 'optimize_none', 'optimize_done', 'uturns_avoided', 'uturns_left', 'remove', 'up', 'down', 'leg', 'start', 'finish', 'searching', 'search_none', 'search_error', 'search_slow', 'add_point', 'loading_1', 'loading_2', 'loading_3', 'loading_4', 'loading_5', 'loading_6', 'loading_7', 'loading_8', 'loading_9', 'loading_10'] as $k) {
     $jsTexts[$k] = t('planner.' . $k);
 }
 
@@ -184,6 +184,7 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
 <div class="calc-wrap" id="calc-wrap" hidden>
   <div class="calc-ring" id="calc-ring"><button type="button" id="calc-btn" class="calc-btn"><?= te('planner.calc_button') ?></button></div>
 </div>
+<p id="offline-banner" class="alert alert-error" role="alert" hidden><?= te('planner.offline') ?></p>
 <p id="planner-status" class="muted" role="status" aria-live="polite"></p>
 <p id="planner-info" class="stats"></p>
 <section id="stop-suggestions" class="stop-suggestions" hidden aria-live="polite"></section>
@@ -232,5 +233,5 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=33"></script>
+<script src="/assets/planner.js?v=34"></script>
 <?php pageFooter();

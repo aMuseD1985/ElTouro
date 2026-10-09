@@ -468,6 +468,8 @@ return [
     'planner.waypoints' => 'Wegpunkte',
     'planner.opts_title' => 'Fahrzeug & Regeln',
     'planner.rules_hint' => 'Bestimmt, welche Wege erlaubt sind. Solange du vor dem 1. März 2027 fährst, nimm „Aktuelle eKFV“.',
+    'planner.offline' => 'Du bist offline. Deine Punkte bleiben erhalten, aber Berechnen, Ortssuche und Pausen brauchen Internet. Sobald du wieder Netz hast, geht es weiter.',
+    'planner.back_online' => 'Wieder online – tippe auf „Tour berechnen“.',
     'planner.help_title' => 'So geht’s',
     'planner.tools' => 'Werkzeuge',
     'planner.auto_calc' => 'Automatisch berechnen',
@@ -633,6 +635,7 @@ return [
 
     'ride.new' => 'Ausfahrt anbieten', 'ride.edit' => 'Ausfahrt bearbeiten', 'ride.by' => 'organisiert von {name}',
     'ride.v_public' => 'offen für alle angemeldeten Fahrer', 'ride.v_group' => 'für die Herde {name}',
+    'ride.ics' => 'In den Kalender', 'ride.ics_link' => 'Alle Infos:',
     'ride.cancelled' => 'Abgesagt', 'ride.free_places' => '{n} Platz frei|{n} Plätze frei', 'ride.full' => 'Ausgebucht',
     'ride.you_confirmed_short' => 'Du bist dabei', 'ride.you_waitlist_short' => 'Du stehst auf der Warteliste',
     'ride.not_editable' => 'Diese Ausfahrt lässt sich nicht mehr ändern.',
@@ -1164,6 +1167,8 @@ return [
     'planner.waypoints' => 'Waypoints',
     'planner.opts_title' => 'Vehicle & rules',
     'planner.rules_hint' => 'Sets which ways are allowed. As long as you ride before 1 March 2027, choose “Current German rules (eKFV)”.',
+    'planner.offline' => 'You are offline. Your points are kept, but calculating, place search and stops need internet. Once you have signal again you can carry on.',
+    'planner.back_online' => 'Back online – tap “Calculate route”.',
     'planner.help_title' => 'How it works',
     'planner.tools' => 'Tools',
     'planner.auto_calc' => 'Calculate automatically',
@@ -1329,6 +1334,7 @@ return [
 
     'ride.new' => 'Offer a ride', 'ride.edit' => 'Edit ride', 'ride.by' => 'organised by {name}',
     'ride.v_public' => 'open to all logged-in riders', 'ride.v_group' => 'for the crew {name}',
+    'ride.ics' => 'Add to calendar', 'ride.ics_link' => 'All details:',
     'ride.cancelled' => 'Cancelled', 'ride.free_places' => '{n} place left|{n} places left', 'ride.full' => 'Fully booked',
     'ride.you_confirmed_short' => 'You’re in', 'ride.you_waitlist_short' => 'You’re on the waiting list',
     'ride.not_editable' => 'This ride can no longer be changed.',

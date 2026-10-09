@@ -87,6 +87,7 @@ RewriteRule ^rides/?$ rides.php [L,QSA]
 RewriteRule ^ride/new/?$ ride_edit.php [L,QSA]
 RewriteRule ^ride/([0-9]+)/?$ ride.php?id=$1 [L,QSA]
 RewriteRule ^ride/([0-9]+)/edit/?$ ride_edit.php?id=$1 [L,QSA]
+RewriteRule ^ride/([0-9]+)/ics$ ride_ics.php?id=$1 [L,QSA]
 
 RewriteRule ^forum/?$ forum.php [L,QSA]
 RewriteRule ^forum/topic/([0-9]+)/?$ forum_topic.php?t=$1 [L,QSA]
