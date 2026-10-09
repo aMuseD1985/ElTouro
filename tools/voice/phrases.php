@@ -30,7 +30,6 @@ const CUES = [
     'arrive'  => 'at the finish (cheer, a long moo)',
     'offroute' => 'when the rider left the route (warning)',
     'back'    => 'back on the route',
-    'speed'   => 'when riding faster than 20 km/h',
 ];
 
 function clipId(string $text): string { return substr(sha1($text), 0, 12); }
@@ -44,7 +43,7 @@ function phrases(array $T): array
         $k = substr($key, 4);
         $isFar = str_starts_with($k, 'far_') && $k !== 'far_stop';
         $isNow = str_starts_with($k, 'now_') && !str_starts_with($k, 'now_stop_');
-        if (in_array($k, ['arrive', 'offroute', 'back', 'speed', 'gps_error', 'no_hints'], true) || $isNow) {
+        if (in_array($k, ['arrive', 'offroute', 'back', 'rerouted', 'gps_error', 'no_hints'], true) || $isNow) {
             foreach (str_contains($text, '{n}') ? range(1, MAX_EXIT) : [0] as $n) {
                 $out[str_replace('{n}', (string)$n, $text)] = $key;
             }
