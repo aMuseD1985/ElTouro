@@ -27,6 +27,7 @@
   var fieldGuidance = document.getElementById('guidance_json');
   var fieldStops = document.getElementById('stops_json');
   var stopsButton = document.getElementById('pl-stops');
+  var calcBtnTop = null;
   var uturnBox = document.getElementById('pl-uturns');
   try { if (uturnBox && localStorage.getItem('eltouro.avoidUturns') === '0') uturnBox.checked = false; } catch (e) { /* ignore */ }
   var fieldRules = document.getElementById('rule_set');
@@ -527,8 +528,42 @@
       saveButton.disabled = true;
       if (nameButton) nameButton.disabled = true;
       setStatus(T.empty);
+      hideCalcButton();
       return;
     }
+    // Points are only collected here; the route is calculated on the button in the middle of the points
+    ++requestNo;
+    current = null;
+    fieldGj.value = '';
+    if (fieldGuidance) fieldGuidance.value = '[]';
+    drawRoute(null);
+    showStats(null);
+    saveButton.disabled = true;
+    if (nameButton) nameButton.disabled = true;
+    stopLoading(true);
+    setStatus(T.press_calc);
+    showCalcButton();
+  }
+
+  // The "Tour berechnen" button sits on the map in the centre of all points
+  var calcLayer = L.layerGroup().addTo(map);
+  function hideCalcButton() { calcLayer.clearLayers(); }
+  function showCalcButton() {
+    hideCalcButton();
+    var b = L.latLngBounds(points.map(function (p) { return [p[0], p[1]]; })).getCenter();
+    var html = document.createElement('button');
+    html.type = 'button';
+    html.className = 'calc-btn';
+    html.textContent = '🛴 ' + T.calc_button;
+    var icon = L.divIcon({ className: 'calc-btn-wrap', html: html, iconSize: null });
+    var m = L.marker(b, { icon: icon, zIndexOffset: 2000, keyboard: false, riseOnHover: true }).addTo(calcLayer);
+    html.addEventListener('click', function (ev) { ev.stopPropagation(); computeRoute(); });
+    L.DomEvent.disableClickPropagation(html);
+  }
+  if (calcBtnTop) calcBtnTop.addEventListener('click', function () { if (points.length >= 2) computeRoute(); });
+
+  function computeRoute() {
+    hideCalcButton();
     var no = ++requestNo;
     saveButton.disabled = true;
     setStatus(T.calculating);
@@ -767,6 +802,6 @@
     if (stopsButton) stopsButton.disabled = false;
   } else {
     saveButton.disabled = true;
-    setStatus(T.empty);
+    if (points.length >= 2) { setStatus(T.press_calc); showCalcButton(); } else setStatus(T.empty);
   }
 })();
