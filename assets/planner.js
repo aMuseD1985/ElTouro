@@ -642,9 +642,9 @@
     showCalcButton();
   }
 
-  // The "Tour berechnen" button sits right under the map. A ring runs around it: after 10 seconds without a change
+  // The "Tour berechnen" button sits right under the map. A ring runs around it: after 6 seconds without a change
   // (point set, moved, map moved or zoomed) it presses itself. Every change starts the ring anew.
-  var CALC_MS = 10000;
+  var CALC_MS = 6000;
   var calcWrap = document.getElementById('calc-wrap');
   var calcRing = document.getElementById('calc-ring');
   var calcBtn = document.getElementById('calc-btn');
@@ -881,7 +881,7 @@
     if (points.length < 2 || points.length >= MAX) return;
     if (!legOk(points[points.length - 1], points[0])) { tooFar(); return; }
     points.push(points[0].slice(0, 2));
-    calculate();
+    calcNow();
   });
   // "My location": the map shows a radius of 40 km around the rider. The location only moves the map – it is never sent anywhere.
   function goToMe(quiet) {
