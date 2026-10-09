@@ -408,10 +408,10 @@
   }
   function loadOthers() {
     if (!ready || document.visibilityState !== 'visible') return;
-    var c = map.getCenter(), b = map.getBounds();
-    var s = Math.max(b.getSouth(), c.lat - 0.25), n = Math.min(b.getNorth(), c.lat + 0.25);
-    var w = Math.max(b.getWest(), c.lng - 0.4), e = Math.min(b.getEast(), c.lng + 0.4);   // a tilted view reaches to the horizon
-    fetch('/api/live?box=' + [s, w, n, e].map(function (x) { return x.toFixed(4); }).join(','), { credentials: 'same-origin' })
+    // A fixed area of about 15 km around the map centre – the visible part of a tilted map is no good measure
+    var c = lastPos ? { lat: lastPos[0], lng: lastPos[1] } : map.getCenter();
+    var box = [c.lat - 0.14, c.lng - 0.22, c.lat + 0.14, c.lng + 0.22];
+    fetch('/api/live?box=' + box.map(function (x) { return x.toFixed(4); }).join(','), { credentials: 'same-origin' })
       .then(function (r) { return r.ok ? r.json() : { riders: [] }; })
       .then(function (j) {
         var seen = {};

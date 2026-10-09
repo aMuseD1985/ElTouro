@@ -87,5 +87,5 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
   </div>
 </div>
 <script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
-<script src="/assets/navigate.js?v=11"></script>
+<script src="/assets/navigate.js?v=12"></script>
 <?php pageFooter();
