@@ -10,6 +10,7 @@
  */
 declare(strict_types=1);
 require_once __DIR__ . '/share_lib.php';
+require_once __DIR__ . '/spots_lib.php';
 
 const STOP_TYPES = ['charge', 'food', 'break', 'sight'];
 const STOP_INTERVAL_KM = 25;   // a charging or food stop roughly this often on long tours
@@ -308,6 +309,25 @@ function suggestStops(array $geo): ?array
             // far off the track counts against a place; 200 m costs about one point
             'score' => round($c['score'] - $pos['off'] / 200, 2),
         ];
+    }
+
+    // The community: remember OSM places, apply what the admin adopted, hide wrong ones, add places riders contributed
+    $items = applySpotData($items);
+    $lats = array_column($route['pts'], 0); $lngs = array_column($route['pts'], 1);
+    foreach (communitySpots(min($lats) - 0.01, min($lngs) - 0.015, max($lats) + 0.01, max($lngs) + 0.015) as $sp) {
+        $pos = projectOnRoute($route, (float)$sp['lat'], (float)$sp['lng']);
+        $maxOff = ['food' => 250, 'charge' => 400, 'sight' => 500, 'break' => 200][$sp['type']] ?? 250;
+        if ($pos['off'] > $maxOff
+            || $pos['along'] < SHARE_PRIVACY_METERS || $pos['along'] > $total - SHARE_PRIVACY_METERS) {
+            continue;
+        }
+        $eff = spotEffective($sp);
+        $facts = ['community'];
+        $it = ['id' => 'c' . (int)$sp['id'], 'spot_id' => (int)$sp['id'], 'type' => $sp['type'], 'kind' => $sp['kind'], 'name' => mb_substr((string)$eff['name'], 0, 80),
+               'lat' => round((float)$sp['lat'], 6), 'lng' => round((float)$sp['lng'], 6), 'km' => round($pos['along'] / 1000, 1), 'off' => (int)round($pos['off']),
+               'facts' => $facts, 'opening_hours' => mb_substr((string)($eff['opening_hours'] ?? ''), 0, 200),
+               'score' => round(['charge' => 4, 'food' => 1.5, 'sight' => 1.5, 'break' => 1][$sp['type']] + 0.5 - $pos['off'] / 200, 2)];
+        $items[] = addSpotExtras($it, $eff, ratingSummary('spot', (int)$sp['id']));
     }
 
     $byType = [];

@@ -5,7 +5,7 @@
  */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/poi_lib.php';
+require_once __DIR__ . '/poi_lib.php';
 header('Content-Type: application/json; charset=utf-8');
 
 function respond(int $code, array $data): never

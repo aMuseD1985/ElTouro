@@ -2,7 +2,7 @@
 /** /live – who is riding right now? Riders who share their live location with the viewer (see live_lib.php). */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/tours_lib.php';
+require_once __DIR__ . '/tours_lib.php';
 $me = requireLogin();
 // Start where the viewer last planned, otherwise in the middle of Germany
 $last = dbOne('SELECT start_lat, start_lng FROM tours WHERE owner_user_id = ? AND deleted_at IS NULL ORDER BY updated_at DESC LIMIT 1', [(int)$me['id']]);

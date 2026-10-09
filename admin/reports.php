@@ -18,6 +18,8 @@ if (isPost()) {
                 'user'     => dbExec("UPDATE users SET status = 'blocked' WHERE id = ? AND is_admin = 0", [$r['target_id']]),
                 'herdpost' => dbExec('UPDATE herd_posts SET deleted_at = UTC_TIMESTAMP() WHERE id = ?', [$r['target_id']]),
                 'ride'     => dbExec('UPDATE rides SET deleted_at = UTC_TIMESTAMP() WHERE id = ?', [$r['target_id']]),
+                'rating'   => dbExec('UPDATE ratings SET deleted_at = UTC_TIMESTAMP() WHERE id = ?', [$r['target_id']]),
+                'spot'     => dbExec('UPDATE spots SET hidden = 1 WHERE id = ?', [$r['target_id']]),
             };
             $decision = '[Inhalt entfernt] ' . $decision;
         }
@@ -54,6 +56,11 @@ function reportTarget(array $r): array
             $text = $x['display_name'] . ': ' . $x['title'] . ($x['description'] ? ' – ' . mb_strimwidth($x['description'], 0, 250, '…') : '');
             return [$x['visibility'] === 'public' ? '/ride/' . $r['target_id'] : '', $text];
         })(),
+        'rating' => (function () use ($r, $gone) {
+            $x = dbOne('SELECT r.stars, r.comment, r.target_type, r.target_id, u.display_name FROM ratings r JOIN users u ON u.id = r.user_id WHERE r.id = ?', [$r['target_id']]);
+            return $x ? [($x['target_type'] === 'tour' ? '/tour/' : '/spot/') . $x['target_id'], $x['display_name'] . ' (' . $x['stars'] . '★): ' . mb_strimwidth((string)$x['comment'], 0, 250, '…')] : ['', $gone];
+        })(),
+        'spot'   => ['/spot/' . $r['target_id'], (string)(dbOne('SELECT name FROM spots WHERE id = ?', [$r['target_id']])['name'] ?? $gone)],
         default  => ['', $gone],
     };
 }

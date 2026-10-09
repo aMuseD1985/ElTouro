@@ -486,9 +486,41 @@ function runMigrations(): array
         $log[] = '~ users.mail_digest, digest_sent_at angelegt';
     }
 
+    /* ---------- Places (stops) from the community, notes, ratings (2026-10, spots_lib.php) ---------- */
+    $create('spots', "CREATE TABLE spots (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, ref VARCHAR(24) NULL, source VARCHAR(10) NOT NULL DEFAULT 'osm',
+      status VARCHAR(10) NOT NULL DEFAULT 'approved', type VARCHAR(8) NOT NULL, kind VARCHAR(24) NOT NULL, name VARCHAR(80) NOT NULL DEFAULT '',
+      lat DECIMAL(9,6) NOT NULL, lng DECIMAL(9,6) NOT NULL, website VARCHAR(255) NULL, opening_hours VARCHAR(200) NULL, phone VARCHAR(40) NULL, note VARCHAR(500) NULL,
+      overrides TEXT NULL, hidden TINYINT(1) NOT NULL DEFAULT 0, created_by BIGINT UNSIGNED NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, seen_at DATETIME NULL,
+      UNIQUE KEY uq_spots_ref (ref), KEY ix_spots_geo (lat, lng), KEY ix_spots_status (source, status),
+      CONSTRAINT fk_spots_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+    ) $opt");
+    $create('spot_reports', "CREATE TABLE spot_reports (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, spot_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL,
+      field VARCHAR(20) NOT NULL, value VARCHAR(500) NOT NULL DEFAULT '', status VARCHAR(10) NOT NULL DEFAULT 'open',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, handled_by BIGINT UNSIGNED NULL, handled_at DATETIME NULL,
+      KEY ix_sr_spot (spot_id, status),
+      CONSTRAINT fk_sr_spot FOREIGN KEY (spot_id) REFERENCES spots(id) ON DELETE CASCADE,
+      CONSTRAINT fk_sr_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    $create('spot_votes', "CREATE TABLE spot_votes (
+      report_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL, vote TINYINT NOT NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (report_id, user_id),
+      CONSTRAINT fk_sv_report FOREIGN KEY (report_id) REFERENCES spot_reports(id) ON DELETE CASCADE,
+      CONSTRAINT fk_sv_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+    $create('ratings', "CREATE TABLE ratings (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY, target_type VARCHAR(8) NOT NULL, target_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL,
+      stars TINYINT UNSIGNED NOT NULL, comment VARCHAR(600) NULL, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME NULL, deleted_at DATETIME NULL,
+      UNIQUE KEY uq_rating (target_type, target_id, user_id), KEY ix_rating_target (target_type, target_id, deleted_at),
+      CONSTRAINT fk_rating_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) $opt");
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
-        'privacy' => ['de' => ['0b48a1a125758f83b569b8b147f16ab6a28f5a5bf999449649641f5d27dfbba1', '7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
+        'privacy' => ['de' => ['f8b5527c07daaa6fff2cca20f8df52aee270b872ede74f6c558b7e3a10c027de', '0b48a1a125758f83b569b8b147f16ab6a28f5a5bf999449649641f5d27dfbba1', '7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',
                              '7adde85362cc9775f7d29d005875c3605475e1d6f9f6dee10f37ead2d8d4065c',
                              '5020a23f093159124a269bbe8b151bcb3c6009d314befbf9ae5cb29cde3f3a1c',
                              '9bb92bbe55987f3de8a55cd7711ca553faa325e04600c69a49baa642defb77ad',
@@ -502,7 +534,7 @@ function runMigrations(): array
                              '39f261e45c9bf5334febf30f5466086cbba8a9366ba19634dfa1f5fbb4cc3b39',
                              'e7ef24531894553916fce2187cb809a283a6da926fc19558a73843ec752979c6',
                              'daced4f00cbd462a1348e804914816beeb3e6843f0b1716174bf272c15a972f4'],
-                      'en' => ['d626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024',
+                      'en' => ['330bc1367825cc700b072e77975ff5a60b9d34f9d8c97f7620b06e563880f6f9', 'd626e9ea9f8f8e548f714271166a27b85c5a3d4b89e7b87bfff553de5fb4e074', 'bcffa513cf8aa47f15aa4ef45af61c239757410a248262de9e43e2cda0968024',
                              '97ec6abe9fd9c9dafcd7f9bf64af86374052b671234a1c8b3b4cbcfd8524b93d',
                              'aad225fefb56e29cc0c861f4a05f7f448e8b226d93e0ee18366cd6eb8fb240c4',
                              '1bdb2d4a39f593ef2343d1e87df96f3a77f24ab7e357242e7e2fe27779010bb8',
@@ -544,8 +576,8 @@ function legalPagesNeedingUpdate(): array
 {
     $markers = [
         'privacy' => [
-            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:', 'Kartenstil' => 'Kartenstil und Zwischenspeicher:', 'Einwilligung' => 'Einwilligung zu Beginn der Nutzung:', 'Benachrichtigungen' => 'Benachrichtigungen:', 'Google Maps' => 'Link zu Google Maps:'],
-            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:', 'Kartenstil' => 'Map style and cache:', 'Einwilligung' => 'Consent at the start of use:', 'Benachrichtigungen' => 'Notifications:', 'Google Maps' => 'Link to Google Maps:'],
+            'de' => ['Ausfahrten' => 'Fotos und Videos:', 'Teilen' => 'Touren teilen:', 'Google-Anmeldung' => 'Anmeldung mit Google:', 'Einladungen' => 'Einladungen:', 'Namensvorschlag' => 'Namensvorschlag:', 'Ortssuche' => 'Ortssuche:', 'Wegpunkt-Namen' => 'Namen der Wegpunkte:', 'Fahrmodus' => 'Fahrmodus:', 'Pausen' => 'Pausen-Vorschläge:', 'Live' => 'Live-Standort:', 'Profilfoto' => 'Profilfoto und Reaktionen:', 'Kartenstil' => 'Kartenstil und Zwischenspeicher:', 'Einwilligung' => 'Einwilligung zu Beginn der Nutzung:', 'Benachrichtigungen' => 'Benachrichtigungen:', 'Google Maps' => 'Link zu Google Maps:', 'Bewertungen und Orte' => 'Bewertungen und Orte:'],
+            'en' => ['Ausfahrten' => 'Photos and videos:', 'Teilen' => 'Sharing routes:', 'Google-Anmeldung' => 'Sign in with Google:', 'Einladungen' => 'Invitations:', 'Namensvorschlag' => 'Name suggestions:', 'Ortssuche' => 'Place search:', 'Wegpunkt-Namen' => 'Waypoint names:', 'Fahrmodus' => 'Ride mode:', 'Pausen' => 'Stop suggestions:', 'Live' => 'Live location:', 'Profilfoto' => 'Profile photo and reactions:', 'Kartenstil' => 'Map style and cache:', 'Einwilligung' => 'Consent at the start of use:', 'Benachrichtigungen' => 'Notifications:', 'Google Maps' => 'Link to Google Maps:', 'Bewertungen und Orte' => 'Ratings and places:'],
         ],
         'terms' => [
             'de' => ['Ausfahrten' => 'legt eine Teilnehmergrenze fest', 'Teilen' => 'per Link teilst', 'Bull-Run' => 'Bull-Run', 'Profilfoto' => 'Als Profilfoto nimm nur', 'Selbst löschen' => 'Profil → „Meine Daten“'],

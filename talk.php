@@ -2,7 +2,7 @@
 /** Crew talk of a crew: topic list with infinite scroll, start a new topic. */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/talk_lib.php';
+require_once __DIR__ . '/talk_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/poi_lib.php';
-require __DIR__ . '/rides_lib.php';
+require_once __DIR__ . '/rides_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 

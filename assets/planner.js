@@ -425,6 +425,8 @@
     it.facts.forEach(function (x) { if (P['fact_' + x]) chips.appendChild(chip(P['fact_' + x], 'is-fact')); });
     li.appendChild(chips);
 
+    if (it.rating) chips.appendChild(chip('★ ' + it.rating.toLocaleString(d.lang === 'de' ? 'de-DE' : 'en-GB') + ' (' + it.rating_n + ')', 'is-good'));
+    if (it.closed) { var cl = document.createElement('p'); cl.className = 'poi-reason is-warn'; cl.textContent = '⚠ ' + P.closed_reported.replace('{text}', it.closed); li.appendChild(cl); }
     if (reason) { var why = document.createElement('p'); why.className = 'poi-reason'; why.textContent = P['reason_' + reason]; li.appendChild(why); }
     if (it.opening_hours) li.appendChild(hoursBlock(it.opening_hours));
 
@@ -434,6 +436,10 @@
     var add = document.createElement('button'); add.type = 'button'; add.textContent = P.add;
     add.addEventListener('click', function () { planStop(it); });
     actions.appendChild(show); actions.appendChild(add);
+    if (it.spot_id) {
+      var more = document.createElement('a'); more.className = 'btn secondary'; more.href = '/spot/' + it.spot_id; more.target = '_blank'; more.rel = 'noopener';
+      more.textContent = P.details; actions.appendChild(more);
+    }
     li.appendChild(actions);
     return li;
   }

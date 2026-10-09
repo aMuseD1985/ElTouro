@@ -4,7 +4,7 @@ declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 $me = requireLogin();
 
-const REPORT_TYPES = ['post', 'thread', 'tour', 'group', 'user', 'herdpost', 'ride'];
+const REPORT_TYPES = ['post', 'thread', 'tour', 'group', 'user', 'herdpost', 'ride', 'rating', 'spot'];
 $type = (string)($_GET['type'] ?? $_POST['type'] ?? '');
 $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
 if (!in_array($type, REPORT_TYPES, true) || $id <= 0) {

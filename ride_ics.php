@@ -2,7 +2,7 @@
 /** GET /ride/<id>/ics – the ride as a calendar entry (RFC 5545). Only for riders who may see the ride. */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/rides_lib.php';
+require_once __DIR__ . '/rides_lib.php';
 $me = requireLogin();
 $ride = loadRide((int)($_GET['id'] ?? 0));
 if ($ride === null || !canSeeRide($ride, (int)$me['id'])) {

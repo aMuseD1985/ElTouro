@@ -2,7 +2,7 @@
 /** /drives – all recorded rides of the rider ("Meine Fahrten"). */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/drive_lib.php';
+require_once __DIR__ . '/drive_lib.php';
 $me = requireLogin();
 $list = ownDrives((int)$me['id']);
 $sum = array_sum(array_column($list, 'distance_m'));

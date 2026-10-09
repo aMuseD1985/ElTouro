@@ -2,8 +2,8 @@
 /** /drive/<id> – one recorded ride as a keepsake: ridden track, planned route of that day, figures, "save as tour". */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/rides_lib.php';
-require __DIR__ . '/drive_lib.php';
+require_once __DIR__ . '/rides_lib.php';
+require_once __DIR__ . '/drive_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 $drive = loadOwnDrive((int)($_GET['id'] ?? 0), $uid);

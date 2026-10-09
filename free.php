@@ -2,7 +2,7 @@
 /** /free – record a ride without a planned tour; afterwards it can be saved as a tour. */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/track_lib.php';
+require_once __DIR__ . '/track_lib.php';
 $me = requireLogin();
 pageHeader(t('free.title'));
 ?>

@@ -8,8 +8,8 @@ declare(strict_types=1);
 const PUBLIC_PAGE = true;   // legal texts / shared tours: a normal web page, no app lock
 const SKIP_ACCESS_GATE = true;
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/share_lib.php';
-require __DIR__ . '/rewards_lib.php';
+require_once __DIR__ . '/share_lib.php';
+require_once __DIR__ . '/rewards_lib.php';
 
 $tour = loadSharedTour((string)($_GET['token'] ?? ''));
 if ($tour === null) {

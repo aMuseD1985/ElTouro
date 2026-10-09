@@ -1,12 +1,13 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/rides_lib.php';
-require __DIR__ . '/share_lib.php';
-require __DIR__ . '/rewards_lib.php';
-require __DIR__ . '/track_lib.php';
-require __DIR__ . '/poi_lib.php';
-require __DIR__ . '/drive_lib.php';
+require_once __DIR__ . '/rides_lib.php';
+require_once __DIR__ . '/share_lib.php';
+require_once __DIR__ . '/rewards_lib.php';
+require_once __DIR__ . '/track_lib.php';
+require_once __DIR__ . '/poi_lib.php';
+require_once __DIR__ . '/drive_lib.php';
+require_once __DIR__ . '/spots_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 
@@ -65,6 +66,7 @@ pageHeader($tour['title']);
   <?= te('tour.by', ['name' => $tour['creator']]) ?>
   <?php if ($tour['crew_name']): ?> · <a href="/crew/<?= e(rawurlencode($tour['crew_slug'])) ?>"><?= e($tour['crew_name']) ?></a><?php endif; ?>
   · <?= te('tour.v_' . $tour['visibility']) ?>
+  · <a href="#ratings"><?= starsHtml(ratingSummary('tour', (int)$tour['id'])) ?></a>
 </p>
 
 <div class="tour-actions">
@@ -126,6 +128,8 @@ pageHeader($tour['title']);
 <?php endif; ?>
 
 <?php if ($tour['description']): ?><div class="description"><?= formatText($tour['description']) ?></div><?php endif; ?>
+
+<?= ratingBlock('tour', (int)$tour['id'], $uid, (int)$tour['owner_user_id'] !== $uid, '/tour/' . (int)$tour['id']) ?>
 
 <section>
   <h2><?= te('tour.rides') ?></h2>

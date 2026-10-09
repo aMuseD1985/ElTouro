@@ -13,7 +13,7 @@
  */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/talk_lib.php';
+require_once __DIR__ . '/talk_lib.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 

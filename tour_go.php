@@ -6,9 +6,9 @@
  */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/tours_lib.php';
-require __DIR__ . '/poi_lib.php';
-require __DIR__ . '/rewards_lib.php';
+require_once __DIR__ . '/tours_lib.php';
+require_once __DIR__ . '/poi_lib.php';
+require_once __DIR__ . '/rewards_lib.php';
 $me = requireLogin();
 $tour = loadTour((int)($_GET['id'] ?? 0));
 if ($tour === null || !canSeeTour($tour, (int)$me['id'])) {

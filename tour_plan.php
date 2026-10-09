@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/tours_lib.php';
-require __DIR__ . '/poi_lib.php';
-require __DIR__ . '/rewards_lib.php';
+require_once __DIR__ . '/tours_lib.php';
+require_once __DIR__ . '/poi_lib.php';
+require_once __DIR__ . '/rewards_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 
@@ -188,6 +188,7 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
 <p id="planner-status" class="muted" role="status" aria-live="polite"></p>
 <p id="planner-info" class="stats"></p>
 <section id="stop-suggestions" class="stop-suggestions" hidden aria-live="polite"></section>
+<p class="hint"><a href="/spot/new" target="_blank" rel="noopener"><?= te('stop.add_missing') ?></a></p>
 <details id="waypoints" class="waypoints" hidden>
   <summary><?= te('planner.waypoints') ?> <span id="wp-count" class="badge"></span></summary>
   <ol id="waypoint-list" class="waypoint-list"></ol>
@@ -233,5 +234,5 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
   <button type="submit" id="tour-save"><?= te('tour.save') ?></button>
 </form>
 <script src="/assets/vendor/leaflet/leaflet.js"></script>
-<script src="/assets/planner.js?v=35"></script>
+<script src="/assets/planner.js?v=36"></script>
 <?php pageFooter();

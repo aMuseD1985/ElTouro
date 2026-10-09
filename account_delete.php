@@ -3,7 +3,7 @@
 declare(strict_types=1);
 const NO_CONSENT_NEEDED = true;
 require __DIR__ . '/bootstrap.php';
-require __DIR__ . '/rewards_lib.php';
+require_once __DIR__ . '/rewards_lib.php';
 require __DIR__ . '/account_data_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
