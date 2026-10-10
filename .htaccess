@@ -5,7 +5,7 @@ Options -Indexes -MultiViews
 DirectoryIndex index.php
 
 # Libraries, includes and docs are never served directly
-<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|spots_lib\.php|push_lib\.php|photos_lib\.php|api_lib\.php|api_routes\.php|rides_lib\.php|share_lib\.php|tour_name_lib\.php|geocoder_lib\.php|track_lib\.php|poi_lib\.php|gpx_lib\.php|live_lib\.php|community_lib\.php|google_lib\.php|rewards_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
+<FilesMatch "^(config\.php|config\.example\.php|bootstrap\.php|core\.php|lang\.php|mailer\.php|account_lib\.php|crews_lib\.php|tours_lib\.php|forum_lib\.php|talk_lib\.php|spots_lib\.php|push_lib\.php|photos_lib\.php|api_lib\.php|api_routes\.php|rides_lib\.php|share_lib\.php|tour_name_lib\.php|geocoder_lib\.php|track_lib\.php|poi_lib\.php|flyer_lib\.php|gpx_lib\.php|live_lib\.php|community_lib\.php|google_lib\.php|rewards_lib\.php|legal_texts\.php|ops_lib\.php|migrations\.php|.*\.md|\.git.*)$">
     Require all denied
 </FilesMatch>
 # Web app (PWA): manifest type, and the service worker must always be fetched fresh
@@ -109,6 +109,7 @@ RewriteRule ^ride/new/?$ ride_edit.php [L,QSA]
 RewriteRule ^ride/([0-9]+)/?$ ride.php?id=$1 [L,QSA]
 RewriteRule ^ride/([0-9]+)/edit/?$ ride_edit.php?id=$1 [L,QSA]
 RewriteRule ^ride/([0-9]+)/ics$ ride_ics.php?id=$1 [L,QSA]
+RewriteRule ^ride/([0-9]+)/flyer/?$ ride_flyer.php?id=$1 [L,QSA]
 
 RewriteRule ^forum/?$ forum.php [L,QSA]
 RewriteRule ^forum/topic/([0-9]+)/?$ forum_topic.php?t=$1 [L,QSA]
