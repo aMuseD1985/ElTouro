@@ -15,6 +15,7 @@ require_once __DIR__ . '/drive_lib.php';
 require_once __DIR__ . '/spots_lib.php';
 require_once __DIR__ . '/notify_lib.php';
 require_once __DIR__ . '/rewards_lib.php';
+require_once __DIR__ . '/gpx_lib.php';
 
 function apiIso(?string $utc): ?string
 {
@@ -152,6 +153,28 @@ function apiRoutes(): array
            'description' => ['string'], 'difficulty' => ['string', '', false, ['easy', 'moderate', 'demanding']], 'style' => ['string', '', false, ['relaxed', 'social', 'sporty']],
            'rule_set' => ['string', '', false, ['ekfv', 'ekfv2027']], 'vehicle_class' => ['integer', '1 city, 2 allround, 3 bull, 4 bull run'], 'waypoints' => ['array', '[[lat, lng], …]']],
         'Distance, bounding box, start and ascent are computed by the server from the geometry; numbers you send are ignored.');
+    $add('POST', '/tours/gpx', 'Tours', 'Create a tour from GPX text', function ($c) {
+        $b = $c['body'];
+        $gid = null;
+        if (($b['visibility'] ?? '') === 'group') {
+            $crew = loadCrew((string)($b['crew_slug'] ?? ''));
+            if ($crew === null || !isActiveMember(membership((int)$crew['id'], $c['uid']))) {
+                throw new ApiError(422, 'invalid_crew', 'crew_slug must name a crew you are an active member of.');
+            }
+            $gid = (int)$crew['id'];
+        }
+        $r = importGpxTour((string)($b['gpx'] ?? ''), $c['uid'], $b + ['group_id' => $gid]);
+        if (is_string($r)) {
+            throw new ApiError(422, 'gpx_' . $r, 'The GPX could not be imported (' . $r . ').');
+        }
+        return [apiTourOut(loadTour($r), true), 201];
+    }, [], ['gpx' => ['string', 'the GPX file content (max. 6 MB); tracks or a route', true], 'title' => ['string', 'default: name in the file'], 'description' => ['string'],
+           'visibility' => ['string', 'default private', false, ['private', 'group', 'public']], 'crew_slug' => ['string'], 'difficulty' => ['string', '', false, ['easy', 'moderate', 'demanding']],
+           'style' => ['string', '', false, ['relaxed', 'social', 'sporty']]], 'Timestamps and device data in the file are ignored; the server measures the tour itself.');
+    $add('GET', '/tours/{id}/gpx', 'Tours', 'GPX of a tour (track, route points and stops) – returns the XML text under data.gpx', function ($c) {
+        $t = apiTourOrFail($c);
+        return ['gpx' => gpxExport($t)];
+    });
     $add('DELETE', '/tours/{id}', 'Tours', 'Delete one of your tours', function ($c) {
         $t = apiTourOrFail($c, true);
         if (dbOne("SELECT 1 AS x FROM rides WHERE tour_id = ? AND deleted_at IS NULL AND status = 'planned' AND starts_at > UTC_TIMESTAMP() LIMIT 1", [$t['id']])) {

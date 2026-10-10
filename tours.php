@@ -65,7 +65,7 @@ pageHeader(t('tours.title'));
   <h1><?= te('tours.title') ?></h1>
   <a class="btn" href="/tour/plan"><?= te('tour.new') ?></a>
 </div>
-<p class="muted"><a href="/drives"><?= te('drives.title') ?></a> · <a href="/free"><?= te('free.start_link') ?></a></p>
+<p class="muted"><a href="/drives"><?= te('drives.title') ?></a> · <a href="/free"><?= te('free.start_link') ?></a> · <a href="/tour/import"><?= te('gpx.link') ?></a></p>
 <form class="filters" method="get" role="search">
   <div class="filters-row">
     <input type="search" name="q" value="<?= e($q) ?>" maxlength="80" placeholder="<?= te('tours.search') ?>" aria-label="<?= te('tours.search') ?>">

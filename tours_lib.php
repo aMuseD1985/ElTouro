@@ -321,3 +321,22 @@ function tourThumbPath(array $tour, ?string $forceFile = null): ?string
     rename($file . '.tmp', $file);
     return $file;
 }
+
+
+/** Waypoints [[lat, lng], …] along a track given as [[lat, lng], …]: start, one about every 400 m (fewer on very long tracks, at most
+ *  MAX_WAYPOINTS), finish – close together they keep a re-planned tour on the road that was really ridden. */
+function waypointsFromTrack(array $pts, int $distanceM): array
+{
+    $step = max(400.0, $distanceM / (MAX_WAYPOINTS - 2));
+    $wps = [[$pts[0][0], $pts[0][1]]];
+    $acc = 0.0;
+    for ($i = 1; $i < count($pts) - 1; $i++) {
+        $acc += distanceMeters($pts[$i - 1][0], $pts[$i - 1][1], $pts[$i][0], $pts[$i][1]);
+        if ($acc >= $step && count($wps) < MAX_WAYPOINTS - 1) {
+            $wps[] = [$pts[$i][0], $pts[$i][1]];
+            $acc = 0.0;
+        }
+    }
+    $wps[] = [end($pts)[0], end($pts)[1]];
+    return $wps;
+}

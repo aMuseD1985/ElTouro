@@ -188,7 +188,7 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
 <p id="planner-status" class="muted" role="status" aria-live="polite"></p>
 <p id="planner-info" class="stats"></p>
 <section id="stop-suggestions" class="stop-suggestions" hidden aria-live="polite"></section>
-<p class="hint"><a href="/spot/new" target="_blank" rel="noopener"><?= te('stop.add_missing') ?></a></p>
+<p class="hint"><a href="/tour/import"><?= te('gpx.link') ?></a> · <a href="/spot/new" target="_blank" rel="noopener"><?= te('stop.add_missing') ?></a></p>
 <details id="waypoints" class="waypoints" hidden>
   <summary><?= te('planner.waypoints') ?> <span id="wp-count" class="badge"></span></summary>
   <ol id="waypoint-list" class="waypoint-list"></ol>
