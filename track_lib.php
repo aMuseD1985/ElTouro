@@ -130,17 +130,42 @@ function ownTracksOfTour(int $userId, int $tourId): array
 }
 
 
-/** The open recording of this rider (for this tour, or a free ride when $tourId is null) started within the last 12 hours – or null.
- *  A ride only ends when the rider ends it; closing the page does not. */
+const RECORDING_IDLE_SECONDS = 2 * 3600;   // an open recording without a new position for 2 hours ends by itself
+
+/** Unix time of the last position of a recording (or its start when nothing arrived) */
+function recordingLastActivity(array $session): int
+{
+    $p = dbOne('SELECT recorded_at FROM track_points WHERE session_id = ? ORDER BY seq DESC LIMIT 1', [$session['id']]);
+    return (int)strtotime(substr((string)($p['recorded_at'] ?? $session['started_at']), 0, 19) . ' UTC');
+}
+
+/** Ends open recordings that have been silent for 2 hours (of one rider, or of everybody for the cron job). @return int number ended */
+function finishStaleRecordings(?int $userId = null): int
+{
+    $n = 0;
+    $rows = dbAll("SELECT * FROM track_sessions WHERE status = 'recording' AND started_at < UTC_TIMESTAMP() - INTERVAL 2 HOUR" . ($userId !== null ? ' AND user_id = ' . (int)$userId : '') . ' LIMIT 200');
+    foreach ($rows as $s) {
+        if (time() - recordingLastActivity($s) >= RECORDING_IDLE_SECONDS) {
+            finishTrack((int)$s['id'], (int)$s['user_id']);
+            $n++;
+        }
+    }
+    return $n;
+}
+
+/** The open recording of this rider (for this tour, or a free ride when $tourId is null) – or null. A ride only ends when the rider
+ *  ends it; closing the page does not. After 2 hours without a position it is ended automatically. */
 function activeRecording(int $userId, ?int $tourId): ?array
 {
-    return dbOne("SELECT id, tour_id, started_at FROM track_sessions WHERE user_id = ? AND status = 'recording' AND started_at > UTC_TIMESTAMP() - INTERVAL 12 HOUR AND "
+    finishStaleRecordings($userId);
+    return dbOne("SELECT id, tour_id, started_at FROM track_sessions WHERE user_id = ? AND status = 'recording' AND "
         . ($tourId === null ? 'tour_id IS NULL' : 'tour_id = ' . (int)$tourId) . ' ORDER BY id DESC LIMIT 1', [$userId]);
 }
 
 /** Any open recording, newest first (for the "ride on" link on the home page) */
 function anyActiveRecording(int $userId): ?array
 {
+    finishStaleRecordings($userId);
     return dbOne("SELECT s.id, s.tour_id, t.title FROM track_sessions s LEFT JOIN tours t ON t.id = s.tour_id AND t.deleted_at IS NULL
-                   WHERE s.user_id = ? AND s.status = 'recording' AND s.started_at > UTC_TIMESTAMP() - INTERVAL 12 HOUR ORDER BY s.id DESC LIMIT 1", [$userId]);
+                   WHERE s.user_id = ? AND s.status = 'recording' ORDER BY s.id DESC LIMIT 1", [$userId]);
 }

@@ -16,4 +16,6 @@ if ($key === '' || !hash_equals($key, (string)($_GET['key'] ?? ''))) {
 require_once __DIR__ . '/push_lib.php';
 echo 'Ride alerts queued: ' . sendRideSoonAlerts() . "\n";
 echo 'Pushes sent: ' . processPushQueue() . "\n";
+require_once __DIR__ . '/track_lib.php';
+echo 'Recordings ended after 2 h of silence: ' . finishStaleRecordings() . "\n";
 echo 'Digests sent: ' . sendDigests() . "\n";

@@ -3,7 +3,7 @@
  * POST /api/track  (JSON, X-CSRF header) – recording from the ride mode.
  *   {"action": "start", "tour_id": 5}                       -> {"session_id": 12}
  *   {"action": "points", "session_id": 12, "points": [[unixMillis, lat, lng, accuracy, speedKmh], …]} -> {"stored": 30}
- *   {"action": "resume", "session_id": 12}                      -> {"session_id": 12, "points": [[lat, lng], …], "distance_m": 1200}   (continue after the page was closed)
+ *   {"action": "resume", "session_id": 12}                      -> {"session_id": 12, "points": [[lat, lng], …], "distance_m": 1200}   (continue after the page was closed; a recording silent for 2 hours has ended by itself → 409)
  *   {"action": "finish", "session_id": 12}                  -> {"distance_m": 23400, "moving_s": 4120, "max_speed_kmh": 19.8}
  */
 declare(strict_types=1);
@@ -51,7 +51,11 @@ if ($action === 'points') {
 }
 if ($action === 'resume') {
     // A ride only ends when the rider ends it: opening the page again continues the same recording (for 12 hours)
-    if ($session['status'] !== 'recording' || strtotime($session['started_at'] . ' UTC') < time() - 12 * 3600) {
+    if ($session['status'] === 'recording' && time() - recordingLastActivity($session) >= RECORDING_IDLE_SECONDS) {
+        finishTrack((int)$session['id'], $uid);   // silent for 2 hours: it ended by itself
+        $session['status'] = 'finished';
+    }
+    if ($session['status'] !== 'recording') {
         respond(409, ['error' => 'ended']);
     }
     $pts = drivePoints((int)$session['id'], 1500);
