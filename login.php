@@ -8,7 +8,7 @@ if (currentUser()) {
 }
 $error = '';
 $email = '';
-$next = (string)($_GET['next'] ?? $_POST['next'] ?? '/');
+$next = cleanNext((string)($_GET['next'] ?? $_POST['next'] ?? '/'));
 
 if (isPost()) {
     checkCsrf();
@@ -50,6 +50,7 @@ pageHeader(t('login.title'));
       <input id="password" name="password" type="password" required autocomplete="current-password"></div>
     <button type="submit"><?= te('login.button') ?></button>
   </form>
+  <p class="muted"><?= te('welcome.no_account') ?> <a href="/register<?= $next !== '/' ? '?next=' . e(rawurlencode($next)) : '' ?>"><?= te('welcome.register_short') ?></a></p>
   <p><a href="/password/forgot"><?= te('login.forgot') ?></a> · <a href="/verify/resend"><?= te('login.resend') ?></a></p>
 </section>
 <?php pageFooter();

@@ -44,6 +44,7 @@ Seiten, die ohne Tester-Passwort erreichbar sein müssen (`access.php`, `migrate
 | Bereich | Dateien |
 |---|---|
 | Konto | `register.php`, `verify.php`, `login.php`, `logout.php`, `password_forgot.php`, `password_reset.php`, `account_lib.php` (Tokens, Mails, `mailHtml()`, `displayNameError()`, `validBirthDate()`, `promoteFirstAdmin()`), `profile.php` |
+| Einstieg | **Der erste Schritt für Besucher ohne Konto ist Registrieren:** `requireLogin()` leitet auf `/welcome?next=…` (`welcome.php`: großer Knopf „Jetzt kostenlos registrieren“, darunter „Ich bin bereits auf eltouro.de angemeldet“ → Login; bei einer öffentlichen Ausfahrt als Ziel steht Titel und Datum als Einladung da). Das Ziel `next` läuft durch Registrierung (Formular, Google, Bestätigungsmail `/verify?t=…&next=…`) und Login; **immer `cleanNext()` benutzen** (nur lokale Pfade, keine Auth-Seiten). Der QR-Code des Flyers landet so beim Registrieren und danach direkt auf der Ausfahrt |
 | Google | `google_lib.php` (OIDC mit PKCE/state/nonce, Button), `auth_google.php` (Start und Callback), `register_google.php` (Abschluss: Name, Geburtsdatum, AGB) |
 | Belohnung | `rewards_lib.php` (Stufe 1: Herkunft `referrals` per `rememberReferral()`/`storeReferral()`, Ereignisse `recordEvent()` in `activity_events`, Einladungscode), `join.php` (`/join/<code>`) – Konzept `docs/rewards.md` |
 | Teilen | `share_lib.php` (Rechte, Token, `trimRouteEnds()`, Vorschaubild mit GD), `share.php` (`/s/<token>`), `assets/share.js` |

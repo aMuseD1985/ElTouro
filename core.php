@@ -293,9 +293,20 @@ function requireLogin(): array
 {
     $u = currentUser();
     if ($u === null) {
-        redirect('/login?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? '/'));
+        // First step for visitors without a session is registering; whoever has an account clicks "I am already signed in" there
+        redirect('/welcome?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? '/'));
     }
     return $u;
+}
+
+/** A safe local target after signing in or registering (relative path, no protocol-relative URL, no auth pages) */
+function cleanNext(string $next): string
+{
+    $next = mb_substr($next, 0, 300);
+    if (!str_starts_with($next, '/') || str_starts_with($next, '//') || str_contains($next, '\\') || preg_match('#^/(login|register|welcome|logout|verify)(/|\?|$)#', $next)) {
+        return '/';
+    }
+    return $next;
 }
 
 function requireAdmin(): array
@@ -569,7 +580,7 @@ function pageHeader(string $title, array $meta = []): void
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/assets/app-pref.js?v=2"></script>
 <script src="/assets/map_styles.js?v=3"></script>
-<link rel="stylesheet" href="/assets/style.css?v=51">
+<link rel="stylesheet" href="/assets/style.css?v=52">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>

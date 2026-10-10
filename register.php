@@ -11,6 +11,7 @@ if (currentUser()) {
 $open = setting('registration_open', '1') === '1';
 $errors = [];
 $values = ['email' => '', 'name' => '', 'birth' => ''];
+$next = cleanNext((string)($_GET['next'] ?? $_POST['next'] ?? '/'));   // where the rider wanted to go (a flyer's QR code, a link)
 
 if ($open && isPost()) {
     checkCsrf();
@@ -36,11 +37,11 @@ if ($open && isPost()) {
                 storeReferral($uid);
                 $token = createToken($uid, 'verify', 48);
                 sendAccountMail($values['email'], 'mail.verify_subject', 'mail.verify_text',
-                    ['name' => $values['name'], 'link' => baseUrl() . '/verify?t=' . $token]);
+                    ['name' => $values['name'], 'link' => baseUrl() . '/verify?t=' . $token . ($next !== '/' ? '&next=' . rawurlencode($next) : '')]);
             }
             // Same answer for an existing address – nobody should learn who is registered
             flash(t('register.done'));
-            redirect('/login');
+            redirect('/login' . ($next !== '/' ? '?next=' . rawurlencode($next) : ''));
         } catch (Throwable $ex) {
             error_log('ElTouro register: ' . $ex->getMessage());
             $errors[] = t('error.general');
@@ -59,9 +60,9 @@ pageHeader(t('register.title'));
     <p><?= te('register.closed') ?></p>
   <?php else: ?>
     <?php foreach ($errors as $err): ?><p class="alert alert-error" role="alert"><?= e($err) ?></p><?php endforeach; ?>
-    <?= googleButton('/', 'google.button_register') ?>
+    <?= googleButton($next, 'google.button_register') ?>
     <form method="post" class="form">
-      <?= csrfField() ?>
+      <?= csrfField() ?><input type="hidden" name="next" value="<?= e($next) ?>">
       <div class="field"><label for="email"><?= te('register.email') ?></label>
         <input id="email" name="email" type="email" required maxlength="254" autocomplete="email" value="<?= e($values['email']) ?>"></div>
       <div class="field"><label for="name"><?= te('register.name') ?></label>
@@ -78,6 +79,7 @@ pageHeader(t('register.title'));
       <p class="hint"><?= str_replace('{privacy}', $privacyLink, te('register.consent_hint')) ?></p>
       <button type="submit"><?= te('register.button') ?></button>
     </form>
+    <p class="muted"><a href="/login<?= $next !== '/' ? '?next=' . e(rawurlencode($next)) : '' ?>"><?= te('welcome.have_account') ?></a></p>
   <?php endif; ?>
 </section>
 <?php pageFooter();

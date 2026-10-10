@@ -15,4 +15,4 @@ promoteFirstAdmin($uid);
 recordVerification($uid);
 logIn($uid);
 flash(t('verify.ok'));
-redirect('/');
+redirect(cleanNext((string)($_GET['next'] ?? '/')));
