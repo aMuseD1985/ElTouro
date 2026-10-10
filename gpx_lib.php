@@ -7,14 +7,14 @@
 declare(strict_types=1);
 require_once __DIR__ . '/tours_lib.php';
 
-require_once __DIR__ . '/poi_lib.php';   // tourStops()
+require_once __DIR__ . '/poi_lib.php';   // tourStops(), routeLine(), projectOnRoute()
 
 const GPX_MAX_BYTES = 6 * 1024 * 1024;
 const GPX_THIN_METERS = 6.0;     // points closer than this to the last kept one are dropped
 const GPX_MAX_POINTS = 15000;
 
 /**
- * @return array{name:string, segments: array<int, array<int, array{0:float,1:float,2:?float}>>, via: array<int, array{0:float,1:float}>}|string
+ * @return array{name:string, places: array<int, array>, segments: array<int, array<int, array{0:float,1:float,2:?float}>>, via: array<int, array{0:float,1:float}>}|string
  *         the parsed file, or an error key (gpx.error_*)
  */
 function parseGpx(string $xml): array|string
@@ -66,8 +66,17 @@ function parseGpx(string $xml): array|string
     if (!$segments) {
         return 'no_track';
     }
+    $places = [];
+    foreach ($doc->wpt as $w) {
+        if (count($places) >= 40) {
+            break;
+        }
+        if (($c = $point($w)) !== null) {
+            $places[] = ['lat' => $c[0], 'lng' => $c[1], 'name' => trim((string)($w->name ?? '')), 'hint' => mb_strtolower(trim((string)($w->type ?? '') . ' ' . (string)($w->sym ?? '') . ' ' . (string)($w->name ?? '') . ' ' . (string)($w->desc ?? '')))];
+        }
+    }
     $name = trim((string)($doc->trk[0]->name ?? $doc->metadata->name ?? $doc->rte[0]->name ?? ''));
-    return ['name' => mb_substr($name, 0, 120), 'segments' => $segments, 'via' => $via];
+    return ['name' => mb_substr($name, 0, 120), 'segments' => $segments, 'via' => $via, 'places' => $places];
 }
 
 /** Thins a segment to what a tour needs (keeps first and last point, elevation stays with its point). */
@@ -125,6 +134,7 @@ function importGpxTour(string $xml, int $userId, array $o): int|string
         foreach ($f['geometry']['coordinates'] as $c) { $pts[] = [$c[1], $c[0]]; }
     }
     $wps = $parsed['via'] && count($parsed['via']) <= MAX_WAYPOINTS ? $parsed['via'] : waypointsFromTrack($pts, $geo['distance']);
+    [$wps, $stops] = $parsed['places'] ? stopsFromGpxPlaces($parsed['places'], $wps, $geo['geojson'], $geo['distance']) : [$wps, []];
     $title = mb_substr(trim((string)($o['title'] ?? '')) ?: ($parsed['name'] ?: 'GPX'), 0, 120);
     $vis = in_array($o['visibility'] ?? '', ['private', 'group', 'public'], true) ? $o['visibility'] : 'private';
     $groupId = $vis === 'group' ? (int)($o['group_id'] ?? 0) ?: null : null;
@@ -132,12 +142,12 @@ function importGpxTour(string $xml, int $userId, array $o): int|string
         $vis = 'private';
     }
     dbExec("INSERT INTO tours (owner_user_id, owner_group_id, title, description, content_lang, visibility, source, rule_set, difficulty, style, vehicle_class, distance_m, ascent_m,
-                   freehand_share_pct, waypoints_json, geojson, start_lat, start_lng, bbox_min_lat, bbox_min_lng, bbox_max_lat, bbox_max_lng)
-            VALUES (?, ?, ?, ?, ?, ?, 'imported', 'ekfv', ?, ?, 2, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)",
+                   freehand_share_pct, waypoints_json, stops_json, geojson, start_lat, start_lng, bbox_min_lat, bbox_min_lng, bbox_max_lat, bbox_max_lng)
+            VALUES (?, ?, ?, ?, ?, ?, 'imported', 'ekfv', ?, ?, 2, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         [$userId, $groupId, $title, ($d = trim((string)($o['description'] ?? ''))) !== '' ? mb_substr($d, 0, 4000) : null, $GLOBALS['LANG'] ?? 'de', $vis,
          in_array($o['difficulty'] ?? '', ['easy', 'moderate', 'demanding'], true) ? $o['difficulty'] : 'easy',
          in_array($o['style'] ?? '', ['relaxed', 'social', 'sporty'], true) ? $o['style'] : 'social',
-         $geo['distance'], computeAscent($geo['geojson']), json_encode($wps), $geo['geojson'],
+         $geo['distance'], computeAscent($geo['geojson']), json_encode($wps), $stops ? json_encode($stops, JSON_UNESCAPED_UNICODE) : null, $geo['geojson'],
          $geo['start'][0], $geo['start'][1], $geo['bbox'][0], $geo['bbox'][1], $geo['bbox'][2], $geo['bbox'][3]]);
     $id = (int)db()->lastInsertId();
     require_once __DIR__ . '/rewards_lib.php';
@@ -176,4 +186,80 @@ function gpxExport(array $tour): string
         $out .= "</trkseg>\n";
     }
     return $out . "</trk>\n</gpx>\n";
+}
+
+
+/** Which kind of stop a named GPX point is (our own export writes "Laden", "Essen & Trinken", "Pause", "Sehenswert" / "Charging" …) */
+function gpxPlaceType(string $hint): string
+{
+    $rules = [
+        'charge' => '/lade|charg|strom|steckdose|socket|e-?tankstelle|akku/u',
+        'food'   => '/essen|trinken|food|drink|café|cafe|kaffee|coffee|restaurant|biergarten|eis|ice.?cream|imbiss|bäcker|baecker|bakery|gasthof|gaststätte|kneipe|pub\b|bar\b|diner|burger|pizza|döner|doener/u',
+        'sight'  => '/sehens|worth seeing|sight|aussicht|view|burg\b|schloss|castle|ruine|museum|denkmal|monument|turm|tower|attraction|kirche|church|brücke|bridge/u',
+    ];
+    foreach ($rules as $type => $re) {
+        if (preg_match($re, $hint)) {
+            return $type;
+        }
+    }
+    return 'break';
+}
+
+/**
+ * Named GPX points that lie along the track become stops: each is a waypoint (an existing one within 15 m is reused, otherwise a new one
+ * is inserted in track order). Returns [waypoints [[lat, lng], …], stops [{i, type, name}, …]].
+ */
+function stopsFromGpxPlaces(array $places, array $wps, string $geojson, int $distanceM): array
+{
+    $route = routeLine($geojson);
+    $items = [];   // [lat, lng, ?stop, along]
+    foreach ($wps as $w) {
+        $items[] = [(float)$w[0], (float)$w[1], null, projectOnRoute($route, (float)$w[0], (float)$w[1])['along']];
+    }
+    foreach ($places as $p) {
+        $pos = projectOnRoute($route, $p['lat'], $p['lng']);
+        if ($pos['off'] > 300 || $pos['along'] < 150 || $pos['along'] > $distanceM - 150) {
+            continue;   // not on the way, or at the very start/finish
+        }
+        $stop = ['type' => gpxPlaceType($p['hint']), 'name' => mb_substr($p['name'], 0, 80)];
+        $reused = false;
+        foreach ($items as $k => $it) {
+            if ($k > 0 && $k < count($items) - 1 && $it[2] === null && distanceMeters($it[0], $it[1], $p['lat'], $p['lng']) <= 15) {
+                $items[$k][2] = $stop;   // the waypoint is already there: it becomes the stop
+                $reused = true;
+                break;
+            }
+        }
+        if ($reused) {
+            continue;
+        }
+        if (count($items) >= MAX_WAYPOINTS) {   // make room: drop the plain waypoint nearest to the new stop
+            $best = null;
+            foreach ($items as $k => $it) {
+                if ($k > 0 && $k < count($items) - 1 && $it[2] === null && ($best === null || abs($it[3] - $pos['along']) < abs($items[$best][3] - $pos['along']))) {
+                    $best = $k;
+                }
+            }
+            if ($best === null) {
+                continue;
+            }
+            array_splice($items, $best, 1);
+        }
+        $at = count($items) - 1;   // before the finish
+        foreach ($items as $k => $it) {
+            if ($k > 0 && $it[3] > $pos['along']) {
+                $at = $k;
+                break;
+            }
+        }
+        array_splice($items, $at, 0, [[round($p['lat'], 6), round($p['lng'], 6), $stop, $pos['along']]]);
+    }
+    $outW = []; $outS = [];
+    foreach ($items as $k => $it) {
+        $outW[] = [$it[0], $it[1]];
+        if ($it[2] !== null) {
+            $outS[] = ['i' => $k, 'type' => $it[2]['type'], 'name' => $it[2]['name']];
+        }
+    }
+    return [$outW, $outS];
 }

@@ -719,3 +719,8 @@ html[data-theme="dark"] .content:has(.ride-mode) * { filter: none !important; }
 
 .dot-wp, .dot-me { display: inline-block; width: .8rem; height: .8rem; border-radius: 50%; vertical-align: middle; border: 2px solid var(--night); background: #fff; }
 .dot-me { background: #C2553F; border-color: #fff; box-shadow: 0 0 0 1px #888; }
+
+/* "Tour berechnen" floats over the lower edge of the map (the ring still fills, then the button presses itself) */
+.planner-wrap { position: relative; }
+.planner-wrap .calc-wrap { position: absolute; left: 0; right: 0; bottom: .9rem; margin: 0; z-index: 1000; pointer-events: none; }
+.planner-wrap .calc-ring { pointer-events: auto; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }

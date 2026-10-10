@@ -157,6 +157,10 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
     <p class="loading-saying" id="planner-saying"></p>
     <div class="loading-bar"><span id="planner-progress"></span></div>
   </div>
+  <!-- "Tour berechnen" floats near the lower edge of the map -->
+  <div class="calc-wrap" id="calc-wrap" hidden>
+  <div class="calc-ring" id="calc-ring"><button type="button" id="calc-btn" class="calc-btn"><?= te('planner.calc_button') ?></button></div>
+</div>
 </div>
 <div class="planner-bar" role="toolbar" aria-label="<?= te('planner.tools') ?>">
   <?php foreach ($tools as [$id, $icon, $key, $flag]): ?>
@@ -181,9 +185,6 @@ $tools = [['pl-undo', '↶', 'planner.undo', ''], ['pl-loop', '⟲', 'planner.lo
   </div>
 </details>
 <p class="alert alert-info" id="optimize-note" role="status" hidden><span id="optimize-text"></span> <button type="button" class="link" id="pl-opt-undo"><?= te('planner.optimize_undo') ?></button></p>
-<div class="calc-wrap" id="calc-wrap" hidden>
-  <div class="calc-ring" id="calc-ring"><button type="button" id="calc-btn" class="calc-btn"><?= te('planner.calc_button') ?></button></div>
-</div>
 <p id="offline-banner" class="alert alert-error" role="alert" hidden><?= te('planner.offline') ?></p>
 <p id="planner-status" class="muted" role="status" aria-live="polite"></p>
 <p id="planner-info" class="stats"></p>

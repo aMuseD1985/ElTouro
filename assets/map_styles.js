@@ -154,5 +154,15 @@
     };
   }
 
+  // Pages with a map: the page itself must not zoom (pinch, double-tap) – zoom the map with its + / − buttons or by pinching on the map
+  function lockPageZoom() {
+    var v = document.querySelector('meta[name=viewport]');
+    if (v && v.content.indexOf('user-scalable') < 0) v.content += ', maximum-scale=1, user-scalable=no';
+    document.documentElement.style.touchAction = 'manipulation';
+  }
+  // only where a map element exists (they all carry data-map-styles) – other pages keep normal page zoom
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { if (document.querySelector('[data-map-styles]')) lockPageZoom(); });
+  else if (document.querySelector('[data-map-styles]')) lockPageZoom();
+
   window.ElTouroMaps = { leaflet: leaflet, maplibre: maplibre, sunUp: sunUp };
 })();
