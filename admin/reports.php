@@ -2,6 +2,7 @@
 /** Reported content (DSA): review, decide, document the decision. */
 declare(strict_types=1);
 require __DIR__ . '/../bootstrap.php';
+require_once __DIR__ . '/../rides_lib.php';
 $me = requireAdmin();
 
 if (isPost()) {
@@ -55,7 +56,7 @@ function reportTarget(array $r): array
             if (!$x) return ['', $gone];
             // Crew-only rides are shown as text like crew talk; public ones can be opened
             $text = $x['display_name'] . ': ' . $x['title'] . ($x['description'] ? ' – ' . mb_strimwidth($x['description'], 0, 250, '…') : '');
-            return [$x['visibility'] === 'public' ? '/ride/' . $r['target_id'] : '', $text];
+            return [$x['visibility'] === 'public' ? rideUrl((int)$r['target_id']) : '', $text];
         })(),
         'rating' => (function () use ($r, $gone) {
             $x = dbOne('SELECT r.stars, r.comment, r.target_type, r.target_id, u.display_name FROM ratings r JOIN users u ON u.id = r.user_id WHERE r.id = ?', [$r['target_id']]);

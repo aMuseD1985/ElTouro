@@ -56,6 +56,7 @@ pageHeader(t('register.title'));
 ?>
 <section class="narrow">
   <h1><?= te('register.title') ?></h1>
+  <?= touroSays(t('touro.register'), 'side') ?>
   <?php if (!$open): ?>
     <p><?= te('register.closed') ?></p>
   <?php else: ?>

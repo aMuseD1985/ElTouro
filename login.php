@@ -39,6 +39,7 @@ pageHeader(t('login.title'));
 ?>
 <section class="narrow">
   <h1><?= te('login.title') ?></h1>
+  <?= touroSays(t('touro.login'), 'front') ?>
   <?php if ($error): ?><p class="alert alert-error" role="alert"><?= e($error) ?></p><?php endif; ?>
   <?= googleButton($next) ?>
   <form method="post" class="form">

@@ -87,8 +87,7 @@ if ($me === null): ?>
   <section>
     <h2><?= te('home.my_crews') ?></h2>
     <?php if (!$mine): ?>
-      <p><?= te('home.no_crews') ?></p>
-      <p><a class="btn" href="/crews"><?= te('crews.discover') ?></a> <a class="btn secondary" href="/crews/new"><?= te('crews.new') ?></a></p>
+      <?= touroSays(t('home.no_crews'), 'front', '<p><a class="btn" href="/crews">' . te('crews.discover') . '</a> <a class="btn secondary" href="/crews/new">' . te('crews.new') . '</a></p>') ?>
     <?php else: ?>
       <ul class="list">
       <?php foreach ($mine as $c): ?>

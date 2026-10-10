@@ -80,6 +80,7 @@ $posts = dbAll('SELECT p.id, p.user_id, p.body, p.created_at, p.edited_at, p.del
 
 $reactions = forumReactions(array_column($posts, 'id'), $uid);
 $editing = (int)($_GET['edit'] ?? 0);
+$GLOBALS['PARENT_PAGE'] = '/forum/' . rawurlencode((string)$topic['cat_slug']);
 pageHeader($topic['title']);
 ?>
 <p class="breadcrumbs"><a href="/forum"><?= te('forum.title') ?></a> › <a href="/forum/<?= e(rawurlencode($topic['cat_slug'])) ?>"><?= e(categoryName($topic)) ?></a> ›</p>

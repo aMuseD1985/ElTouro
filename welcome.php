@@ -17,7 +17,7 @@ $q = $next !== '/' ? '?next=' . rawurlencode($next) : '';
 
 // A public ride that the flyer or a share link points to: show what the visitor was invited to (title and date only)
 $teaser = null;
-if (preg_match('#^/ride/(\d+)/?$#', $next, $m) && ($ride = loadRide((int)$m[1])) !== null && $ride['visibility'] === 'public' && $ride['status'] === 'planned') {
+if (preg_match('#^/ride/([A-Z0-9]{6}|\d+)/?$#', $next, $m) && ($ride = ctype_digit($m[1]) && strlen($m[1]) < 6 ? loadRide((int)$m[1]) : dbRide('r.code = ?', [$m[1]])) !== null && $ride['visibility'] === 'public' && $ride['status'] === 'planned') {
     $teaser = ['title' => $ride['title'], 'when' => formatRideTime($ride['starts_at'])];
 }
 pageHeader(t('welcome.title'));
@@ -29,6 +29,7 @@ pageHeader(t('welcome.title'));
   <?php elseif ($next !== '/'): ?>
     <p class="alert alert-info"><?= te('welcome.needs_account') ?></p>
   <?php endif; ?>
+  <?= touroSays(t('welcome.touro'), 'look-back-large') ?>
   <p class="lead"><?= te('welcome.intro') ?></p>
   <ul class="welcome-list">
     <li>🗺 <?= te('welcome.b1') ?></li>

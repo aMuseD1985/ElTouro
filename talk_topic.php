@@ -6,6 +6,7 @@
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/talk_lib.php';
+require_once __DIR__ . '/rides_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 
@@ -60,12 +61,13 @@ foreach (['new_posts', 'reply_to', 'delete_confirm', 'error', 'loading', 'no_mor
 }
 $ride = dbOne("SELECT id FROM rides WHERE talk_topic_id = ? AND deleted_at IS NULL", [$tid]);
 
+$GLOBALS['PARENT_PAGE'] = '/crew/' . rawurlencode((string)$topic['crew_slug']) . '/talk';
 pageHeader($topic['title']);
 ?>
 <p class="breadcrumbs"><a href="/crew/<?= e(rawurlencode($topic['crew_slug'])) ?>"><?= e($topic['crew_name']) ?></a> ›
   <a href="/crew/<?= e(rawurlencode($topic['crew_slug'])) ?>/talk"><?= te('talk.title') ?></a> ›</p>
 <h1><?= e($topic['title']) ?></h1>
-<?php if ($ride): ?><p><a class="btn secondary" href="/ride/<?= (int)$ride['id'] ?>"><?= te('ride.to_ride') ?></a></p><?php endif; ?>
+<?php if ($ride): ?><p><a class="btn secondary" href="<?= rideUrl($ride) ?>"><?= te('ride.to_ride') ?></a></p><?php endif; ?>
 <?php if ($topic['is_locked']): ?><p class="alert alert-info"><?= te('forum.locked_text') ?></p><?php endif; ?>
 
 <?php if ($moderator): ?>

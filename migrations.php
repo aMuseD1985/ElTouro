@@ -598,6 +598,25 @@ function runMigrations(): array
         $log[] = '~ reports.target_type: ENUM → VARCHAR (Meldungen zu Bewertungen, Orten und Fotos)';
     }
 
+    // Rides get a short, unpredictable code for their URLs (/ride/K7X9QM) instead of the running number
+    if (!columnExists('rides', 'code')) {
+        db()->exec('ALTER TABLE rides ADD code CHAR(6) NULL');
+        $log[] = '~ rides.code angelegt';
+    }
+    require_once __DIR__ . '/rides_lib.php';
+    $filled = 0;
+    foreach (dbAll('SELECT id FROM rides WHERE code IS NULL') as $r) {
+        dbExec('UPDATE rides SET code = ? WHERE id = ?', [newRideCode(), $r['id']]);
+        $filled++;
+    }
+    if ($filled) {
+        $log[] = "~ rides.code für $filled bestehende Ausfahrten vergeben (alte Adressen /ride/<Nummer> leiten weiter)";
+    }
+    if (!dbOne("SELECT 1 AS x FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'rides' AND INDEX_NAME = 'uq_rides_code'")) {
+        db()->exec('ALTER TABLE rides MODIFY code CHAR(6) NOT NULL, ADD UNIQUE KEY uq_rides_code (code)');
+        $log[] = '~ rides.code eindeutig gemacht';
+    }
+
     // Legal pages: default texts of earlier versions that were never edited get the current default.
     $earlierDefaults = [
         'privacy' => ['de' => ['7e4ba2126ff6c8f44d235eb02218c42fc71858a57579da1cf8ecbbbd4055f6f8', 'd1fd3d0814e71f30d20659d660c744d8c41e25ba28297f881a3d1f556fa76e15', 'f8b5527c07daaa6fff2cca20f8df52aee270b872ede74f6c558b7e3a10c027de', '0b48a1a125758f83b569b8b147f16ab6a28f5a5bf999449649641f5d27dfbba1', '7f5b63b6bc91c170f4b48617d86799fdc5143a9258b9bfce9c12160e66174814', '1d37ffa904f2ff69495cbf1838231f22c9d4671e0cf074a93923c214018d2787',

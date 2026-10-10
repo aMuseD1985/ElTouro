@@ -55,10 +55,27 @@
   var ARROW = { left: -90, slight_left: -45, sharp_left: -135, right: 90, slight_right: 45, sharp_right: 135, keep_left: -20,
                 keep_right: 20, uturn: 180, exit_left: -45, exit_right: 45, straight: 0 };
 
+  // How much the track really bends at a distance: the largest direction change over 15, 25 and 40 m on either side (degrees)
+  function bendAt(s) {
+    var best = 0;
+    [15, 25, 40].forEach(function (w) {
+      var t = (bearing(pointAt(s), pointAt(s + w)) - bearing(pointAt(s - w), pointAt(s)) + 540) % 360 - 180;
+      best = Math.max(best, Math.abs(t));
+    });
+    return best;
+  }
+  // Only real turns are announced. "Slight" turns that are hardly a bend (under 25°) stay silent – a small curve in the road is no
+  // instruction. When in doubt (25° and more, forks, junctions the router marks) the prompt is played rather than missed.
+  var MIN_SLIGHT_BEND = 25;
+  function worthAnnouncing(kind, at) {
+    if (kind === 'slight_left' || kind === 'slight_right') return bendAt(at) >= MIN_SLIGHT_BEND;
+    return true;
+  }
+
   var hints = [];
   try {
     JSON.parse(d.guidance || '[]').forEach(function (g) {
-      if (CMD[g[1]] && g[0] < n) hints.push({ at: cum[g[0]], kind: CMD[g[1]], exit: g[2] });
+      if (CMD[g[1]] && g[0] < n && worthAnnouncing(CMD[g[1]], cum[g[0]])) hints.push({ at: cum[g[0]], kind: CMD[g[1]], exit: g[2] });
     });
   } catch (e) { hints = []; }
 
@@ -69,7 +86,7 @@
       if (cum[j] < 15 || total - cum[j] < 15) continue;
       var turn = (bearing(pointAt(cum[j]), pointAt(cum[j] + 20)) - bearing(pointAt(cum[j] - 20), pointAt(cum[j])) + 540) % 360 - 180;
       var a = Math.abs(turn);
-      if (a < 35 || cum[j] - last < 30) continue;
+      if (a < 45 || cum[j] - last < 30) continue;   // geometry only: 45° and more counts as a turn, small bends do not
       var side = turn > 0 ? 'right' : 'left';
       hints.push({ at: cum[j], kind: a >= 150 ? 'uturn' : a >= 110 ? 'sharp_' + side : a >= 55 ? side : 'slight_' + side, exit: 0 });
       last = cum[j];
@@ -287,7 +304,7 @@
         var detourLen = cum[detour.length - 1];
         keep.forEach(function (h) { h.at = detourLen + (h.at - oldAlong); });
         var fresh = [];
-        (j.guidance || []).forEach(function (g) { if (CMD[g[1]] && g[0] < detour.length) fresh.push({ at: cum[g[0]], kind: CMD[g[1]], exit: g[2] }); });
+        (j.guidance || []).forEach(function (g) { if (CMD[g[1]] && g[0] < detour.length && worthAnnouncing(CMD[g[1]], cum[g[0]])) fresh.push({ at: cum[g[0]], kind: CMD[g[1]], exit: g[2] }); });
         hints = fresh.concat(keep).sort(function (x, y) { return x.at - y.at; });
         state.along = 0; state.seg = 0; state.off = 0; state.offRoute = false;
         var src = map.getSource('route');

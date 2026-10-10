@@ -7,12 +7,13 @@ require_once __DIR__ . '/rides_lib.php';
 $me = requireLogin();
 $uid = (int)$me['id'];
 
-$ride = loadRide((int)($_GET['id'] ?? $_POST['id'] ?? 0));
+$ride = loadRideFromRequest();
 if ($ride === null || !canSeeRide($ride, $uid)) {
     notFound();
 }
+redirectLegacyRideUrl($ride);   // /ride/12 → /ride/K7X9QM
 $rid = (int)$ride['id'];
-$self = '/ride/' . $rid;
+$self = rideUrl($ride);
 $isOrganizer = (int)$ride['organizer_user_id'] === $uid;
 $canManage = canManageRide($ride, $me);
 
@@ -72,11 +73,11 @@ pageHeader($ride['title']);
 <p class="breadcrumbs"><a href="/rides"><?= te('rides.title') ?></a> ›<?php if ($ride['crew_slug'] && $inCrew): ?> <a href="/crew/<?= e(rawurlencode($ride['crew_slug'])) ?>"><?= e($ride['crew_name']) ?></a> ›<?php endif; ?></p>
 <div class="title-row">
   <h1><?= e($ride['title']) ?></h1>
-  <?php if ($canManage && $open): ?><a class="btn secondary" href="/ride/<?= $rid ?>/edit"><?= te('ride.edit') ?></a><?php endif; ?>
+  <?php if ($canManage && $open): ?><a class="btn secondary" href="<?= rideUrl($ride, '/edit') ?>"><?= te('ride.edit') ?></a><?php endif; ?>
 </div>
 <p class="ride-when big"><?= e(formatRideTime($ride['starts_at'])) ?>
-  <?php if ($ride['status'] !== 'cancelled'): ?><a class="btn secondary ics-btn" href="/ride/<?= $rid ?>/ics" download>📅 <?= te('ride.ics') ?></a>
-  <?php if ($canManage): ?><a class="btn secondary ics-btn" href="/ride/<?= $rid ?>/flyer" target="_blank" rel="noopener">🖨 <?= te('flyer.link') ?></a><?php endif; ?><?php endif; ?></p>
+  <?php if ($ride['status'] !== 'cancelled'): ?><a class="btn secondary ics-btn" href="<?= rideUrl($ride, '/ics') ?>" download>📅 <?= te('ride.ics') ?></a>
+  <?php if ($canManage): ?><a class="btn secondary ics-btn" href="<?= rideUrl($ride, '/flyer') ?>" target="_blank" rel="noopener">🖨 <?= te('flyer.link') ?></a><?php endif; ?><?php endif; ?></p>
 <p class="muted"><?= te('ride.by', ['name' => $ride['organizer']]) ?> ·
   <?= $ride['visibility'] === 'public' ? te('ride.v_public') : te('ride.v_group', ['name' => (string)$ride['crew_name']]) ?></p>
 

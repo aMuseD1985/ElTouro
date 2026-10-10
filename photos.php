@@ -73,7 +73,7 @@ pageHeader(t('photo.title') . ' · ' . $crew['name']);
     <button type="submit"><?= te('photo.upload') ?></button>
   </form>
 </details>
-<?php if (!$photos): ?><p class="muted"><?= te('photo.empty') ?></p><?php endif; ?>
+<?php if (!$photos): ?><?= touroSays(t('photo.empty'), 'front') ?><?php endif; ?>
 <ul class="photo-grid" id="photo-grid" data-csrf="<?= e(csrfToken()) ?>">
   <?php foreach ($photos as $p): ?>
   <li class="photo-card" data-id="<?= (int)$p['id'] ?>">

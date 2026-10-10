@@ -134,7 +134,7 @@ pageHeader($crew['name']);
   <?php if ($latest): ?><ul class="list"><?php foreach ($latest as $lt): ?>
     <li><a href="/talk/<?= (int)$lt['id'] ?>"><?= e($lt['title']) ?></a> <span class="muted">· <?= e(relativeTime($lt['last_post_at'])) ?></span></li>
   <?php endforeach; ?></ul>
-  <?php else: ?><p class="muted"><?= te('talk.empty') ?></p><?php endif; ?>
+  <?php else: ?><?= touroSays(t('talk.empty'), 'front') ?><?php endif; ?>
 </section>
 <?php endif; ?>
 

@@ -24,6 +24,71 @@ const STVO29_THRESHOLD = 15;
 const RIDE_SIGNUP_RETENTION_DAYS = 180;
 const APP_TIMEZONE = 'Europe/Berlin';
 
+const RIDE_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';   // capital letters and digits without the look-alikes 0, O, 1, I
+
+/** A fresh, unused six-character ride code (about a billion possibilities: nobody can guess or count rides from it) */
+function newRideCode(): string
+{
+    for ($try = 0; $try < 30; $try++) {
+        $code = '';
+        for ($i = 0; $i < 6; $i++) {
+            $code .= RIDE_CODE_CHARS[random_int(0, strlen(RIDE_CODE_CHARS) - 1)];
+        }
+        if (dbOne('SELECT 1 AS x FROM rides WHERE code = ?', [$code]) === null) {
+            return $code;
+        }
+    }
+    throw new RuntimeException('no free ride code');
+}
+
+/** The code of a ride (row with 'code', row with 'id', or id) */
+function rideCode(int|array $ride): string
+{
+    if (is_array($ride) && !empty($ride['code'])) {
+        return (string)$ride['code'];
+    }
+    $id = is_array($ride) ? (int)$ride['id'] : $ride;
+    static $cache = [];
+    return $cache[$id] ??= (string)(dbOne('SELECT code FROM rides WHERE id = ?', [$id])['code'] ?? $id);
+}
+
+/** Address of a ride (or of one of its pages: '/edit', '/ics', '/flyer') */
+function rideUrl(int|array $ride, string $suffix = ''): string
+{
+    return '/ride/' . rideCode($ride) . $suffix;
+}
+
+/** The ride a request asks for: ?code=K7X9QM, or the old number (?id=12, also posted by old forms) */
+function loadRideFromRequest(): ?array
+{
+    $code = strtoupper((string)($_GET['code'] ?? ''));
+    if ($code !== '') {
+        return preg_match('/^[A-Z0-9]{6}$/', $code) ? dbRide('r.code = ?', [$code]) : null;
+    }
+    $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
+    return $id > 0 ? loadRide($id) : null;
+}
+
+/** Old links with the number (/ride/12): visible rides move on to the code address (GET only, the ride must be visible for the rider) */
+function redirectLegacyRideUrl(array $ride, string $suffix = ''): void
+{
+    if (isset($_GET['id']) && !isset($_GET['code']) && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
+        $q = $_GET; unset($q['id']);
+        header('Location: ' . rideUrl($ride, $suffix) . ($q ? '?' . http_build_query($q) : ''), true, 301);
+        exit;
+    }
+}
+
+function dbRide(string $where, array $params): ?array
+{
+    return dbOne('SELECT r.*, u.display_name AS organizer, g.name AS crew_name, g.slug AS crew_slug,
+                         t.title AS tour_title, t.deleted_at AS tour_deleted_at
+                    FROM rides r JOIN users u ON u.id = r.organizer_user_id
+                    JOIN tours t ON t.id = r.tour_id
+                    LEFT JOIN rider_groups g ON g.id = r.group_id AND g.deleted_at IS NULL
+                   WHERE ' . $where . ' AND r.deleted_at IS NULL', $params);
+}
+
 function loadRide(int $id): ?array
 {
     return dbOne('SELECT r.*, u.display_name AS organizer, g.name AS crew_name, g.slug AS crew_slug,
@@ -122,7 +187,7 @@ function visibleRides(int $userId, bool $upcoming = true, string $extra = '1=1',
 {
     $time = $upcoming ? 'r.starts_at > UTC_TIMESTAMP() - INTERVAL 3 HOUR' : 'r.starts_at <= UTC_TIMESTAMP() - INTERVAL 3 HOUR';
     $order = $upcoming ? 'r.starts_at ASC' : 'r.starts_at DESC';
-    return dbAll("SELECT r.id, r.title, r.starts_at, r.meeting_point, r.capacity, r.status, r.visibility, r.style, r.group_id,
+    return dbAll("SELECT r.id, r.code, r.title, r.starts_at, r.meeting_point, r.capacity, r.status, r.visibility, r.style, r.group_id,
                          u.display_name AS organizer, g.name AS crew_name, g.slug AS crew_slug, t.distance_m,
                          (SELECT COUNT(*) FROM ride_signups s WHERE s.ride_id = r.id AND s.status = 'confirmed') AS confirmed,
                          ms.status AS my_status
@@ -141,13 +206,13 @@ function visibleRides(int $userId, bool $upcoming = true, string $extra = '1=1',
 /** Card list of rides, shared with the crew page and the home page. */
 function rideCards(array $list, string $empty): void
 {
-    if (!$list) { echo '<p class="muted">' . te($empty) . '</p>'; return; }
+    if (!$list) { echo touroSays(t($empty), 'side-large', '<p><a class="btn" href="/ride/new">' . te('ride.new') . '</a></p>'); return; }
     echo '<ul class="cards">';
     foreach ($list as $r) {
         $free = max(0, (int)$r['capacity'] - (int)$r['confirmed']);
         echo '<li class="card ride-card' . ($r['status'] === 'cancelled' ? ' cancelled' : '') . '">'
            . '<p class="ride-when">' . e(formatRideTime($r['starts_at'])) . '</p>'
-           . '<h3><a href="/ride/' . (int)$r['id'] . '">' . e($r['title']) . '</a></h3>'
+           . '<h3><a href="' . rideUrl($r) . '">' . e($r['title']) . '</a></h3>'
            . '<p class="muted">' . e($r['meeting_point']) . ' · ' . e(formatKm((int)$r['distance_m'])) . '</p>'
            . '<p class="muted">' . te('ride.by', ['name' => $r['organizer']]) . ($r['crew_name'] ? ' · ' . e($r['crew_name']) : ' · ' . te('ride.v_public')) . '</p><p>';
         if ($r['status'] === 'cancelled') {
@@ -197,7 +262,7 @@ function signUpForRide(int $rideId, int $userId, bool $photoConsent): string
         $pdo->commit();
         require_once __DIR__ . '/notify_lib.php';
         $r = dbOne('SELECT organizer_user_id, title FROM rides WHERE id = ?', [$rideId]);
-        notifyUser((int)($r['organizer_user_id'] ?? 0), $userId, 'ride_signup', '/ride/' . $rideId, ['name' => displayNameOf($userId), 'title' => (string)($r['title'] ?? '')]);
+        notifyUser((int)($r['organizer_user_id'] ?? 0), $userId, 'ride_signup', rideUrl($rideId), ['name' => displayNameOf($userId), 'title' => (string)($r['title'] ?? '')]);
         return $status;
     } catch (Throwable $ex) {
         if ($pdo->inTransaction()) {
@@ -325,10 +390,10 @@ function notifyRiders(array $ride, string $kind, ?array $userIds = null, int $ex
             'title'   => $ride['title'],
             'when'    => formatRideTime($ride['starts_at'], $u['locale']),
             'meeting' => $ride['meeting_point'],
-            'link'    => baseUrl() . '/ride/' . (int)$ride['id'],
+            'link'    => baseUrl() . rideUrl($ride),
         ]);
         require_once __DIR__ . '/notify_lib.php';
-        notifyUser((int)$u['id'], $exceptUserId, 'ride_' . $kind, '/ride/' . (int)$ride['id'], ['title' => (string)$ride['title']]);
+        notifyUser((int)$u['id'], $exceptUserId, 'ride_' . $kind, rideUrl($ride), ['title' => (string)$ride['title']]);
         try {
             sendMail($u['email'], tl($u['locale'], 'mail.ride_' . $kind . '_subject', ['title' => $ride['title']]), mailHtml($text), $text);
             $sent++;
@@ -348,7 +413,7 @@ function rideAnnouncement(array $ride, array $tour): string
         'tour'     => $tour['title'],
         'km'       => formatKm((int)$tour['distance_m']),
         'capacity' => (int)$ride['capacity'],
-        'link'     => '/ride/' . (int)$ride['id'],
+        'link'     => rideUrl($ride),
     ]) . ($ride['description'] ? "\n\n" . $ride['description'] : '');
 }
 

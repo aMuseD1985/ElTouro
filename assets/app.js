@@ -83,7 +83,7 @@
   }
 
   // ---- Back button in the installed app (no browser bar there; Android has its own back gesture, iOS does not)
-  if (html.classList.contains('standalone') && window.history.length > 1 && location.pathname !== '/') {
+  if (html.classList.contains('standalone') && location.pathname !== '/') {
     var header = document.querySelector('.site-header');
     if (header) {
       var back = document.createElement('button');
@@ -91,7 +91,11 @@
       back.className = 'app-back';
       back.textContent = '‹';
       back.setAttribute('aria-label', T.back || 'Back');
-      back.addEventListener('click', function () { history.back(); });
+      // up to the page above (tour → list, editor → tour …); without a known parent one step back in the history
+      back.addEventListener('click', function () {
+        var up = document.body.dataset.parent;
+        if (up) location.href = up; else history.back();
+      });
       header.insertBefore(back, header.firstChild);
     }
   }

@@ -21,7 +21,7 @@ pageHeader(categoryName($cat));
   <h1><?= e(categoryName($cat)) ?></h1>
   <a class="btn" href="/forum/<?= e(rawurlencode($cat['slug'])) ?>/new"><?= te('forum.new_topic') ?></a>
 </div>
-<?php if (!$topics): ?><p class="muted"><?= te('forum.no_topics') ?></p><?php endif; ?>
+<?php if (!$topics): ?><?= touroSays(t('forum.no_topics'), 'front') ?><?php endif; ?>
 <ul class="forum-list">
 <?php foreach ($topics as $t): ?>
   <li>

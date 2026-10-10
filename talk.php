@@ -52,7 +52,7 @@ pageHeader(t('talk.title') . ' · ' . $crew['name']);
   </form>
 </details>
 
-<?php if (!$topics): ?><p class="muted"><?= te('talk.empty') ?></p><?php endif; ?>
+<?php if (!$topics): ?><?= touroSays(t('talk.empty'), 'front') ?><?php endif; ?>
 <ul class="topic-list" id="topics"
     data-crew="<?= e($crew['slug']) ?>" data-offset="<?= count($topics) ?>"
     data-more="<?= count($topics) === TALK_TOPICS_PAGE_SIZE ? '1' : '0' ?>">

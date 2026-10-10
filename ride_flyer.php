@@ -1,11 +1,11 @@
 <?php
-/** /ride/<id>/flyer – A4 flyer of a ride with QR code, ready to print or save as PDF (organiser, crew lead, admin). */
+/** /ride/<code>/flyer – A4 flyer of a ride with QR code, ready to print or save as PDF (organiser, crew lead, admin). */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/rides_lib.php';
 require_once __DIR__ . '/flyer_lib.php';
 $me = requireLogin();
-$ride = loadRide((int)($_GET['id'] ?? 0));
+$ride = loadRideFromRequest();
 if ($ride === null || !canSeeRide($ride, (int)$me['id']) || !canManageRide($ride, $me)) {
     notFound();
 }
@@ -15,7 +15,7 @@ $f = fn(string $k, array $v = []) => tl($lang, $k, $v);
 $e = fn(string $s) => htmlspecialchars($s, ENT_QUOTES, 'UTF-8');
 $showName = ($_GET['name'] ?? '1') !== '0';
 $when = flyerWhen(utcToLocal($ride['starts_at']), $lang);
-$url = baseUrl() . '/ride/' . (int)$ride['id'];
+$url = baseUrl() . rideUrl($ride);
 $km = $tour ? number_format((int)$tour['distance_m'] / 1000, 1, $lang === 'de' ? ',' : '.', '') . ' km' : '';
 $routeLine = $tour ? $km . ' | ' . $f('flyer.difficulty') . ': ' . $f('tour.d_' . $tour['difficulty']) : (string)$ride['tour_title'];
 $rules = $tour ? $f('tour.r_' . $tour['rule_set']) : '';
@@ -23,6 +23,7 @@ $forWhom = $ride['group_id'] !== null && $ride['visibility'] === 'group'
     ? $f('flyer.for_crew', ['crew' => (string)$ride['crew_name'], 'n' => (int)$ride['capacity']])
     : $f('flyer.for_all', ['n' => (int)$ride['capacity']]);
 $hero = is_file(__DIR__ . '/assets/img/flyer-hero.jpg') ? '/assets/img/flyer-hero.jpg?v=' . filemtime(__DIR__ . '/assets/img/flyer-hero.jpg') : null;
+$logo = is_file(__DIR__ . '/assets/img/logo-claim-' . $lang . '.webp') ? '/assets/img/logo-claim-' . $lang . '.webp' : '/assets/img/logo-claim-de.webp';   // the logo with its claim as on eltouro.de (add logo-claim-en.webp for English flyers)
 $Y = '#F7C948'; $N = '#14263F'; $B = '#2F8FD0'; $L = '#CDEBFA';
 
 $rows = [
@@ -41,13 +42,13 @@ $footer = [['leaf', 'flyer.f1', 'flyer.f1s'], ['people', 'flyer.f2', 'flyer.f2s'
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= $e($f('flyer.page_title', ['title' => $ride['title']])) ?></title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="/assets/flyer.css?v=1">
+<link rel="stylesheet" href="/assets/flyer.css?v=2">
 </head>
 <body>
 <div class="flyer-toolbar">
-  <a href="/ride/<?= (int)$ride['id'] ?>">← <?= te('flyer.back') ?></a>
+  <a href="<?= rideUrl($ride) ?>">← <?= te('flyer.back') ?></a>
   <button type="button" id="flyer-print"><?= te('flyer.print') ?></button>
-  <label class="choice"><input type="checkbox" id="flyer-name" <?= $showName ? 'checked' : '' ?> data-id="<?= (int)$ride['id'] ?>"> <?= te('flyer.show_name') ?></label>
+  <label class="choice"><input type="checkbox" id="flyer-name" <?= $showName ? 'checked' : '' ?> data-code="<?= $e(rideCode($ride)) ?>"> <?= te('flyer.show_name') ?></label>
   <span class="hint"><?= te('flyer.print_hint') ?></span>
 </div>
 <div class="flyer-stage" id="flyer-stage">
@@ -78,7 +79,6 @@ $footer = [['leaf', 'flyer.f1', 'flyer.f1s'], ['people', 'flyer.f2', 'flyer.f2s'
       <path d="M70 168 Q120 140 210 134 L210 170 Z" fill="#CBB79A"/><path d="M90 170 Q140 148 210 144 L210 170Z" fill="#B9A482" fill-opacity=".7"/>
     <?php endif; ?>
     <!-- brush strokes behind the texts -->
-    <?= brushStroke(-8, 5, 128, 33, 7, 11, $N) ?>
     <?= brushStroke(2, 94, 108, 46, -6, 23, $Y, 1, 1.1) ?>
     <?= brushStroke(-6, 139, 104, 21, 4, 37, $N, 1, 1.2) ?>
     <?= brushStroke(146, 39, 52, 2.4, -2, 41, $Y, 1, .5) ?>
@@ -93,8 +93,7 @@ $footer = [['leaf', 'flyer.f1', 'flyer.f1s'], ['people', 'flyer.f2', 'flyer.f2s'
     <?= brushStroke(180, 292.8, 34, 2.2, -7, 92, $Y, 1, .7) ?>
   </svg>
 
-  <div class="f-logo"><span class="f-logo-word">ELTOURO</span><span class="f-logo-de">.de</span></div>
-  <div class="f-claim"><?= $e($f('flyer.tagline')) ?></div>
+  <img class="f-logoimg" src="<?= $e($logo) ?>" alt="ElTouro.de – <?= $e($f('flyer.logo_claim')) ?>">
   <div class="f-shout"><?= $e($f('flyer.shout')) ?></div>
   <img class="f-mascot" src="/assets/img/mascot/side-large.webp" alt="">
   <div class="f-head"><span><?= $e($f('flyer.head1')) ?></span><span><?= $e($f('flyer.head2')) ?></span></div>
@@ -122,7 +121,7 @@ $footer = [['leaf', 'flyer.f1', 'flyer.f1s'], ['people', 'flyer.f2', 'flyer.f2s'
     <?php endforeach; ?>
   </div>
   <div class="f-foot-line"></div>
-  <div class="f-foot-logo"><span class="f-logo-word">ELTOURO</span><span class="f-logo-de">.de</span></div>
+  <div class="f-foot-logo"><img src="<?= $e($logo) ?>" alt="ElTouro.de"></div>
   <div class="f-foot-tag"><?= $e($f('flyer.community')) ?></div>
 </div>
 </div>

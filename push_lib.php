@@ -277,9 +277,9 @@ function announceRideNearby(array $ride): void
                 continue;
             }
             $lang = (string)(dbOne('SELECT locale FROM users WHERE id = ?', [$uid])['locale'] ?? 'de');
-            notifyUser($uid, (int)$ride['organizer_user_id'], 'ride_near', '/ride/' . (int)$ride['id'], ['title' => $ride['title'], 'where' => $ride['meeting_point']], false);
+            notifyUser($uid, (int)$ride['organizer_user_id'], 'ride_near', rideUrl($ride), ['title' => $ride['title'], 'where' => $ride['meeting_point']], false);
             enqueuePush($uid, tl($lang, 'push.ride_near_title'), tl($lang, 'push.ride_near_body', ['title' => $ride['title'], 'when' => utcToLocal($ride['starts_at'])->format($lang === 'de' ? 'd.m. H:i' : 'j M, H:i'),
-                'where' => $ride['meeting_point']]), '/ride/' . (int)$ride['id'], 'ride' . (int)$ride['id']);
+                'where' => $ride['meeting_point']]), rideUrl($ride), 'ride' . (int)$ride['id']);
         }
         pushAfterResponse();
     } catch (Throwable $ex) {
@@ -304,7 +304,7 @@ function sendRideSoonAlerts(): int
             dbExec('INSERT IGNORE INTO ride_alerts (ride_id, user_id) VALUES (?, ?)', [$ride['id'], $uid]);
             $lang = (string)(dbOne('SELECT locale FROM users WHERE id = ?', [$uid])['locale'] ?? 'de');
             enqueuePush($uid, tl($lang, 'push.ride_soon_title'), tl($lang, 'push.ride_soon_body', ['title' => $ride['title'], 'when' => utcToLocal($ride['starts_at'])->format('H:i'),
-                'where' => $ride['meeting_point']]), '/ride/' . (int)$ride['id'], 'soon' . (int)$ride['id']);
+                'where' => $ride['meeting_point']]), rideUrl($ride), 'soon' . (int)$ride['id']);
             $n++;
         }
     }

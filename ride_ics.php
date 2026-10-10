@@ -1,10 +1,10 @@
 <?php
-/** GET /ride/<id>/ics – the ride as a calendar entry (RFC 5545). Only for riders who may see the ride. */
+/** GET /ride/<code>/ics – the ride as a calendar entry (RFC 5545). Only for riders who may see the ride. */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/rides_lib.php';
 $me = requireLogin();
-$ride = loadRide((int)($_GET['id'] ?? 0));
+$ride = loadRideFromRequest();
 if ($ride === null || !canSeeRide($ride, (int)$me['id'])) {
     notFound();
 }
@@ -15,7 +15,7 @@ $start = new DateTimeImmutable($ride['starts_at'], new DateTimeZone('UTC'));
 // Length: riding time at 18 km/h plus half an hour for gathering and breaks, at least one hour
 $minutes = max(60, (int)round(((int)($tour['distance_m'] ?? 0)) / 1000 / 18 * 60) + 30);
 $end = $start->modify('+' . $minutes . ' minutes');
-$url = baseUrl() . '/ride/' . (int)$ride['id'];
+$url = baseUrl() . rideUrl($ride);
 
 $esc = fn(string $s) => str_replace(["\\", ";", ",", "\r\n", "\n", "\r"], ["\\\\", "\;", "\\,", "\\n", "\\n", "\\n"], $s);
 $fold = function (string $line): string {

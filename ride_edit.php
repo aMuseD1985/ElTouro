@@ -11,14 +11,14 @@ $me = requireLogin();
 $uid = (int)$me['id'];
 
 $ride = null;
-if (isset($_GET['id']) || isset($_POST['id'])) {
-    $ride = loadRide((int)($_GET['id'] ?? $_POST['id']));
+if (isset($_GET['id']) || isset($_POST['id']) || isset($_GET['code'])) {
+    $ride = loadRideFromRequest();
     if ($ride === null || !canSeeRide($ride, $uid) || !canManageRide($ride, $me)) {
         notFound();
     }
     if (!isRideOpen($ride)) {
         flash(t('ride.not_editable'), 'error');
-        redirect('/ride/' . (int)$ride['id']);
+        redirect(rideUrl($ride));
     }
 }
 
@@ -152,14 +152,14 @@ if (isPost()) {
                 postRideUpdate($updated, $uid, t('ride.talk_changed', ['when' => formatRideTime($updated['starts_at']), 'meeting' => $updated['meeting_point']]));
             }
             flash(t($moved ? 'ride.saved_notified' : 'ride.saved'));
-            redirect('/ride/' . (int)$ride['id']);
+            redirect(rideUrl($ride));
         }
 
         $pdo->beginTransaction();
-        dbExec("INSERT INTO rides (tour_id, organizer_user_id, group_id, visibility, title, description, content_lang, starts_at,
+        dbExec("INSERT INTO rides (code, tour_id, organizer_user_id, group_id, visibility, title, description, content_lang, starts_at,
                        meeting_point, meeting_lat, meeting_lng, capacity, waitlist_enabled, style, stvo29_confirmed_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($needsStvo ? 'UTC_TIMESTAMP()' : 'NULL') . ")",
-            [$tour['id'], $uid, $groupId, $visibility, $w['title'], $w['description'] ?: null, $LANG, $startsAt->format('Y-m-d H:i:s'),
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, " . ($needsStvo ? 'UTC_TIMESTAMP()' : 'NULL') . ")",
+            [newRideCode(), $tour['id'], $uid, $groupId, $visibility, $w['title'], $w['description'] ?: null, $LANG, $startsAt->format('Y-m-d H:i:s'),
              $w['meeting'], $lat, $lng, $capacity, $w['waitlist'] ? 1 : 0, $w['style']]);
         $rid = (int)$pdo->lastInsertId();
         // The organizer rides along and takes the first place
@@ -175,14 +175,14 @@ if (isPost()) {
         if ($groupId !== null) {
             require_once __DIR__ . '/notify_lib.php';
             $members = array_column(dbAll("SELECT user_id FROM group_members WHERE group_id = ? AND status = 'active'", [$groupId]), 'user_id');
-            notifyMany($members, $uid, 'ride_new', '/ride/' . $rid, ['title' => $w['title'], 'crew' => (string)(loadCrewById($groupId)['name'] ?? '')]);
+            notifyMany($members, $uid, 'ride_new', rideUrl($rid), ['title' => $w['title'], 'crew' => (string)(loadCrewById($groupId)['name'] ?? '')]);
         }
         if ($visibility === 'public') {
             require_once __DIR__ . '/push_lib.php';
             announceRideNearby(loadRide($rid));   // riders nearby who asked for it (crew rides already reach the crew above)
         }
         flash(t('ride.created'));
-        redirect('/ride/' . $rid);
+        redirect(rideUrl($rid));
     }
 }
 
@@ -190,7 +190,7 @@ $jsTexts = ['meeting' => t('ride.meeting_point')];
 pageHeader($ride ? t('ride.edit') : t('ride.new'));
 ?>
 <link rel="stylesheet" href="/assets/vendor/leaflet/leaflet.css">
-<p class="breadcrumbs"><a href="/rides"><?= te('rides.title') ?></a> ›<?php if ($ride): ?> <a href="/ride/<?= (int)$ride['id'] ?>"><?= e($ride['title']) ?></a> ›<?php endif; ?></p>
+<p class="breadcrumbs"><a href="/rides"><?= te('rides.title') ?></a> ›<?php if ($ride): ?> <a href="<?= rideUrl($ride) ?>"><?= e($ride['title']) ?></a> ›<?php endif; ?></p>
 <h1><?= te($ride ? 'ride.edit' : 'ride.new') ?></h1>
 <?php foreach ($errors as $err): ?><p class="alert alert-error" role="alert"><?= e($err) ?></p><?php endforeach; ?>
 <p class="muted"><?= te('ride.tour') ?>: <a href="/tour/<?= (int)$tour['id'] ?>"><?= e($tour['title']) ?></a> · <?= e(formatKm((int)$tour['distance_m'])) ?>

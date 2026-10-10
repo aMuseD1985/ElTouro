@@ -69,7 +69,7 @@ function apiCrewOrFail(array $c, bool $memberOnly = false): array
 
 function apiRideOut(array $r): array
 {
-    return ['id' => (int)$r['id'], 'title' => $r['title'], 'starts_at' => apiIso($r['starts_at']), 'meeting_point' => $r['meeting_point'],
+    return ['id' => (int)$r['id'], 'code' => rideCode($r), 'url' => baseUrl() . rideUrl($r), 'title' => $r['title'], 'starts_at' => apiIso($r['starts_at']), 'meeting_point' => $r['meeting_point'],
             'capacity' => (int)$r['capacity'], 'confirmed' => isset($r['confirmed']) ? (int)$r['confirmed'] : null, 'status' => $r['status'], 'visibility' => $r['visibility'],
             'style' => $r['style'], 'organizer' => $r['organizer'] ?? null, 'crew' => $r['crew_name'] ?? null, 'crew_slug' => $r['crew_slug'] ?? null,
             'my_status' => $r['my_status'] ?? null];

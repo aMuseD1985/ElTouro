@@ -15,7 +15,7 @@ pageHeader(t('notif.title'));
   <a class="btn secondary" href="/profile#notifications"><?= te('notif.settings') ?></a>
 </div>
 <?php if (!$list): ?>
-  <p class="muted"><?= te('notif.none') ?></p>
+  <?= touroSays(t('notif.none'), 'look-back-large') ?>
 <?php else: ?>
   <ul class="notif-list">
     <?php foreach ($list as $n): ?>

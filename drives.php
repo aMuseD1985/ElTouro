@@ -13,7 +13,7 @@ pageHeader(t('drives.title'));
   <a class="btn" href="/free">⏺ <?= te('free.start_link') ?></a>
 </div>
 <?php if (!$list): ?>
-  <p class="muted"><?= te('drives.none') ?></p>
+  <?= touroSays(t('drives.none'), 'side-large', '<p><a class="btn" href="/free">⏺ ' . te('free.start_link') . '</a></p>') ?>
 <?php else: ?>
   <p class="muted"><?= te('drives.sum', ['n' => count($list), 'km' => formatKm((int)$sum)]) ?></p>
   <?= driveCards($list) ?>

@@ -107,10 +107,14 @@ RewriteRule ^s/([A-Za-z0-9_-]{24})/image\.png$ share.php?token=$1&image=1 [L,QSA
 
 RewriteRule ^rides/?$ rides.php [L,QSA]
 RewriteRule ^ride/new/?$ ride_edit.php [L,QSA]
-RewriteRule ^ride/([0-9]+)/?$ ride.php?id=$1 [L,QSA]
-RewriteRule ^ride/([0-9]+)/edit/?$ ride_edit.php?id=$1 [L,QSA]
-RewriteRule ^ride/([0-9]+)/ics$ ride_ics.php?id=$1 [L,QSA]
-RewriteRule ^ride/([0-9]+)/flyer/?$ ride_flyer.php?id=$1 [L,QSA]
+RewriteRule ^ride/([A-Z0-9]{6})/?$ ride.php?code=$1 [L,QSA]
+RewriteRule ^ride/([0-9]{1,5})/?$ ride.php?id=$1 [L,QSA]
+RewriteRule ^ride/([A-Z0-9]{6})/edit/?$ ride_edit.php?code=$1 [L,QSA]
+RewriteRule ^ride/([0-9]{1,5})/edit/?$ ride_edit.php?id=$1 [L,QSA]
+RewriteRule ^ride/([A-Z0-9]{6})/ics$ ride_ics.php?code=$1 [L,QSA]
+RewriteRule ^ride/([0-9]{1,5})/ics$ ride_ics.php?id=$1 [L,QSA]
+RewriteRule ^ride/([A-Z0-9]{6})/flyer/?$ ride_flyer.php?code=$1 [L,QSA]
+RewriteRule ^ride/([0-9]{1,5})/flyer/?$ ride_flyer.php?id=$1 [L,QSA]
 
 RewriteRule ^forum/?$ forum.php [L,QSA]
 RewriteRule ^forum/topic/([0-9]+)/?$ forum_topic.php?t=$1 [L,QSA]

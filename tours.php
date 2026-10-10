@@ -39,10 +39,8 @@ function tourList(array $list, bool $emptyCta = false): void
 {
     global $filtered;
     if (!$list) {
-        echo '<p class="muted">' . te($filtered ? 'tours.none_filtered' : 'tours.none') . '</p>';
-        if ($emptyCta && !$filtered) {
-            echo '<p><a class="btn" href="/tour/plan">' . te('tours.first') . '</a></p>';
-        }
+        echo touroSays(t($filtered ? 'tours.none_filtered' : 'tours.none'), 'side-large',
+            $emptyCta && !$filtered ? '<p><a class="btn" href="/tour/plan">' . te('tours.first') . '</a> <a class="btn secondary" href="/tour/import">' . te('gpx.link') . '</a></p>' : '');
         return;
     }
     echo '<ul class="cards tour-cards">';

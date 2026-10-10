@@ -462,11 +462,22 @@ function flash(string $text, string $type = 'ok'): void
 }
 
 /** Uniform 404 page. Also used where something exists but must not be revealed. */
+/**
+ * Touro says something: the mascot with a speech bubble. For empty lists, the welcome pages and errors – so a page is never just empty.
+ * $pose: front (default), side, look-back-large, rear; $actionHtml is trusted HTML (a button), $text plain text.
+ */
+function touroSays(string $text, string $pose = 'front', string $actionHtml = ''): string
+{
+    $pose = in_array($pose, ['front', 'side', 'side-large', 'look-back-large', 'rear', 'rear-left', 'rear-right', 'side-left'], true) ? $pose : 'front';
+    return '<div class="touro-says"><img class="touro-img" src="/assets/img/mascot/' . $pose . '.webp?v=2" alt="" loading="lazy">'
+         . '<div class="touro-bubble"><p>' . e($text) . '</p>' . $actionHtml . '</div></div>';
+}
+
 function notFound(string $extra = ''): never
 {
     http_response_code(404);
     pageHeader(t('error.not_found'));
-    echo '<h1>' . te('error.not_found') . '</h1>' . ($extra !== '' ? '<p>' . e($extra) . '</p>' : '');
+    echo '<h1>' . te('error.not_found') . '</h1>' . ($extra !== '' ? '<p>' . e($extra) . '</p>' : '') . touroSays(t('touro.lost'), 'look-back-large', '<p><a class="btn" href="/">' . te('touro.home') . '</a></p>');
     pageFooter();
     exit;
 }
@@ -580,13 +591,13 @@ function pageHeader(string $title, array $meta = []): void
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="/assets/app-pref.js?v=2"></script>
 <script src="/assets/map_styles.js?v=3"></script>
-<link rel="stylesheet" href="/assets/style.css?v=52">
+<link rel="stylesheet" href="/assets/style.css?v=53">
 <meta name="theme-color" content="#14263F">
 <?php foreach ($meta as $property => $content): ?><meta <?= str_starts_with($property, 'og:') ? 'property' : 'name' ?>="<?= e($property) ?>" content="<?= e($content) ?>">
 <?php endforeach; ?>
 </head>
 <?php // The app interface (logged in, not on public pages like legal texts or shared tours) behaves like an app ?>
-<body<?= $u && !defined('PUBLIC_PAGE') ? ' class="app-ui"' : '' ?>>
+<body<?= $u && !defined('PUBLIC_PAGE') ? ' class="app-ui"' : '' ?><?= ($pp = parentPage()) !== null ? ' data-parent="' . e($pp) . '"' : '' ?>>
 <a class="skip" href="#content"><?= te('nav.skip') ?></a>
 <?php if (!isLive()): ?><div class="env-band env-<?= e($env) ?>"><?= e(strtoupper($env)) ?><span class="env-long"> · <?= te('env.notice') ?></span></div><?php endif; ?>
 <?php if ($banner !== ''): ?><div class="banner" role="status"><?= inlineFormat($banner) ?></div><?php endif; ?>
@@ -679,6 +690,45 @@ consentGate();
  * Bottom tab bar of the app on phones (CSS shows it below 800 px only): the five places a rider goes to most.
  * Only for logged-in riders on app pages; language and logout live in the profile on small screens.
  */
+/**
+ * The page "above" the current one (for the back button of the installed app): a tour's editor and ride mode go back to the tour,
+ * the tour to the list, the lists to the start page. Pages with a dynamic parent set $GLOBALS['PARENT_PAGE'] (e.g. a talk topic → its crew talk).
+ * Null = unknown: the button then falls back to the browser history.
+ */
+function parentPage(): ?string
+{
+    if (!empty($GLOBALS['PARENT_PAGE'])) {
+        return (string)$GLOBALS['PARENT_PAGE'];
+    }
+    $path = rtrim((string)(strtok($_SERVER['REQUEST_URI'] ?? '/', '?') ?: '/'), '/') ?: '/';
+    $rules = [
+        '#^/(tours|rides|crews|forum|profile|live|notifications|search)$#' => '/',
+        '#^/(drives|free)$#' => '/tours',
+        '#^/drive/(\d+)$#' => '/drives',
+        '#^/tour/(plan|import)$#' => '/tours',
+        '#^/tour/(\d+)$#' => '/tours',
+        '#^/tour/(\d+)/(edit|go)$#' => '/tour/$1',
+        '#^/ride/new$#' => '/rides',
+        '#^/ride/([A-Z0-9]{6}|\d+)$#' => '/rides',
+        '#^/ride/([A-Z0-9]{6}|\d+)/(edit|flyer)$#' => '/ride/$1',
+        '#^/crew/new$#' => '/crews',
+        '#^/crew/([a-z0-9-]+)$#' => '/crews',
+        '#^/crew/([a-z0-9-]+)/(talk|photos|edit)$#' => '/crew/$1',
+        '#^/forum/([a-z0-9-]+)$#' => '/forum',
+        '#^/spot/new$#' => '/tour/plan',
+        '#^/api/docs$#' => '/profile',
+        '#^/account/.*$#' => '/profile',
+        '#^/admin$#' => '/profile',
+        '#^/admin/.+$#' => '/admin',
+    ];
+    foreach ($rules as $re => $to) {
+        if (preg_match($re, $path, $m)) {
+            return preg_replace_callback('/\$(\d)/', fn($x) => $m[(int)$x[1]] ?? '', $to);
+        }
+    }
+    return null;
+}
+
 function tabBar(): string
 {
     if (currentUser() === null || defined('PUBLIC_PAGE')) {
@@ -686,6 +736,7 @@ function tabBar(): string
     }
     $path = (string)(strtok($_SERVER['REQUEST_URI'] ?? '/', '?') ?: '/');
     $tabs = [
+        ['/', '🏠', 'nav.home', []],
         ['/tours', '🗺', 'nav.tours', ['/tour']],
         ['/rides', '📅', 'nav.rides', ['/ride', '/live']],
         ['/crews', '🐂', 'nav.crews', ['/crew', '/talk']],
@@ -694,7 +745,7 @@ function tabBar(): string
     ];
     $h = '<nav class="tabbar" aria-label="' . te('nav.main') . '">';
     foreach ($tabs as [$href, $icon, $key, $prefixes]) {
-        $on = false;
+        $on = $href === '/' && $path === '/';
         foreach ($prefixes as $p) {
             if ($path === $p || str_starts_with($path, $p . '/') || ($p === '/tour' && $path === '/tours') || ($p === '/ride' && $path === '/rides')) {
                 $on = true;

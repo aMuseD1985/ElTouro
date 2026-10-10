@@ -730,3 +730,12 @@ html[data-theme="dark"] .content:has(.ride-mode) * { filter: none !important; }
 .btn-big { display: block; text-align: center; font-size: 1.2rem; padding: 1rem 1.2rem; }
 .welcome-have { margin-top: 1.4rem; }
 .welcome-have .btn { display: block; text-align: center; }
+
+/* Touro speaks: the mascot with a speech bubble in empty lists, welcome and error pages */
+.touro-says { display: flex; align-items: flex-end; gap: .8rem; margin: 1rem 0 1.4rem; }
+.touro-img { flex: none; height: 7.5rem; width: auto; filter: drop-shadow(0 3px 3px rgba(0, 0, 0, .3)); }
+.touro-bubble { position: relative; background: #fff; color: var(--night); border: 2px solid var(--night); border-radius: 16px 16px 16px 4px; padding: .7rem 1rem; max-width: 30rem; }
+.touro-bubble::before { content: ''; position: absolute; left: -9px; bottom: 10px; width: 14px; height: 14px; background: #fff; border-left: 2px solid var(--night); border-bottom: 2px solid var(--night); transform: rotate(45deg); }
+.touro-bubble p { margin: 0 0 .4rem; }
+.touro-bubble p:last-child { margin-bottom: 0; }
+.touro-bubble .btn { margin-top: .2rem; }

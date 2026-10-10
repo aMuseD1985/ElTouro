@@ -34,6 +34,7 @@ if (isPost()) {
     }
 }
 
+$GLOBALS['PARENT_PAGE'] = '/forum/' . rawurlencode((string)$cat['slug']);
 pageHeader(t('forum.new_topic'));
 ?>
 <p class="breadcrumbs"><a href="/forum"><?= te('forum.title') ?></a> › <a href="/forum/<?= e(rawurlencode($cat['slug'])) ?>"><?= e(categoryName($cat)) ?></a> ›</p>

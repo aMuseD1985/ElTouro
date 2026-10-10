@@ -59,6 +59,12 @@ function mapService(): array
 function fillPlaceholders(string $text, string $updated): string
 {
     global $LANG;
+    // Optional contact details: a line with an empty optional placeholder disappears instead of showing "[please enter]" (the e-mail address is the contact)
+    foreach (['operator_phone'] as $optional) {
+        if (setting($optional) === '') {
+            $text = preg_replace('/^[^\n]*\{\{' . $optional . '\}\}[^\n]*\n?/m', '', $text) ?? $text;
+        }
+    }
     $missing = $LANG === 'de' ? '[bitte in Admin → Einstellungen eintragen]' : '[not yet provided]';
     [$service, $serviceNote] = mapService();
     $values = [

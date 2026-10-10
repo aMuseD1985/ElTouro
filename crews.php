@@ -50,7 +50,7 @@ pageHeader(t('crews.title'));
     <input id="q" name="q" type="search" value="<?= e($q) ?>" placeholder="<?= te('crews.search') ?>">
     <button type="submit"><?= te('crews.search_button') ?></button>
   </form>
-  <?php if (!$list): ?><p class="muted"><?= te('crews.none') ?></p><?php endif; ?>
+  <?php if (!$list): ?><?= touroSays(t('crews.none'), 'front', '<p><a class="btn" href="/crew/new">' . te('crews.new') . '</a></p>') ?><?php endif; ?>
   <ul class="cards">
   <?php foreach ($list as $c): ?>
     <li class="card">

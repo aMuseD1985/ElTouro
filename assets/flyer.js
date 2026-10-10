@@ -24,6 +24,6 @@
 
   document.getElementById('flyer-print').addEventListener('click', function () { window.print(); });
   document.getElementById('flyer-name').addEventListener('change', function (e) {
-    location.href = '/ride/' + e.target.dataset.id + '/flyer' + (e.target.checked ? '' : '?name=0');
+    location.href = '/ride/' + e.target.dataset.code + '/flyer' + (e.target.checked ? '' : '?name=0');
   });
 })();

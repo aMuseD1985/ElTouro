@@ -127,7 +127,7 @@ function sendDigests(): int
             $list .= ($list !== '' ? "\n" : '') . tl($u['locale'], 'mail.digest_rides_head') . "\n";
             foreach ($rides as $r) {
                 $list .= '• ' . tl($u['locale'], 'mail.digest_ride_line', ['title' => $r['title'], 'when' => utcToLocal($r['starts_at'])->format($u['locale'] === 'de' ? 'd.m. H:i' : 'j M, H:i'),
-                    'where' => $r['meeting_point']]) . "\n  " . baseUrl() . '/ride/' . (int)$r['id'] . "\n";
+                    'where' => $r['meeting_point']]) . "\n  " . baseUrl() . rideUrl($r) . "\n";
             }
         }
         $count = count($rows) + count($rides);
