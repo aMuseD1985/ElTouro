@@ -7,6 +7,7 @@
   var d = el.dataset;
   var T = JSON.parse(d.texts || '{}');
   var SIM = d.sim === '1';
+  var RESUME = SIM ? 0 : (parseInt(d.resume || '0', 10) || 0);   // a recording of this ride that is still open (the page was closed in between)
   var rideStartedAt = Date.now();
   var LOCALE = d.lang === 'de' ? 'de-DE' : 'en-GB';
   var CRUISE_KMH = 18;          // planning speed of an e-scooter ride incl. lights and corners
@@ -412,12 +413,29 @@
   // ---------------------------------------------------------------- sources: GPS or simulation
   var watchId = null, simTimer = null, wakeLock = null;
 
+  // A silent, looping sound plus a media-session entry keeps the browser from freezing the page when the screen goes dark
+  // (on Android this usually keeps the position coming; iOS and some phones still stop – hence the hint to keep the screen on)
+  var keepAliveAudio = null;
+  function keepAlive() {
+    try {
+      if (!keepAliveAudio) {
+        keepAliveAudio = new Audio('data:audio/wav;base64,UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YRAAAACAgICAgICAgICAgICAgICA');
+        keepAliveAudio.loop = true; keepAliveAudio.volume = 0.01;
+      }
+      keepAliveAudio.play().catch(function () {});
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({ title: 'ElTouro', artist: T.ride_running || 'Fahrt läuft' });
+        navigator.mediaSession.setActionHandler('stop', null);
+      }
+    } catch (e) { /* no keep-alive */ }
+  }
+  function stopKeepAlive() { try { if (keepAliveAudio) keepAliveAudio.pause(); } catch (e) { /* ignore */ } }
   function keepAwake() {
     if (!('wakeLock' in navigator)) return;
     navigator.wakeLock.request('screen').then(function (l) { wakeLock = l; }).catch(function () {});
   }
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState === 'visible' && state.running) keepAwake();
+    if (document.visibilityState === 'visible' && state.running) { keepAwake(); if (!SIM) keepAlive(); }
     if (document.visibilityState === 'hidden' && record) record.flush(true);
   });
 
@@ -457,7 +475,7 @@
     sharing = false;
     api('/api/live', { action: 'stop' }, true).catch(function () { /* the server forgets us after two minutes anyway */ });
   }
-  window.addEventListener('pagehide', stopSharing);
+  window.addEventListener('pagehide', function () { stopSharing(); if (record) record.flush(true); });
 
   function otherMarker(r) {
     var box = document.createElement('div');
@@ -496,9 +514,11 @@
       headers: { 'Content-Type': 'application/json', 'X-CSRF': d.csrf }, body: JSON.stringify(body) })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); });
   }
-  function Recorder() {
+  function Recorder(resumeId) {
     var self = this, buf = [], session = null, lastP = null, lastT = 0, timer = null;
-    this.ready = api({ action: 'start', tour_id: parseInt(d.tour, 10) }).then(function (j) { session = j.session_id; });
+    var startNew = function () { return api({ action: 'start', tour_id: parseInt(d.tour, 10) }).then(function (j) { session = j.session_id; }); };
+    // Continue the open recording if there is one – the ride only ends when the rider ends it
+    this.ready = resumeId ? api({ action: 'resume', session_id: resumeId }).then(function (j) { session = j.session_id; }).catch(startNew) : startNew();
     this.add = function (fix) {
       var p = [fix.lat, fix.lng];
       // at most one point every 2 s, and only when we have moved – standing at lights fills nothing
@@ -529,12 +549,21 @@
     try { localStorage.setItem('eltouro.record', ui.record.checked ? '1' : '0'); } catch (e) { /* ignore */ }
   });
 
+  if (RESUME) {
+    if (ui.record) { ui.record.checked = true; ui.record.disabled = true; }
+    var discard = document.getElementById('ride-discard');
+    if (discard) discard.addEventListener('click', function () {
+      discard.disabled = true;
+      api({ action: 'finish', session_id: RESUME }).catch(function () {}).then(function () { location.href = location.pathname; });
+    });
+  }
   ui.start.addEventListener('click', function () {
     state.running = true;
     ui.start.hidden = true;
     ui.stop.hidden = false;
     if (ui.record) ui.record.disabled = true;
     keepAwake();
+    if (!SIM) keepAlive();
     follow = true;
     // The first utterance must come from this click – browsers (iOS in particular) only allow speech after a gesture
     rideStartedAt = Date.now();
@@ -543,7 +572,7 @@
     if (!hints.length) say(T.no_hints, true);
     if (SIM) startSim();
     else {
-      if (ui.record && ui.record.checked) record = new Recorder();
+      if (ui.record && (ui.record.checked || RESUME)) record = new Recorder(RESUME);
       // Live sharing is asked for on every ride – it is never switched on from an earlier one
       if (ui.live && ui.live.checked) sharing = true;
       if (ui.live) { ui.live.disabled = true; ui.liveScope.disabled = true; }
@@ -693,6 +722,7 @@
     state.running = false;
     if (watchId !== null) navigator.geolocation.clearWatch(watchId);
     clearInterval(simTimer);
+    stopKeepAlive();
     if (wakeLock) { wakeLock.release().catch(function () {}); wakeLock = null; }
     stopSharing();
     ui.stop.hidden = true;

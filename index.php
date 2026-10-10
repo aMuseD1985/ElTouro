@@ -44,7 +44,9 @@ if ($me === null): ?>
 
   <div class="home-actions">
     <a class="btn" href="/tour/plan">🗺 <?= te('home.plan') ?></a>
-    <?php if ($last): ?><a class="btn secondary" href="/tour/<?= (int)$last['id'] ?>/go">▶ <?= te('home.resume', ['title' => $last['title']]) ?></a><?php endif; ?>
+    <?php require_once __DIR__ . '/track_lib.php'; $running = anyActiveRecording($uid); ?>
+    <?php if ($running): ?><a class="btn" href="<?= $running['tour_id'] ? '/tour/' . (int)$running['tour_id'] . '/go' : '/free' ?>">⏺ <?= te('home.running', ['title' => $running['title'] ?: t('drive.free')]) ?></a>
+    <?php elseif ($last): ?><a class="btn secondary" href="/tour/<?= (int)$last['id'] ?>/go">▶ <?= te('home.resume', ['title' => $last['title']]) ?></a><?php endif; ?>
     <a class="btn secondary" href="/live">📍 <?= te('profile.more_live') ?></a>
   </div>
 

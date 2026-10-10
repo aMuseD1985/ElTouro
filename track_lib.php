@@ -128,3 +128,19 @@ function ownTracksOfTour(int $userId, int $tourId): array
     return dbAll("SELECT id, started_at, distance_m, moving_s, max_speed_kmh FROM track_sessions
                    WHERE user_id = ? AND tour_id = ? AND status = 'finished' ORDER BY started_at DESC LIMIT 20", [$userId, $tourId]);
 }
+
+
+/** The open recording of this rider (for this tour, or a free ride when $tourId is null) started within the last 12 hours – or null.
+ *  A ride only ends when the rider ends it; closing the page does not. */
+function activeRecording(int $userId, ?int $tourId): ?array
+{
+    return dbOne("SELECT id, tour_id, started_at FROM track_sessions WHERE user_id = ? AND status = 'recording' AND started_at > UTC_TIMESTAMP() - INTERVAL 12 HOUR AND "
+        . ($tourId === null ? 'tour_id IS NULL' : 'tour_id = ' . (int)$tourId) . ' ORDER BY id DESC LIMIT 1', [$userId]);
+}
+
+/** Any open recording, newest first (for the "ride on" link on the home page) */
+function anyActiveRecording(int $userId): ?array
+{
+    return dbOne("SELECT s.id, s.tour_id, t.title FROM track_sessions s LEFT JOIN tours t ON t.id = s.tour_id AND t.deleted_at IS NULL
+                   WHERE s.user_id = ? AND s.status = 'recording' AND s.started_at > UTC_TIMESTAMP() - INTERVAL 12 HOUR ORDER BY s.id DESC LIMIT 1", [$userId]);
+}

@@ -6,6 +6,7 @@ declare(strict_types=1);
 
 // Bump when what we store or why changes: everybody is then asked for consent again (consent.php)
 const CONSENT_VERSION = 5;
+const SESSION_KEEP_SECONDS = 90 * 86400;   // riders stay signed in for three months, the time starts anew with every visit
 // Stand-in author for content that stays after an account is deleted (see account_data_lib.php)
 const DELETED_USER_EMAIL = 'deleted-user@eltouro.invalid';
 
@@ -157,20 +158,25 @@ if (is_dir($sessionDir) && is_writable($sessionDir)) {
     session_save_path($sessionDir);
     ini_set('session.gc_probability', '1');
     ini_set('session.gc_divisor', '100');
-    ini_set('session.gc_maxlifetime', '28800');   // 8 hours without activity
+    ini_set('session.gc_maxlifetime', (string)SESSION_KEEP_SECONDS);   // stays signed in for 90 days (renewed with every visit)
 }
 ini_set('session.use_strict_mode', '1');
 ini_set('session.use_only_cookies', '1');
 
+function sessionCookieOptions(int $lifetime): array
+{
+    return ['lifetime' => $lifetime, 'path' => '/', 'secure' => isHttps(), 'httponly' => true, 'samesite' => 'Lax'];
+}
+
 session_name('eltouro_sid');
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path'     => '/',
-    'secure'   => isHttps(),
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
+session_set_cookie_params(sessionCookieOptions(0));   // visitors without an account: a session cookie only
 session_start();
+// Signed-in riders: the cookie lives 90 days and is renewed (at most once a day) – "stay signed in", also after weeks of not opening the app
+if (!empty($_SESSION['uid']) && time() - (int)($_SESSION['cookie_renewed'] ?? 0) > 86400 && !headers_sent()) {
+    $_SESSION['cookie_renewed'] = time();
+    $o = sessionCookieOptions(SESSION_KEEP_SECONDS);
+    setcookie(session_name(), session_id(), ['expires' => time() + SESSION_KEEP_SECONDS, 'path' => $o['path'], 'secure' => $o['secure'], 'httponly' => true, 'samesite' => 'Lax']);
+}
 
 accessGate();
 sendSecurityHeaders();
@@ -305,6 +311,9 @@ function requireAdmin(): array
 function logIn(int $userId): void
 {
     session_regenerate_id(true);
+    $_SESSION['cookie_renewed'] = time();
+    // the session is already running, so its cookie parameters cannot change any more: send the long-lived cookie ourselves (the last one wins)
+    setcookie(session_name(), session_id(), ['expires' => time() + SESSION_KEEP_SECONDS, 'path' => '/', 'secure' => isHttps(), 'httponly' => true, 'samesite' => 'Lax']);
     $_SESSION['uid'] = $userId;
     unset($_SESSION['referral']);   // an existing account was not brought by whoever's link opened this session
 }

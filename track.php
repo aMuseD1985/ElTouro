@@ -3,11 +3,13 @@
  * POST /api/track  (JSON, X-CSRF header) – recording from the ride mode.
  *   {"action": "start", "tour_id": 5}                       -> {"session_id": 12}
  *   {"action": "points", "session_id": 12, "points": [[unixMillis, lat, lng, accuracy, speedKmh], …]} -> {"stored": 30}
+ *   {"action": "resume", "session_id": 12}                      -> {"session_id": 12, "points": [[lat, lng], …], "distance_m": 1200}   (continue after the page was closed)
  *   {"action": "finish", "session_id": 12}                  -> {"distance_m": 23400, "moving_s": 4120, "max_speed_kmh": 19.8}
  */
 declare(strict_types=1);
 require __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/track_lib.php';
+require_once __DIR__ . '/drive_lib.php';
 header('Content-Type: application/json; charset=utf-8');
 
 function respond(int $code, array $data): never
@@ -46,6 +48,18 @@ if ($session === null) {
 }
 if ($action === 'points') {
     respond(200, ['stored' => addTrackPoints($session, is_array($input['points'] ?? null) ? $input['points'] : [])]);
+}
+if ($action === 'resume') {
+    // A ride only ends when the rider ends it: opening the page again continues the same recording (for 12 hours)
+    if ($session['status'] !== 'recording' || strtotime($session['started_at'] . ' UTC') < time() - 12 * 3600) {
+        respond(409, ['error' => 'ended']);
+    }
+    $pts = drivePoints((int)$session['id'], 1500);
+    $len = 0.0;
+    for ($i = 1; $i < count($pts); $i++) {
+        $len += distanceMeters($pts[$i - 1][0], $pts[$i - 1][1], $pts[$i][0], $pts[$i][1]);
+    }
+    respond(200, ['session_id' => (int)$session['id'], 'points' => $pts, 'distance_m' => (int)round($len), 'started_at' => gmdate('c', (int)strtotime($session['started_at'] . ' UTC'))]);
 }
 if ($action === 'finish') {
     $s = finishTrack((int)$session['id'], $uid);

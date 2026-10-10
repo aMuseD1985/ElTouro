@@ -9,13 +9,14 @@ require __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/tours_lib.php';
 require_once __DIR__ . '/poi_lib.php';
 require_once __DIR__ . '/rewards_lib.php';
+require_once __DIR__ . '/track_lib.php';
 $me = requireLogin();
 $tour = loadTour((int)($_GET['id'] ?? 0));
 if ($tour === null || !canSeeTour($tour, (int)$me['id'])) {
     notFound();
 }
 
-$keys = ['finished_early', 'start', 'start_sim', 'arrive', 'halfway', 'offroute', 'back', 'speed', 'gps_wait', 'gps_error', 'gps_denied', 'wakelock',
+$keys = ['ride_running', 'finished_early', 'start', 'start_sim', 'arrive', 'halfway', 'offroute', 'back', 'speed', 'gps_wait', 'gps_error', 'gps_denied', 'wakelock',
          'in_m', 'in_km', 'now', 'remaining', 'eta_min', 'eta_h', 'speed_unit', 'sim_clock', 'follow', 'voice_on', 'voice_off', 'voice_pick', 'voice_changed', 'voice_sample', 'share_text', 'link_copied', 'rerouting', 'rerouted', 'posted', 'post_error', 'post_slow',
          'view_heading', 'view_3d', 'view_north', 'far_stop', 'now_stop_charge', 'now_stop_food', 'now_stop_break', 'now_stop_sight', 'label_stop', 'done_title', 'done_arrived', 'done_text', 'done_recorded', 'done_not_recorded', 'saving', 'no_hints'];
 foreach (['left', 'slight_left', 'sharp_left', 'right', 'slight_right', 'sharp_right', 'keep_left', 'keep_right', 'uturn',
@@ -27,6 +28,7 @@ foreach ($keys as $k) {
     $texts[$k] = t('nav.' . $k);
 }
 $sim = isset($_GET['sim']);
+$resume = $sim ? null : activeRecording((int)$me['id'], (int)$tour['id']);
 pageHeader(t('nav.title', ['title' => $tour['title']]));
 ?>
 <link rel="stylesheet" href="/assets/vendor/maplibre/maplibre-gl.css">
@@ -40,7 +42,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
      data-lang="<?= e($LANG) ?>"
      data-tour="<?= (int)$tour['id'] ?>"
      data-rules="<?= e((string)$tour['rule_set']) ?>" data-vehicle="<?= (int)($tour['vehicle_class'] ?? 2) ?>"
-     data-sim="<?= $sim ? '1' : '0' ?>"
+     data-sim="<?= $sim ? '1' : '0' ?>" data-resume="<?= $resume ? (int)$resume['id'] : '' ?>"
      data-texts="<?= e(json_encode($texts, JSON_UNESCAPED_UNICODE)) ?>">
   <div id="ride-map" class="ride-map"></div>
 
@@ -48,7 +50,7 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
     <div class="ride-arrow" id="ride-arrow" aria-hidden="true"><span>⬆</span></div>
     <div class="ride-next">
       <strong id="ride-dist">–</strong>
-      <span id="ride-text"><?= te($sim ? 'nav.ready_sim' : 'nav.ready') ?></span>
+      <span id="ride-text"><?= te($sim ? 'nav.ready_sim' : ($resume ? 'nav.ready_resume' : 'nav.ready')) ?></span>
     </div>
   </div>
   <p class="ride-subtitle" id="ride-subtitle" hidden></p>
@@ -72,8 +74,9 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
               <option value="crews"><?= te('nav.live_crews') ?></option><option value="all"><?= te('nav.live_all') ?></option></select></label>
           <button type="button" id="ride-info-btn" class="info-btn" aria-expanded="false" aria-controls="ride-info" aria-label="<?= te('nav.info') ?>">ⓘ</button>
         </div>
-        <p class="ride-hint" id="ride-info" hidden><?= te('nav.record_hint') ?> <?= te('nav.live_hint') ?></p>
-        <button type="button" id="ride-start" class="btn"><?= te('nav.start_button') ?></button>
+        <p class="ride-hint" id="ride-info" hidden><?= te('nav.record_hint') ?> <?= te('nav.live_hint') ?> <?= te('nav.screen_hint') ?></p>
+        <button type="button" id="ride-start" class="btn"><?= te($resume ? 'nav.resume_button' : 'nav.start_button') ?></button>
+        <?php if ($resume): ?><button type="button" id="ride-discard" class="btn secondary"><?= te('nav.resume_discard') ?></button><?php endif; ?>
       <?php endif; ?>
       <button type="button" id="ride-stop" class="btn hold-btn" hidden aria-describedby="ride-stop-hint"><span class="hold-fill" aria-hidden="true"></span><span class="hold-label"><?= te('nav.stop_button') ?> <small id="ride-stop-hint"><?= te('nav.stop_hold') ?></small></span></button>
       <div class="ride-tools">
@@ -126,5 +129,5 @@ pageHeader(t('nav.title', ['title' => $tour['title']]));
 <script src="/assets/vendor/maplibre/maplibre-gl-csp.js"></script>
 <script src="/assets/voice.js?v=2"></script>
 <script src="/assets/confetti.js?v=2"></script>
-<script src="/assets/navigate.js?v=23"></script>
+<script src="/assets/navigate.js?v=24"></script>
 <?php pageFooter();

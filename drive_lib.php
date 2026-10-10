@@ -58,11 +58,13 @@ function saveDriveAsTour(array $drive, int $userId, string $title): ?int
     if ($geo === null || $geo['distance'] < 100) {
         return null;
     }
-    // Waypoints: start, one about every 2.5 km, finish – so the tour can be edited and re-planned later
+    // Waypoints: start, one about every 400 m (fewer on very long rides – at most MAX_WAYPOINTS), finish. Close together,
+    // they keep a re-planned tour on the road that was really ridden.
+    $step = max(400.0, $geo['distance'] / (MAX_WAYPOINTS - 2));
     $wps = [[$pts[0][0], $pts[0][1]]]; $acc = 0.0;
     for ($i = 1; $i < count($pts) - 1; $i++) {
         $acc += distanceMeters($pts[$i - 1][0], $pts[$i - 1][1], $pts[$i][0], $pts[$i][1]);
-        if ($acc >= 2500 && count($wps) < 20) { $wps[] = [$pts[$i][0], $pts[$i][1]]; $acc = 0.0; }
+        if ($acc >= $step && count($wps) < MAX_WAYPOINTS - 1) { $wps[] = [$pts[$i][0], $pts[$i][1]]; $acc = 0.0; }
     }
     $wps[] = [end($pts)[0], end($pts)[1]];
     dbExec("INSERT INTO tours (owner_user_id, title, description, content_lang, visibility, difficulty, style, rule_set, vehicle_class, source, distance_m, ascent_m,
